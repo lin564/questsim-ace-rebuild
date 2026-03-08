@@ -4541,5 +4541,26 @@ buildNav();
 switchGradebookPathway('pyth');
 navigate('screen-student-dashboard');
 </script>
+  <!-- ROUTING PATCH: hash-based URL routing + back/forward support -->
+<script>
+  const _orig = navigate;
+  let _busy = false;
+  window.navigate = function(screenId) {
+    _busy = true;
+    _orig(screenId);
+    if (location.hash !== '#' + screenId) history.pushState(null, '', '#' + screenId);
+    _busy = false;
+  };
+  window.addEventListener('popstate', () => {
+    if (!_busy) {
+      const id = location.hash.slice(1) || 'screen-student-dashboard';
+      if (document.getElementById(id)) _orig(id);
+    }
+  });
+  window.addEventListener('load', () => {
+    const id = location.hash.slice(1);
+    if (id && document.getElementById(id)) _orig(id);
+  });
+</script>
 </body>
 </html>
