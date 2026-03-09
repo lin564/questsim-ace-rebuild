@@ -4562,5 +4562,501 @@ navigate('screen-student-dashboard');
     if (id && document.getElementById(id)) _orig(id);
   });
 </script>
+  <script> /**
+ * QuestSim ACE — Phase 1 localStorage Data Layer
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Add this as a <script> block in index.html AFTER the routing patch,
+ * just before </body>.
+ *
+ * Exposes a global `QS` object for debug use (QS.reset(), QS.get('profile'), etc.)
+ *
+ * Chain order after wiring:
+ *   window.navigate → qs_navigate → routing_navigate → original_navigate
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+const QS = (() => {
+  'use strict';
+
+  // ── SEED DATA ─────────────────────────────────────────────────────────────
+  // Mirrors all currently hardcoded demo values.
+  // Seeds localStorage on first load; never overwrites existing data.
+
+  const SEED_PROFILE = {
+    student_id:            's_maya_p3',
+    name:                  'Maya Chen',
+    avatar:                'MC',
+    class_code:            'P3',
+    xp:                    830,
+    level:                 7,
+    xp_to_next:            1000,
+    streak:                5,
+    challenges_completed:  47,
+    challenges_this_week:  8
+  };
+
+  const SEED_QUEST = {
+    quest_name:       'The Lost Proof of Pythagoras',
+    tier:             'extension',
+    tier_label:       'Extension Waters',
+    fragments_found:  3,
+    fragments_total:  5,
+    location:         'rhodes',
+    location_name:    'The Harbor of Rhodes',
+    location_emoji:   '⛵',
+    next_fragment:    'Fragment 4: The Harbor of Rhodes',
+    fragments_status: [true, true, true, false, false]
+  };
+
+  const SEED_CHALLENGES = [
+    // ── Rhodes ──────────────────────────────────────────────────────────────
+    {
+      id:           'ch_rhodes_f1',
+      location:     'rhodes',
+      tier:         'foundation',
+      tier_label:   'Foundation',
+      cog_badge:    '🏛️',
+      diff_badge:   '⭐',
+      prompt:       'A merchant needs to cross the harbor entrance at Rhodes. The dock runs 6 cubits east and 8 cubits north. How long is the direct rope needed to reach the other side?',
+      diagram_emoji: '⛵',
+      diagram_desc:  'Harbor entrance — two stone walls meet at a right angle.',
+      given:         { a: 6, b: 8 },
+      answer:        10,
+      unit:          'cubits',
+      hint_1:        'Label the two short sides a and b. This is a right triangle.',
+      hint_2:        'Use a² + b² = c². Here a = 6, b = 8. So c² = 36 + 64 = 100.',
+      hint_3:        '√100 = 10. The rope must be 10 cubits long.',
+      reference:     'a² + b² = c²',
+      xp_award:      40,
+      fragment:      null
+    },
+    {
+      id:           'ch_rhodes_e1',
+      location:     'rhodes',
+      tier:         'extension',
+      tier_label:   'Extension',
+      cog_badge:    '🔭',
+      diff_badge:   '⭐⭐',
+      prompt:       'A lighthouse keeper at Rhodes must lower a rescue rope from a window 5 cubits above the water to a boat 12 cubits away along the shore. How long must the rope be?',
+      diagram_emoji: '🏛️',
+      diagram_desc:  'Lighthouse on a cliff — vertical height and horizontal distance form a right triangle.',
+      given:         { a: 5, b: 12 },
+      answer:        13,
+      unit:          'cubits',
+      hint_1:        'Height = 5, horizontal distance = 12. These are the two legs of a right triangle.',
+      hint_2:        'c² = 5² + 12² = 25 + 144 = 169.',
+      hint_3:        '√169 = 13. The rope must be 13 cubits.',
+      reference:     'a² + b² = c²',
+      xp_award:      60,
+      fragment:      'Fragment 4: The Lighthouse Theorem'
+    },
+    {
+      id:           'ch_rhodes_m1',
+      location:     'rhodes',
+      tier:         'mastery',
+      tier_label:   'Mastery',
+      cog_badge:    '⚡',
+      diff_badge:   '⭐⭐⭐',
+      prompt:       'Two ships leave Rhodes harbor at right angles. One travels 20 cubits east, the other 15 cubits north. What is the straight-line distance between them?',
+      diagram_emoji: '🚢',
+      diagram_desc:  'Two ships diverge at 90° from the same harbor point.',
+      given:         { a: 20, b: 15 },
+      answer:        25,
+      unit:          'cubits',
+      hint_1:        'The two distances are the legs of a right triangle. a = 20, b = 15.',
+      hint_2:        'c² = 20² + 15² = 400 + 225 = 625.',
+      hint_3:        '√625 = 25. The ships are 25 cubits apart.',
+      reference:     'a² + b² = c²',
+      xp_award:      100,
+      fragment:      'Fragment 5: The Open Sea Proof'
+    },
+    // ── Athens ──────────────────────────────────────────────────────────────
+    {
+      id:           'ch_athens_f1',
+      location:     'athens',
+      tier:         'foundation',
+      tier_label:   'Foundation',
+      cog_badge:    '🏛️',
+      diff_badge:   '⭐',
+      prompt:       'Builders at the Acropolis lean a ramp against a wall. The ramp base is 4 cubits from the wall and the wall stands 3 cubits tall. How long is the ramp surface?',
+      diagram_emoji: '🏺',
+      diagram_desc:  'Ramp against the Acropolis wall — the classic 3-4-5 triangle.',
+      given:         { a: 3, b: 4 },
+      answer:        5,
+      unit:          'cubits',
+      hint_1:        'Height = 3, base = 4. These are the two legs.',
+      hint_2:        'c² = 3² + 4² = 9 + 16 = 25.',
+      hint_3:        '√25 = 5. The ramp surface is 5 cubits long.',
+      reference:     'a² + b² = c²',
+      xp_award:      40,
+      fragment:      null
+    },
+    {
+      id:           'ch_athens_e1',
+      location:     'athens',
+      tier:         'extension',
+      tier_label:   'Extension',
+      cog_badge:    '🔭',
+      diff_badge:   '⭐⭐',
+      prompt:       'A fallen column at Athens leans against the temple wall. The column is 26 cubits long and its base rests 10 cubits from the wall. How high up the wall does it reach?',
+      diagram_emoji: '🏛️',
+      diagram_desc:  'Broken column as hypotenuse — find the missing leg.',
+      given:         { hyp: 26, a: 10 },
+      answer:        24,
+      unit:          'cubits',
+      hint_1:        'The column is the hypotenuse (26). One leg is 10. Find the other leg using b² = c² − a².',
+      hint_2:        'b² = 26² − 10² = 676 − 100 = 576.',
+      hint_3:        '√576 = 24. The column reaches 24 cubits up the wall.',
+      reference:     'b² = c² − a²',
+      xp_award:      60,
+      fragment:      null
+    }
+  ];
+
+  // ── STORAGE HELPERS ───────────────────────────────────────────────────────
+
+  function save(key, val) {
+    try { localStorage.setItem('qs_' + key, JSON.stringify(val)); }
+    catch (e) { console.error('[QS] save failed for key:', key, e); }
+  }
+
+  function load(key) {
+    try {
+      const raw = localStorage.getItem('qs_' + key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+
+  function init() {
+    if (!load('profile'))    save('profile',    SEED_PROFILE);
+    if (!load('quest'))      save('quest',      SEED_QUEST);
+    if (!load('challenges')) save('challenges', SEED_CHALLENGES);
+    if (!load('sessions'))   save('sessions',   []);
+    const p = load('profile');
+    console.log('[QS] Init — student:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length);
+  }
+
+  // ── SESSION ───────────────────────────────────────────────────────────────
+
+  function startSession() {
+    const profile = load('profile') || SEED_PROFILE;
+    const quest   = load('quest')   || SEED_QUEST;
+    const session = {
+      id:            'sess_' + Date.now(),
+      student_id:    profile.student_id,
+      location:      quest.location,
+      location_name: quest.location_name,
+      started:       new Date().toISOString(),
+      ssne:          { q1: null, q2: null, q3: null, q4: '' },
+      challenge_idx: 0,
+      attempts:      []
+    };
+    save('session_now', session);
+    console.log('[QS] New session started:', session.id);
+    return session;
+  }
+
+  function saveCheckIn(question, value) {
+    let s = load('session_now');
+    if (!s || s.completed) s = startSession();
+    s.ssne[question] = value;
+    save('session_now', s);
+    console.log('[QS] Check-in', question, '=', value);
+  }
+
+  // ── CHALLENGE ENGINE ──────────────────────────────────────────────────────
+
+  /** Returns the challenge index that matches the current quest location + tier */
+  function getCurrentChallengeIdx() {
+    const quest      = load('quest')      || SEED_QUEST;
+    const challenges = load('challenges') || SEED_CHALLENGES;
+    const idx = challenges.findIndex(
+      ch => ch.location === quest.location && ch.tier === quest.tier
+    );
+    return idx >= 0 ? idx : 0;
+  }
+
+  function loadChallenge(idx) {
+    if (idx === undefined || idx === null) idx = getCurrentChallengeIdx();
+    const challenges = load('challenges') || SEED_CHALLENGES;
+    if (!challenges[idx]) { console.warn('[QS] No challenge at index', idx); return; }
+    const ch = challenges[idx];
+
+    // Persist challenge index in active session
+    const s = load('session_now');
+    if (s && !s.completed) { s.challenge_idx = idx; save('session_now', s); }
+
+    // ── DOM updates ──────────────────────────────────────────────────────────
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    set('chPrompt',    ch.prompt);
+    set('chCogBadge',  ch.cog_badge);
+    set('chDiffBadge', ch.diff_badge + ' ' + ch.tier_label);
+    set('diagramEmoji', ch.diagram_emoji);
+    set('diagramDesc',  ch.diagram_desc);
+    set('chUnit',       ch.unit);
+    set('chReference',  ch.reference);
+
+    // Reset answer input
+    const inp = document.getElementById('answerInput');
+    if (inp) { inp.value = ''; inp.disabled = false; }
+
+    // Hide feedback panels
+    ['feedbackCorrect', 'feedbackIncorrect'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    // Hide tier-advance banner
+    const ta = document.getElementById('tierAdvance');
+    if (ta) ta.style.display = 'none';
+
+    // Build hint elements (hidden; revealed progressively on wrong answers)
+    const hc = document.getElementById('hintsContainer');
+    if (hc) {
+      hc.innerHTML = '';
+      [ch.hint_1, ch.hint_2, ch.hint_3].forEach((hint, i) => {
+        if (!hint) return;
+        const d = document.createElement('div');
+        d.id        = 'qs_hint_' + (i + 1);
+        d.className = 'hint-item';
+        d.style.display = 'none';
+        d.textContent   = '💡 ' + hint;
+        hc.appendChild(d);
+      });
+    }
+
+    console.log('[QS] Challenge loaded:', ch.id, '— answer:', ch.answer, ch.unit);
+  }
+
+  // ── ANSWER SUBMISSION ─────────────────────────────────────────────────────
+
+  function submitAnswer() {
+    const s          = load('session_now');
+    const challenges = load('challenges') || SEED_CHALLENGES;
+    if (!s) { console.warn('[QS] submitAnswer — no active session.'); return; }
+
+    const ch = challenges[s.challenge_idx];
+    if (!ch) { console.warn('[QS] submitAnswer — challenge not found.'); return; }
+
+    const inp = document.getElementById('answerInput');
+    const raw = inp ? inp.value.trim() : '';
+    if (!raw) return;
+
+    const userAnswer = parseFloat(raw);
+    const correct    = userAnswer === ch.answer;
+
+    // Record attempt
+    s.attempts.push({
+      challenge_id: ch.id,
+      user_answer:  isNaN(userAnswer) ? raw : userAnswer,
+      correct:      correct,
+      timestamp:    new Date().toISOString()
+    });
+    save('session_now', s);
+
+    // Count attempts on this specific challenge (for progressive hints + reveal)
+    const attemptsOnThis = s.attempts.filter(a => a.challenge_id === ch.id).length;
+
+    const fc = document.getElementById('feedbackCorrect');
+    const fi = document.getElementById('feedbackIncorrect');
+
+    if (correct) {
+      // ── CORRECT ───────────────────────────────────────────────────────────
+      const profile = load('profile') || SEED_PROFILE;
+      profile.xp += ch.xp_award;
+      profile.challenges_completed += 1;
+      profile.challenges_this_week += 1;
+      save('profile', profile);
+
+      // Archive completed session
+      s.completed = new Date().toISOString();
+      save('session_now', s);
+      const sessions = load('sessions') || [];
+      sessions.push(s);
+      save('sessions', sessions);
+
+      // Feedback text
+      const fbTxt = document.getElementById('fbCorrectText');
+      if (fbTxt) fbTxt.textContent =
+        '✅ Correct! ' + ch.answer + ' ' + ch.unit + ' — +' + ch.xp_award + ' XP awarded.';
+      if (fc) fc.style.display = 'block';
+      if (fi) fi.style.display = 'none';
+
+      // Lock input after correct answer
+      if (inp) inp.disabled = true;
+
+      // Fragment / tier advance banner
+      if (ch.fragment) {
+        const quest = load('quest') || SEED_QUEST;
+        quest.fragments_found = Math.min(quest.fragments_found + 1, quest.fragments_total);
+        save('quest', quest);
+        const ta  = document.getElementById('tierAdvance');
+        const tat = document.getElementById('tierAdvanceText');
+        if (ta) {
+          if (tat) tat.textContent = '🏆 ' + ch.fragment + ' discovered!';
+          ta.style.display = 'block';
+        }
+      }
+
+    } else {
+      // ── INCORRECT ─────────────────────────────────────────────────────────
+      let msg = '';
+      if (attemptsOnThis >= 3) {
+        msg = '❌ The answer is ' + ch.answer + ' ' + ch.unit + '. ' + ch.hint_3;
+        if (inp) inp.disabled = true;   // max attempts reached — lock input
+      } else {
+        msg = '❌ Not quite — check your working and try again.';
+      }
+      const fbTxt = document.getElementById('fbIncorrectText');
+      if (fbTxt) fbTxt.textContent = msg;
+      if (fi) fi.style.display = 'block';
+      if (fc) fi.style.display = 'none'; // typo guard — keep fi visible
+
+      // Progressive hint reveal: hint 1 after attempt 1, hint 2 after attempt 2, etc.
+      showHint(attemptsOnThis);
+    }
+  }
+
+  // ── HINTS ─────────────────────────────────────────────────────────────────
+
+  function showHint(n) {
+    const el = document.getElementById('qs_hint_' + n);
+    if (el) { el.style.display = 'block'; console.log('[QS] Hint ' + n + ' revealed.'); }
+  }
+
+  // ── DASHBOARD ─────────────────────────────────────────────────────────────
+
+  function renderDashboard() {
+    const profile = load('profile') || SEED_PROFILE;
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    set('dashXP',     profile.xp);
+    set('userName',   profile.name);
+    set('userAvatar', profile.avatar);
+
+    // data-qs attribute hook: any element with data-qs="xp" (etc.) updates automatically
+    document.querySelectorAll('[data-qs]').forEach(el => {
+      const key = el.dataset.qs;
+      if (profile[key] !== undefined) el.textContent = profile[key];
+    });
+  }
+
+  // ── HELPER: selection value ───────────────────────────────────────────────
+  // Returns 1-based position of el among its parent's children.
+  // Falls back to data-value attribute if present.
+
+  function getSelectionValue(el) {
+    if (el.dataset && el.dataset.value) return parseInt(el.dataset.value, 10);
+    const parent = el.parentElement;
+    if (!parent) return 1;
+    const idx = Array.from(parent.children).indexOf(el);
+    return idx >= 0 ? idx + 1 : 1;
+  }
+
+  // ── DOM WIRING ────────────────────────────────────────────────────────────
+
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // 1. Seed data & render dashboard
+    init();
+    renderDashboard();
+
+    // 2. Wrap selectEmoji — check-in step uses selectEmoji(this, 'q2') for mood (1–5)
+    if (typeof window.selectEmoji === 'function') {
+      const _e = window.selectEmoji;
+      window.selectEmoji = function (el, questionId) {
+        _e(el, questionId);
+        if (questionId === 'q2') saveCheckIn('q1', getSelectionValue(el));
+      };
+    }
+
+    // 3. Wrap selectChoice — 'q3' = understanding (1–3), 'q4' = readiness (1–3)
+    if (typeof window.selectChoice === 'function') {
+      const _c = window.selectChoice;
+      window.selectChoice = function (el, questionId) {
+        _c(el, questionId);
+        if (questionId === 'q3') saveCheckIn('q2', getSelectionValue(el));
+        if (questionId === 'q4') saveCheckIn('q3', getSelectionValue(el));
+      };
+    }
+
+    // 4. Override submitAnswer & showHint
+    window.submitAnswer = submitAnswer;
+    window.showHint     = showHint;
+
+    // 5. Wrap navigate (sits on top of the routing patch's navigate wrapper)
+    if (typeof window.navigate === 'function') {
+      const _n = window.navigate;
+      window.navigate = function (screenId) {
+
+        // ── Entering check-in: start a fresh session ─────────────────────────
+        if (screenId === 'screen-checkin') {
+          startSession();
+        }
+
+        // ── Entering simulation: save note, ensure session, load challenge ────
+        if (screenId === 'screen-simulation') {
+          // Grab free-text note from check-in q4 step before leaving that screen
+          const q4step = document.getElementById('checkin-q4');
+          if (q4step) {
+            const noteInput = q4step.querySelector('input[type="text"], textarea');
+            if (noteInput) saveCheckIn('q4', noteInput.value);
+          }
+          // Ensure there is an open (non-completed) session
+          const existing = load('session_now');
+          if (!existing || existing.completed) startSession();
+          // Load the challenge that matches current quest location + tier
+          loadChallenge(getCurrentChallengeIdx());
+        }
+
+        // Hand off to routing-patch navigate (which calls original navigate)
+        _n(screenId);
+
+        // ── Arriving at dashboard: refresh XP / avatar ───────────────────────
+        if (screenId === 'screen-student-dashboard') {
+          renderDashboard();
+        }
+      };
+    }
+
+    // 6. Dashboard refresh when browser back/forward lands on dashboard
+    //    (routing patch's popstate uses _orig, bypassing our wrapper above)
+    window.addEventListener('popstate', () => {
+      const id = location.hash.slice(1);
+      if (id === 'screen-student-dashboard') renderDashboard();
+    });
+
+    console.log('[QS] Wiring complete. Debug: QS.get("profile"), QS.reset()');
+  });
+
+  // ── PUBLIC API ────────────────────────────────────────────────────────────
+
+  return {
+    init,
+    loadChallenge,
+    submitAnswer,
+    renderDashboard,
+    showHint,
+    saveCheckIn,
+    startSession,
+    getCurrentChallengeIdx,
+    get:   (key) => load(key),
+    reset () {
+      ['profile', 'quest', 'challenges', 'sessions', 'session_now']
+        .forEach(k => localStorage.removeItem('qs_' + k));
+      init();
+      renderDashboard();
+      console.log('[QS] Reset complete — fresh seed data loaded.');
+    }
+  };
+
+})();</script>
 </body>
 </html>
