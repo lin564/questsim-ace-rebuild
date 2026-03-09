@@ -4915,7 +4915,7 @@ const QS = (() => {
       const fbTxt = document.getElementById('fbIncorrectText');
       if (fbTxt) fbTxt.textContent = msg;
       if (fi) fi.style.display = 'block';
-      if (fc) fi.style.display = 'none'; // typo guard — keep fi visible
+      if (fc) fc.style.display = 'none'; // typo guard — keep fi visible
 
       // Progressive hint reveal: hint 1 after attempt 1, hint 2 after attempt 2, etc.
       showHint(attemptsOnThis);
