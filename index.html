@@ -1693,21 +1693,21 @@ body {
 <!-- SCREEN 6: TEACHER DASHBOARD -->
 <div class="screen" id="screen-teacher-dashboard">
   <div class="page-title">Class Dashboard</div>
-  <div class="page-subtitle">Period 3 — Geometry · 28 students</div>
+  <div class="page-subtitle" id="td-subtitle">Period 3 — Geometry · 28 students</div>
 
   <div class="grid-4 mb-md">
     <div class="stat-card">
-      <div class="stat-value">24</div>
+      <div class="stat-value" id="td-active-val">24</div>
       <div class="stat-label">Active Today</div>
-      <div class="stat-trend up">86% of class</div>
+      <div class="stat-trend up" id="td-active-pct">86% of class</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">78%</div>
+      <div class="stat-value" id="td-engage-val">78%</div>
       <div class="stat-label">Avg Engagement</div>
       <div class="stat-trend up">↑ 5% from last week</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="font-size:1.4rem;">
+      <div class="stat-value" id="td-tier-val" style="font-size:1.4rem;">
         <span style="color:var(--green);">8</span> ·
         <span style="color:var(--gold);">14</span> ·
         <span style="color:var(--purple);">6</span>
@@ -1715,7 +1715,7 @@ body {
       <div class="stat-label">Foundation · Extension · Mastery</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">⛅</div>
+      <div class="stat-value" id="td-conf-val">⛅</div>
       <div class="stat-label">Avg Math Confidence</div>
       <div class="stat-trend down">↓ slight decline this week</div>
     </div>
@@ -1727,14 +1727,14 @@ body {
       <div class="alert-card alert-danger" onclick="navigateToPastoral()">
         <div class="alert-icon">🔴</div>
         <div>
-          <div class="alert-text">3 students have reported low math confidence for 3+ consecutive sessions</div>
+          <div class="alert-text" id="td-alert-conf">3 students have reported low math confidence for 3+ consecutive sessions</div>
           <div class="alert-action">Review in Pastoral View →</div>
         </div>
       </div>
       <div class="alert-card alert-warning" onclick="navigate('screen-pathway-designer')">
         <div class="alert-icon">🟡</div>
         <div>
-          <div class="alert-text">12 students stuck at Foundation Tier Challenge 4 (triangle identification)</div>
+          <div class="alert-text" id="td-alert-stuck">12 students stuck at Foundation Tier Challenge 4 (triangle identification)</div>
           <div class="alert-action">Review Pathway →</div>
         </div>
       </div>
@@ -1748,7 +1748,7 @@ body {
       <div class="alert-card" style="background:rgba(126,87,194,0.06);border-left:3px solid var(--purple);display:flex;align-items:flex-start;gap:14px;padding:16px;border-radius:var(--radius-sm);margin-bottom:10px;cursor:pointer;transition:var(--transition);" onclick="navigateToEffort()">
         <div class="alert-icon">🟣</div>
         <div>
-          <div class="alert-text"><strong>Effort vs. Advancement gap:</strong> 5 students have high XP but stalled tier progress — they're working hard but not advancing</div>
+          <div class="alert-text" id="td-alert-effort"><strong>Effort vs. Advancement gap:</strong> 5 students have high XP but stalled tier progress — they're working hard but not advancing</div>
           <div class="alert-action" style="color:var(--purple);font-size:0.78rem;font-weight:600;margin-top:4px;">Review Effort vs. Advancement →</div>
         </div>
       </div>
@@ -1756,9 +1756,9 @@ body {
     <div class="card">
       <div class="card-header">📊 Tier Distribution This Week</div>
       <div class="chart-placeholder">
-        <div class="chart-bar" style="height:60%;background:var(--green);width:60px;" data-label="Foundation" data-value="8"></div>
-        <div class="chart-bar" style="height:85%;background:var(--gold);width:60px;" data-label="Extension" data-value="14"></div>
-        <div class="chart-bar" style="height:40%;background:var(--purple);width:60px;" data-label="Mastery" data-value="6"></div>
+        <div class="chart-bar" id="td-bar-found" style="height:60%;background:var(--green);width:60px;" data-label="Foundation" data-value="8"></div>
+        <div class="chart-bar" id="td-bar-ext" style="height:85%;background:var(--gold);width:60px;" data-label="Extension" data-value="14"></div>
+        <div class="chart-bar" id="td-bar-mast" style="height:40%;background:var(--purple);width:60px;" data-label="Mastery" data-value="6"></div>
       </div>
     </div>
   </div>
@@ -1791,32 +1791,10 @@ body {
   </div>
 
   <div class="tab-content active" id="pathway-challenges">
-    <div class="grid-3">
-      <div>
-        <div class="section-label" style="color:var(--green);">Foundation Tier (4 challenges)</div>
-        <div class="card mb-sm" style="border-left:3px solid var(--green);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Identify Right Triangles</span><span class="badge badge-green">Remember</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--green);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Label Triangle Sides</span><span class="badge badge-green">Understand</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--green);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Basic Side Calculation</span><span class="badge badge-teal">Apply</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--green);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Pythagorean Triples</span><span class="badge badge-teal">Apply</span></div></div>
-        <button class="btn btn-sm btn-outline" style="width:100%;"onclick="navigate('screen-add-challenge')">+ Add Challenge</button>
-      </div>
-      <div>
-        <div class="section-label" style="color:var(--gold);">Extension Tier (5 challenges)</div>
-        <div class="card mb-sm" style="border-left:3px solid var(--gold);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Real-World Ladder Problem</span><span class="badge badge-purple">Analyze</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--gold);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Multi-Step Composite</span><span class="badge badge-purple">Analyze</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--gold);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Coordinate Distance</span><span class="badge badge-purple">Analyze</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--gold);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Error Detection</span><span class="badge badge-orange">Evaluate</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--gold);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Proof Comparison</span><span class="badge badge-orange">Evaluate</span></div></div>
-        <button class="btn btn-sm btn-outline" style="width:100%;"onclick="navigate('screen-add-challenge')">+ Add Challenge</button>
-      </div>
-      <div>
-        <div class="section-label" style="color:var(--purple);">Mastery Tier (3 challenges)</div>
-        <div class="card mb-sm" style="border-left:3px solid var(--purple);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Design a Floor Plan</span><span class="badge badge-red">Create</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--purple);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Construct a Proof</span><span class="badge badge-red">Create</span></div></div>
-        <div class="card mb-sm" style="border-left:3px solid var(--purple);padding:14px;"><div class="flex-between"><span style="font-size:0.85rem;font-weight:600;">Teach Another Student</span><span class="badge badge-orange">Evaluate</span></div></div>
-        <button class="btn btn-sm btn-outline" style="width:100%;"onclick="navigate('screen-add-challenge')">+ Add Challenge</button>
-      </div>
+    <div class="grid-3" id="pathway-challenges-grid">
+      <p style="color:var(--text-muted);padding:20px;">Loading challenges...</p>
     </div>
+  </div>
   </div>
 
   <div class="tab-content" id="pathway-thresholds">
@@ -1825,16 +1803,16 @@ body {
       <div class="grid-2 mt-md">
         <div style="padding:20px;background:var(--bg);border-radius:var(--radius);text-align:center;">
           <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Foundation → Extension</div>
-          <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--green);font-weight:700;">0.75</div>
+          <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--green);font-weight:700;" id="threshold-fe-val">0.75</div>
           <div style="font-size:0.78rem;color:var(--text-soft);">mastery score required</div>
-          <input type="range" min="50" max="100" value="75" style="width:100%;margin-top:12px;">
+          <input type="range" min="50" max="100" value="75" id="threshold-fe" style="width:100%;margin-top:12px;" oninput="if(window.QS)window.QS.saveThreshold('foundation_to_extension',this.value)">
           <div style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Est. median advancement: ~6 challenges</div>
         </div>
         <div style="padding:20px;background:var(--bg);border-radius:var(--radius);text-align:center;">
           <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Extension → Mastery</div>
-          <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--gold);font-weight:700;">0.85</div>
+          <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--gold);font-weight:700;" id="threshold-em-val">0.85</div>
           <div style="font-size:0.78rem;color:var(--text-soft);">mastery score required</div>
-          <input type="range" min="50" max="100" value="85" style="width:100%;margin-top:12px;">
+          <input type="range" min="50" max="100" value="85" id="threshold-em" style="width:100%;margin-top:12px;" oninput="if(window.QS)window.QS.saveThreshold('extension_to_mastery',this.value)">
           <div style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Est. median advancement: ~8 challenges</div>
         </div>
       </div>
@@ -4452,88 +4430,48 @@ function showNodeDetail(title, info) {
 }
 
 // ═══ GRADEBOOK ═══
-const gradebookData = {
-  pyth: {
-    title: 'Student Roster — Pythagorean Theorem',
-    stats: [
-      { value: '82%', label: 'Class Avg Mastery' },
-      { value: '412', label: 'Avg XP (this pathway)' },
-      { value: '6.2', label: 'Avg Sessions' },
-      { value: '71%', label: 'Completion Rate' },
-    ],
-    headers: ['Student','Tier','Mastery','XP','Level','Challenges','Sessions','Last Active','Confidence','Flags'],
-    rows: [
-      { d:['Jaylen R.','<span class="badge badge-gold">Extension</span>','68%','<span style="font-weight:700;color:var(--purple);">640</span>','7','52','12','Today','⛈️','<span class="badge badge-red" style="font-size:0.6rem;">Effort + Conf.</span>'], bg:'rgba(224,83,104,0.03)' },
-      { d:['Liam T.','<span class="badge badge-purple">Mastery</span>','94%','920','9','48','8','Today','☀️','—'] },
-      { d:['Maya C.','<span class="badge badge-gold">Extension</span>','82%','830','7','47','9','Today','⛅','—'] },
-      { d:['Aisha S.','<span class="badge badge-green">Foundation</span>','55%','280','4','28','7','Yesterday','🌧️','<span class="badge badge-orange" style="font-size:0.6rem;">Low Conf.</span>'], bg:'rgba(239,140,59,0.03)' },
-      { d:['Sofia P.','<span class="badge badge-gold">Extension</span>','76%','520','6','38','6','Today','☁️','—'] },
-      { d:['Diego W.','<span class="badge badge-gold">Extension</span>','72%','350','5','35','8','Today','⛈️','<span class="badge badge-orange" style="font-size:0.6rem;">Low Conf.</span>'], bg:'rgba(126,87,194,0.03)' },
-      { d:['Emma L.','<span class="badge badge-purple">Mastery</span>','91%','880','8','45','7','2 days ago','⛅','—'] },
-    ],
-    extra: '+ 21 more students...'
-  },
-  proofs: {
-    title: 'Student Roster — Geometric Proofs',
-    stats: [
-      { value: '41%', label: 'Class Avg Mastery' },
-      { value: '145', label: 'Avg XP (this pathway)' },
-      { value: '2.8', label: 'Avg Sessions' },
-      { value: '18%', label: 'Completion Rate' },
-    ],
-    headers: ['Student','Tier','Mastery','XP','Level','Challenges','Sessions','Last Active','Confidence','Flags'],
-    rows: [
-      { d:['Liam T.','<span class="badge badge-gold">Extension</span>','72%','310','9','22','4','Today','☀️','—'] },
-      { d:['Emma L.','<span class="badge badge-gold">Extension</span>','65%','280','8','18','3','2 days ago','⛅','—'] },
-      { d:['Maya C.','<span class="badge badge-green">Foundation</span>','38%','120','7','12','3','3 days ago','☁️','—'] },
-      { d:['Sofia P.','<span class="badge badge-green">Foundation</span>','35%','95','6','10','2','3 days ago','☁️','—'] },
-      { d:['Jaylen R.','<span class="badge badge-green">Foundation</span>','22%','60','7','8','2','Yesterday','⛈️','<span class="badge badge-orange" style="font-size:0.6rem;">Low Conf.</span>'], bg:'rgba(239,140,59,0.03)' },
-      { d:['Diego W.','—','—','0','5','0','0','—','—','<span class="badge" style="background:var(--bg);font-size:0.6rem;color:var(--text-muted);">Not started</span>'] },
-      { d:['Aisha S.','—','—','0','4','0','0','—','—','<span class="badge" style="background:var(--bg);font-size:0.6rem;color:var(--text-muted);">Not started</span>'] },
-    ],
-    extra: '+ 21 more students...'
-  },
-  all: {
-    title: 'Student Roster — All Pathways',
-    stats: [
-      { value: '65%', label: 'Overall Avg Mastery' },
-      { value: '558', label: 'Avg Total XP' },
-      { value: '9.0', label: 'Avg Total Sessions' },
-      { value: '2', label: 'Active Pathways' },
-    ],
-    headers: ['Student','Pyth. Tier','Pyth. Mastery','Proofs Tier','Proofs Mastery','Total XP','Level','Total Sessions','Last Active','Flags'],
-    rows: [
-      { d:['Liam T.','<span class="badge badge-purple">Mastery</span>','94%','<span class="badge badge-gold">Extension</span>','72%','1,230','9','12','Today','—'] },
-      { d:['Emma L.','<span class="badge badge-purple">Mastery</span>','91%','<span class="badge badge-gold">Extension</span>','65%','1,160','8','10','2 days ago','—'] },
-      { d:['Maya C.','<span class="badge badge-gold">Extension</span>','82%','<span class="badge badge-green">Foundation</span>','38%','950','7','12','Today','—'] },
-      { d:['Jaylen R.','<span class="badge badge-gold">Extension</span>','68%','<span class="badge badge-green">Foundation</span>','22%','700','7','14','Today','<span class="badge badge-red" style="font-size:0.6rem;">Effort + Conf.</span>'], bg:'rgba(224,83,104,0.03)' },
-      { d:['Sofia P.','<span class="badge badge-gold">Extension</span>','76%','<span class="badge badge-green">Foundation</span>','35%','615','6','8','Today','—'] },
-      { d:['Diego W.','<span class="badge badge-gold">Extension</span>','72%','—','—','350','5','8','Today','<span class="badge badge-orange" style="font-size:0.6rem;">Low Conf.</span>'], bg:'rgba(126,87,194,0.03)' },
-      { d:['Aisha S.','<span class="badge badge-green">Foundation</span>','55%','—','—','280','4','7','Yesterday','<span class="badge badge-orange" style="font-size:0.6rem;">Low Conf.</span>'], bg:'rgba(239,140,59,0.03)' },
-    ],
-    extra: '+ 21 more students...'
-  }
-};
+let gradebookData = {};
 
 function switchGradebookPathway(key) {
+  // Lazy build from live roster data
+  if (window.QS && window.QS.buildGradebookData) {
+    gradebookData = window.QS.buildGradebookData();
+  }
   const data = gradebookData[key];
   if (!data) return;
-  document.getElementById('gradebookTableTitle').textContent = data.title;
+
+  const titles = { pyth: "Pythagorean Theorem", proofs: "Geometric Proofs", all: "All Pathways" };
+  const titleEl = document.getElementById("gradebookTableTitle");
+  if (titleEl) titleEl.textContent = "Student Roster — " + (titles[key] || key);
+
   // Stats
-  document.getElementById('gradebookStats').innerHTML = data.stats.map(s =>
-    `<div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`
-  ).join('');
+  const statsEl = document.getElementById("gradebookStats");
+  if (statsEl && data.stats) {
+    const labels = { enrolled: "Enrolled", avgMastery: "Avg Mastery", avgXP: "Avg XP" };
+    statsEl.innerHTML = Object.entries(data.stats).map(([k, v]) =>
+      '<div class="stat-card"><div class="stat-value">' + v + '</div><div class="stat-label">' + (labels[k] || k) + '</div></div>'
+    ).join("");
+  }
+
   // Header
-  const th = (t) => `<th style="text-align:${t==='Student'?'left':'center'};padding:10px;font-weight:700;color:var(--navy);">${t}</th>`;
-  document.getElementById('gradebookHeader').innerHTML = data.headers.map(th).join('');
+  const headerEl = document.getElementById("gradebookHeader");
+  if (headerEl && data.header) {
+    headerEl.innerHTML = data.header.map(t =>
+      '<th style="text-align:' + (t==="Student" ? "left" : "center") + ';padding:10px;font-weight:700;color:var(--navy);">' + t + '</th>'
+    ).join("");
+  }
+
   // Body
-  const rows = data.rows.map(r => {
-    const bgStyle = r.bg ? ` style="border-bottom:1px solid var(--border);background:${r.bg};"` : ' style="border-bottom:1px solid var(--border);"';
-    const cells = r.d.map((c,i) => `<td style="${i===0?'padding:10px;font-weight:600;':'text-align:center;padding:10px;'}">${c}</td>`).join('');
-    return `<tr${bgStyle}>${cells}</tr>`;
-  }).join('');
-  const extra = `<tr><td style="padding:10px;color:var(--text-muted);font-style:italic;" colspan="${data.headers.length}">${data.extra}</td></tr>`;
-  document.getElementById('gradebookBody').innerHTML = rows + extra;
+  const bodyEl = document.getElementById("gradebookBody");
+  if (bodyEl && data.rows) {
+    bodyEl.innerHTML = data.rows.map(row =>
+      '<tr style="border-bottom:1px solid var(--border);">' +
+        row.map((c, i) =>
+          '<td style="' + (i === 0 ? "padding:10px;font-weight:600;" : "text-align:center;padding:10px;") + '">' + c + '</td>'
+        ).join("") +
+      '</tr>'
+    ).join("");
+  }
 }
 
 // ═══ INIT ═══
@@ -4574,7 +4512,7 @@ navigate('screen-student-dashboard');
  *   window.navigate → qs_navigate → routing_navigate → original_navigate
  * ─────────────────────────────────────────────────────────────────────────────
  */
-const QS = (() => {
+window.QS = (() => {
   'use strict';
 
   // ── SEED DATA ─────────────────────────────────────────────────────────────
@@ -4607,7 +4545,24 @@ const QS = (() => {
     fragments_status: [true, true, true, false, false]
   };
 
-  const SEED_CHALLENGES = [
+  // ── CLASS ROSTER (teacher view) ──────────────────────────────────────────
+  // Each entry mirrors the shape a real backend would return.
+  // The logged-in student (Maya) is included — her row merges live profile data.
+
+  const SEED_ROSTER = [
+    { student_id:'s_jaylen_p3', name:'Jaylen R.', avatar:'JR', class_code:'P3', xp:640, level:7, tier:'extension', mastery:0.68, challenges_completed:52, sessions_completed:12, last_active:'Today', confidence:1, pyth:{tier:'extension',mastery:0.68,xp:640,challenges:52,sessions:12}, proofs:{tier:'foundation',mastery:0.22,xp:60,challenges:8,sessions:2} },
+    { student_id:'s_liam_p3',   name:'Liam T.',   avatar:'LT', class_code:'P3', xp:920, level:9, tier:'mastery',   mastery:0.94, challenges_completed:48, sessions_completed:8,  last_active:'Today', confidence:5, pyth:{tier:'mastery',mastery:0.94,xp:920,challenges:48,sessions:8}, proofs:{tier:'extension',mastery:0.72,xp:310,challenges:22,sessions:4} },
+    { student_id:'s_maya_p3',   name:'Maya C.',   avatar:'MC', class_code:'P3', xp:830, level:7, tier:'extension', mastery:0.82, challenges_completed:47, sessions_completed:9,  last_active:'Today', confidence:3, pyth:{tier:'extension',mastery:0.82,xp:830,challenges:47,sessions:9}, proofs:{tier:'foundation',mastery:0.38,xp:120,challenges:12,sessions:3} },
+    { student_id:'s_aisha_p3',  name:'Aisha S.',  avatar:'AS', class_code:'P3', xp:280, level:4, tier:'foundation',mastery:0.55, challenges_completed:28, sessions_completed:7,  last_active:'Yesterday', confidence:2, pyth:{tier:'foundation',mastery:0.55,xp:280,challenges:28,sessions:7}, proofs:{tier:null,mastery:0,xp:0,challenges:0,sessions:0} },
+    { student_id:'s_sofia_p3',  name:'Sofia P.',  avatar:'SP', class_code:'P3', xp:520, level:6, tier:'extension', mastery:0.76, challenges_completed:38, sessions_completed:6,  last_active:'Today', confidence:3, pyth:{tier:'extension',mastery:0.76,xp:520,challenges:38,sessions:6}, proofs:{tier:'foundation',mastery:0.35,xp:95,challenges:10,sessions:2} },
+    { student_id:'s_diego_p3',  name:'Diego W.',  avatar:'DW', class_code:'P3', xp:350, level:5, tier:'extension', mastery:0.72, challenges_completed:35, sessions_completed:8,  last_active:'Today', confidence:1, pyth:{tier:'extension',mastery:0.72,xp:350,challenges:35,sessions:8}, proofs:{tier:null,mastery:0,xp:0,challenges:0,sessions:0} },
+    { student_id:'s_emma_p3',   name:'Emma L.',   avatar:'EL', class_code:'P3', xp:880, level:8, tier:'mastery',   mastery:0.91, challenges_completed:45, sessions_completed:7,  last_active:'2 days ago', confidence:3, pyth:{tier:'mastery',mastery:0.91,xp:880,challenges:45,sessions:7}, proofs:{tier:'extension',mastery:0.65,xp:280,challenges:18,sessions:3} },
+    { student_id:'s_kai_p3',    name:'Kai N.',    avatar:'KN', class_code:'P3', xp:410, level:5, tier:'extension', mastery:0.62, challenges_completed:33, sessions_completed:10, last_active:'Today', confidence:4, pyth:{tier:'extension',mastery:0.62,xp:410,challenges:33,sessions:10}, proofs:{tier:'foundation',mastery:0.28,xp:75,challenges:6,sessions:2} },
+  ];
+
+  const SEED_THRESHOLDS = { foundation_to_extension: 0.75, extension_to_mastery: 0.85 };
+
+    const SEED_CHALLENGES = [
     // ── Rhodes ──────────────────────────────────────────────────────────────
     {
       id:           'ch_rhodes_f1',
@@ -4733,6 +4688,8 @@ const QS = (() => {
     if (!load('quest'))      save('quest',      SEED_QUEST);
     if (!load('challenges')) save('challenges', SEED_CHALLENGES);
     if (!load('sessions'))   save('sessions',   []);
+    if (!load('roster'))     save('roster',     SEED_ROSTER);
+    if (!load('thresholds')) save('thresholds', SEED_THRESHOLDS);
     const p = load('profile');
     console.log('[QS] Init — student:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length);
   }
@@ -4960,6 +4917,138 @@ const QS = (() => {
     return idx >= 0 ? idx + 1 : 1;
   }
 
+
+  // ── TEACHER HELPERS ────────────────────────────────────────────────────────────────
+
+  function getRoster() { return load("roster") || SEED_ROSTER; }
+
+  function tierBadge(t) {
+    if (t === "mastery")   return '<span class="badge badge-mastery">Mastery</span>';
+    if (t === "extension") return '<span class="badge badge-extension">Extension</span>';
+    return '<span class="badge badge-foundation">Foundation</span>';
+  }
+
+  function confEmoji(c) { return ["","😟","😐","🙂","😊","🤩"][c] || ""; }
+  function flagBadges(s) {
+    const flags = [];
+    if (s.confidence <= 1) flags.push('<span class="badge" style="background:#e74c3c;color:#fff">Low conf</span>');
+    if (s.mastery < 0.4 && s.challenges_completed > 20)
+      flags.push('<span class="badge" style="background:#f39c12;color:#fff">Stuck</span>');
+    if (s.sessions_completed >= 10)
+      flags.push('<span class="badge" style="background:#27ae60;color:#fff">High effort</span>');
+    return flags.join(" ");
+  }
+
+  // ── TEACHER DASHBOARD RENDER ───────────────────────────────────────────────────
+
+  function renderTeacherDashboard() {
+    const roster = getRoster();
+    const total = roster.length;
+    if (!total) return;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const setH = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML = v; };
+
+    const active = roster.filter(s => s.last_active === "Today").length;
+    set("td-active-val", active);
+    set("td-active-pct", Math.round(active / total * 100) + "%");
+
+    const avgMastery = roster.reduce((a, s) => a + s.mastery, 0) / total;
+    set("td-engage-val", Math.round(avgMastery * 100) + "%");
+
+    const tiers = { foundation: 0, extension: 0, mastery: 0 };
+    roster.forEach(s => { if (tiers[s.tier] !== undefined) tiers[s.tier]++; });
+    set("td-tier-val", tiers.foundation + " · " + tiers.extension + " · " + tiers.mastery);
+
+    const avgConf = roster.reduce((a, s) => a + s.confidence, 0) / total;
+    set("td-conf-val", avgConf.toFixed(1) + "/5 " + confEmoji(Math.round(avgConf)));
+
+    const barSet = (id, n) => {
+      const el = document.getElementById(id);
+      if (el) { el.style.width = Math.round(n / total * 100) + "%"; el.textContent = n; }
+    };
+    barSet("td-bar-found", tiers.foundation);
+    barSet("td-bar-ext",   tiers.extension);
+    barSet("td-bar-mast",  tiers.mastery);
+
+    const lowConf = roster.filter(s => s.confidence <= 1).length;
+    const stuck   = roster.filter(s => s.mastery < 0.4 && s.challenges_completed > 20).length;
+    const effort  = roster.filter(s => s.sessions_completed >= 10).length;
+    setH("td-alert-conf",   lowConf ? lowConf + " student" + (lowConf > 1 ? "s" : "") + " with low confidence" : "✓ All OK");
+    setH("td-alert-stuck",  stuck   ? stuck   + " student" + (stuck > 1 ? "s" : "")   + " may be stuck"        : "✓ All OK");
+    setH("td-alert-effort", effort  ? effort  + " student" + (effort > 1 ? "s" : "")  + " showing high effort"  : "—");
+  }
+  // ── GRADEBOOK DATA BUILDER ─────────────────────────────────────────────────────
+
+  function buildGradebookData() {
+    const roster = getRoster();
+    const data = { pyth: { stats:{}, header:[], rows:[] }, proofs: { stats:{}, header:[], rows:[] }, all: { stats:{}, header:[], rows:[] } };
+
+    function buildView(key, pathwayKey) {
+      const students = pathwayKey ? roster.filter(s => s[pathwayKey] && s[pathwayKey].tier) : roster;
+      const total = students.length;
+      const avgMastery = total ? students.reduce((a, s) => a + (pathwayKey ? s[pathwayKey].mastery : s.mastery), 0) / total : 0;
+      const avgXP = total ? Math.round(students.reduce((a, s) => a + (pathwayKey ? s[pathwayKey].xp : s.xp), 0) / total) : 0;
+
+      data[key].stats = { enrolled: total + " students", avgMastery: Math.round(avgMastery * 100) + "%", avgXP: avgXP + " XP" };
+      data[key].header = ["Student", "Tier", "Mastery", "XP", "Challenges", "Sessions", "Confidence", "Flags"];
+      data[key].rows = students.map(s => {
+        const d = pathwayKey ? s[pathwayKey] : s;
+        return [
+          '<div class="student-cell"><div class="avatar-small">' + s.avatar + '</div>' + s.name + '</div>',
+          tierBadge(d.tier || s.tier),
+          Math.round((d.mastery || 0) * 100) + "%",
+          (d.xp || 0) + " XP",
+          (d.challenges || s.challenges_completed) + "",
+          (d.sessions || s.sessions_completed) + "",
+          confEmoji(s.confidence),
+          flagBadges(s)
+        ];
+      });
+    }
+
+    buildView("pyth",   "pyth");
+    buildView("proofs", "proofs");
+    buildView("all",     null);
+    return data;
+  }
+  // ── PATHWAY DESIGNER RENDERS ───────────────────────────────────────────────────
+
+  function renderPathwayChallenges() {
+    const challenges = load("challenges") || SEED_CHALLENGES;
+    const grid = document.getElementById("pathway-challenges-grid");
+    if (!grid) return;
+    grid.innerHTML = challenges.map(ch =>
+      '<div class="card">' +
+        '<div class="card-header"><span>' + ch.cog_badge + '</span> ' + ch.id + '</div>' +
+        '<div class="card-body">' +
+          '<p style="font-size:0.9rem">' + ch.prompt.slice(0, 80) + '…</p>' +
+          '<p>' + tierBadge(ch.tier) + ' ' + ch.diff_badge + '</p>' +
+          '<p class="text-sm" style="opacity:0.7">Answer: ' + ch.answer + ' ' + ch.unit + ' | XP: ' + ch.xp_award + '</p>' +
+        '</div>' +
+      '</div>'
+    ).join("");
+  }
+
+  function renderThresholds() {
+    const th = load("thresholds") || SEED_THRESHOLDS;
+    const feSlider = document.getElementById("threshold-fe");
+    const emSlider = document.getElementById("threshold-em");
+    const feVal    = document.getElementById("threshold-fe-val");
+    const emVal    = document.getElementById("threshold-em-val");
+    if (feSlider) feSlider.value = Math.round(th.foundation_to_extension * 100);
+    if (emSlider) emSlider.value = Math.round(th.extension_to_mastery * 100);
+    if (feVal)    feVal.textContent = Math.round(th.foundation_to_extension * 100) + "%";
+    if (emVal)    emVal.textContent = Math.round(th.extension_to_mastery * 100) + "%";
+  }
+
+  function saveThreshold(which, val) {
+    const th = load("thresholds") || SEED_THRESHOLDS;
+    th[which] = parseInt(val, 10) / 100;
+    save("thresholds", th);
+    renderThresholds();
+    console.log("[QS] Threshold updated:", which, "=", th[which]);
+  }
+
   // ── DOM WIRING ────────────────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -5019,6 +5108,26 @@ const QS = (() => {
         // Hand off to routing-patch navigate (which calls original navigate)
         _n(screenId);
 
+
+        // ── Arriving at teacher dashboard: render live stats ────────────
+        if (screenId === 'screen-teacher-dashboard') {
+          renderTeacherDashboard();
+        }
+
+        // ── Arriving at gradebook: rebuild data from roster ─────────────
+        if (screenId === 'screen-gradebook') {
+          if (typeof switchGradebookPathway === 'function') {
+            const sel = document.getElementById('gradebookPathway');
+            switchGradebookPathway(sel ? sel.value : 'pyth');
+          }
+        }
+
+        // ── Arriving at pathway designer: render challenges & thresholds ─
+        if (screenId === 'screen-pathway-designer') {
+          renderPathwayChallenges();
+          renderThresholds();
+        }
+
         // ── Arriving at dashboard: refresh XP / avatar ───────────────────────
         if (screenId === 'screen-student-dashboard') {
           renderDashboard();
@@ -5031,6 +5140,8 @@ const QS = (() => {
     window.addEventListener('popstate', () => {
       const id = location.hash.slice(1);
       if (id === 'screen-student-dashboard') renderDashboard();
+      if (id === 'screen-teacher-dashboard') renderTeacherDashboard();
+      if (id === 'screen-pathway-designer') { renderPathwayChallenges(); renderThresholds(); }
     });
 
     console.log('[QS] Wiring complete. Debug: QS.get("profile"), QS.reset()');
@@ -5047,9 +5158,15 @@ const QS = (() => {
     saveCheckIn,
     startSession,
     getCurrentChallengeIdx,
+    renderTeacherDashboard,
+    buildGradebookData,
+    renderPathwayChallenges,
+    renderThresholds,
+    saveThreshold,
+    getRoster,
     get:   (key) => load(key),
     reset () {
-      ['profile', 'quest', 'challenges', 'sessions', 'session_now']
+      ['profile', 'quest', 'challenges', 'sessions', 'session_now', 'roster', 'thresholds']
         .forEach(k => localStorage.removeItem('qs_' + k));
       init();
       renderDashboard();
