@@ -774,9 +774,70 @@ body {
 @media (max-width: 768px) {
   .unity-embed-container { aspect-ratio:4/3; max-height:60vh; }
 }
+
+/* ═══ LOGIN SCREEN ═══ */
+.login-screen {
+  position:fixed; inset:0; z-index:9999;
+  background:linear-gradient(160deg,#0f2640 0%,#1B3A5C 40%,#2A7F8E 100%);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-body); transition:opacity 0.5s ease;
+}
+.login-screen.hidden { opacity:0; pointer-events:none; }
+.login-card {
+  background:white; border-radius:20px; padding:48px 40px; max-width:440px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3); text-align:center; position:relative;
+}
+.login-card .login-logo { font-size:3rem; margin-bottom:8px; }
+.login-card .login-title {
+  font-family:var(--font-display); font-size:1.6rem; color:var(--navy); font-weight:700;
+  margin-bottom:4px;
+}
+.login-card .login-subtitle { font-size:0.9rem; color:var(--text-soft); margin-bottom:28px; line-height:1.5; }
+.login-card .login-btn {
+  width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:0.95rem;
+  font-weight:600; cursor:pointer; font-family:var(--font-body); transition:var(--transition);
+  display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px;
+}
+.login-btn-primary { background:var(--navy); color:white; }
+.login-btn-primary:hover { background:var(--navy-deep); transform:translateY(-1px); box-shadow:var(--shadow-md); }
+.login-btn-guest { background:var(--bg); color:var(--text-soft); border:1.5px solid var(--border) !important; }
+.login-btn-guest:hover { border-color:var(--teal) !important; color:var(--teal); }
+.login-divider {
+  display:flex; align-items:center; gap:12px; margin:18px 0; font-size:0.75rem; color:var(--text-muted);
+}
+.login-divider::before,.login-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+.login-note { font-size:0.72rem; color:var(--text-muted); margin-top:20px; line-height:1.5; }
+.login-bg-art {
+  position:absolute; bottom:-60px; right:-60px; font-size:12rem; opacity:0.04;
+  transform:rotate(-15deg); pointer-events:none;
+}
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════ LOGIN SCREEN ═══════════════════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-bg-art">🏛️</div>
+    <div class="login-logo">🏛️</div>
+    <div class="login-title">QuestSim</div>
+    <div class="login-subtitle">The Lost Proof of Pythagoras<br>An Adaptive Challenge Engine Adventure</div>
+
+    <button class="login-btn login-btn-primary" onclick="loginWithQuestSim()">
+      🔑 Sign in with QuestSim
+    </button>
+
+    <div class="login-divider">or</div>
+
+    <button class="login-btn login-btn-guest" onclick="loginAsGuest()">
+      Continue as Guest
+    </button>
+
+    <div class="login-note">
+      Sign in with your <strong>py.questsim.com</strong> account for full access to the 3D world, progress saving, and teacher features. Guest mode has limited access.
+    </div>
+  </div>
+</div>
 
 <!-- Architecture Link Banner -->
 <div style="background:linear-gradient(135deg,#1B3A5C,#2A7F8E);padding:8px 24px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
@@ -3011,6 +3072,85 @@ body {
 </div>
 
 <script>
+// ═══ LOGIN ═══
+const QUESTSIM_URL = 'https://py.questsim.com';
+let isAuthenticated = false;
+
+function loginWithQuestSim() {
+  // Open py.questsim.com in a popup for authentication
+  const w = 600, h = 700;
+  const left = (screen.width - w) / 2, top = (screen.height - h) / 2;
+  const popup = window.open(
+    QUESTSIM_URL,
+    'questsim_login',
+    `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`
+  );
+
+  // Show a waiting state on the button
+  const btn = document.querySelector('.login-btn-primary');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '⏳ Sign in on the popup window...';
+  btn.disabled = true;
+
+  // Poll for the popup closing (user finished login)
+  const pollTimer = setInterval(() => {
+    if (popup && popup.closed) {
+      clearInterval(pollTimer);
+      isAuthenticated = true;
+      dismissLogin();
+    }
+  }, 500);
+
+  // Also allow manual dismiss after 5 seconds (in case popup is blocked)
+  setTimeout(() => {
+    if (!isAuthenticated) {
+      btn.innerHTML = origText;
+      btn.disabled = false;
+      // Add a "popup blocked?" helper
+      let helper = document.getElementById('popupHelper');
+      if (!helper) {
+        helper = document.createElement('div');
+        helper.id = 'popupHelper';
+        helper.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-top:8px;';
+        helper.innerHTML = 'Popup blocked? <a href="' + QUESTSIM_URL + '" target="_blank" style="color:var(--teal);font-weight:600;">Open py.questsim.com</a> in a new tab, sign in, then come back and click the button again.';
+        btn.parentNode.insertBefore(helper, btn.nextSibling);
+      }
+    }
+  }, 6000);
+}
+
+function loginAsGuest() {
+  isAuthenticated = false;
+  dismissLogin();
+}
+
+function dismissLogin() {
+  const loginScreen = document.getElementById('loginScreen');
+  loginScreen.classList.add('hidden');
+  setTimeout(() => loginScreen.style.display = 'none', 500);
+}
+
+// Check if user was already authenticated (session still valid)
+function checkExistingSession() {
+  // If there's a stored login flag, skip the login screen
+  try {
+    if (sessionStorage.getItem('qs_ace_logged_in')) {
+      isAuthenticated = true;
+      const loginScreen = document.getElementById('loginScreen');
+      loginScreen.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+// Store login state when dismissing
+const _origDismiss = dismissLogin;
+dismissLogin = function() {
+  try { sessionStorage.setItem('qs_ace_logged_in', '1'); } catch(e) {}
+  _origDismiss();
+};
+
+checkExistingSession();
+
 // ═══ STATE ═══
 let currentRole = 'student';
 let currentScreen = 'screen-student-dashboard';
