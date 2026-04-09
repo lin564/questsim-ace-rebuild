@@ -822,18 +822,26 @@ body {
     <div class="login-title">QuestSim</div>
     <div class="login-subtitle">The Lost Proof of Pythagoras<br>An Adaptive Challenge Engine Adventure</div>
 
-    <button class="login-btn login-btn-primary" onclick="loginWithQuestSim()">
-      🔑 Sign in with QuestSim
+    <div style="margin-bottom:16px;">
+      <input type="text" id="loginPasscode" placeholder="Enter your Pass Code"
+        style="width:100%;padding:14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.95rem;font-family:var(--font-body);text-align:center;"
+        onkeydown="if(event.key==='Enter')loginWithPasscode()">
+    </div>
+
+    <button class="login-btn login-btn-primary" onclick="loginWithPasscode()">
+      🔑 Enter QuestSim
     </button>
+
+    <div id="loginError" style="display:none;font-size:0.78rem;color:var(--red);margin-top:8px;"></div>
 
     <div class="login-divider">or</div>
 
     <button class="login-btn login-btn-guest" onclick="loginAsGuest()">
-      Continue as Guest
+      Continue as Guest (Demo)
     </button>
 
     <div class="login-note">
-      Sign in with your <strong>py.questsim.com</strong> account for full access to the 3D world, progress saving, and teacher features. Guest mode has limited access.
+      Enter your <strong>class pass code</strong> for full access to the 3D world with progress saving. Guest mode uses the demo version with limited activities.
     </div>
   </div>
 </div>
@@ -3072,55 +3080,41 @@ body {
 
 <script>
 // ═══ LOGIN ═══
-const QUESTSIM_URL = 'https://pymini1.questsim.com';
+const QUESTSIM_MINI_URL = 'https://pymini1.questsim.com';
+const QUESTSIM_DEMO_URL = 'https://py-demo.questsim.com';
 let isAuthenticated = false;
+let userPasscode = '';
 
-function loginWithQuestSim() {
-  // Open py.questsim.com in a popup for authentication
-  const w = 600, h = 700;
-  const left = (screen.width - w) / 2, top = (screen.height - h) / 2;
-  const popup = window.open(
-    QUESTSIM_URL,
-    'questsim_login',
-    `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no`
-  );
-
-  // Show a waiting state on the button
-  const btn = document.querySelector('.login-btn-primary');
-  const origText = btn.innerHTML;
-  btn.innerHTML = '⏳ Sign in on the popup window...';
-  btn.disabled = true;
-
-  // Poll for the popup closing (user finished login)
-  const pollTimer = setInterval(() => {
-    if (popup && popup.closed) {
-      clearInterval(pollTimer);
-      isAuthenticated = true;
-      dismissLogin();
-    }
-  }, 500);
-
-  // Also allow manual dismiss after 5 seconds (in case popup is blocked)
-  setTimeout(() => {
-    if (!isAuthenticated) {
-      btn.innerHTML = origText;
-      btn.disabled = false;
-      // Add a "popup blocked?" helper
-      let helper = document.getElementById('popupHelper');
-      if (!helper) {
-        helper = document.createElement('div');
-        helper.id = 'popupHelper';
-        helper.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-top:8px;';
-        helper.innerHTML = 'Popup blocked? <a href="' + QUESTSIM_URL + '" target="_blank" style="color:var(--teal);font-weight:600;">Open py.questsim.com</a> in a new tab, sign in, then come back and click the button again.';
-        btn.parentNode.insertBefore(helper, btn.nextSibling);
-      }
-    }
-  }, 6000);
+function loginWithPasscode() {
+  const input = document.getElementById('loginPasscode');
+  const code = input.value.trim();
+  if (!code) {
+    showLoginError('Please enter your pass code.');
+    input.focus();
+    return;
+  }
+  userPasscode = code;
+  isAuthenticated = true;
+  dismissLogin();
 }
 
 function loginAsGuest() {
   isAuthenticated = false;
+  userPasscode = '';
   dismissLogin();
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function getGameUrl() {
+  if (isAuthenticated && userPasscode) {
+    return QUESTSIM_MINI_URL + '/?AC=' + encodeURIComponent(userPasscode);
+  }
+  return QUESTSIM_DEMO_URL;
 }
 
 function dismissLogin() {
@@ -3838,7 +3832,7 @@ function renderUnityInArtwork(artworkArea) {
   wrapper.innerHTML = `
     <div class="unity-embed-container" id="unityContainer" style="flex:1;min-height:0;">
       <iframe id="questsimIframe"
-        src="https://pymini1.questsim.com"
+        src=""
         style="width:100%;height:100%;border:none;display:block;"
         allow="autoplay; fullscreen; gamepad; pointer-lock; keyboard-map; web-share; clipboard-write; clipboard-read"
         allowfullscreen>
@@ -3857,8 +3851,9 @@ function renderUnityInArtwork(artworkArea) {
 
   artworkArea.appendChild(wrapper);
 
-  // Hide loading overlay once iframe loads
+  // Set iframe src based on auth
   const iframe = document.getElementById('questsimIframe');
+  iframe.src = getGameUrl();
   iframe.addEventListener('load', () => {
     const overlay = document.getElementById('unityLoadingOverlay');
     if (overlay) overlay.classList.add('hidden');
