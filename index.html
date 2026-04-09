@@ -754,9 +754,8 @@ body {
 
 /* ═══ UNITY EMBED ═══ */
 .unity-embed-container {
-  position:relative; width:100%; aspect-ratio:16/9; max-height:70vh;
-  background:#231F20; border-radius:var(--radius); overflow:hidden;
-  box-shadow:var(--shadow-lg);
+  position:relative; width:100%; height:100%;
+  background:#231F20; overflow:hidden;
 }
 .unity-embed-container canvas {
   width:100%; height:100%; display:block;
@@ -1137,39 +1136,39 @@ body {
 
   <!-- PHASE 2: LOCATION ARRIVAL + CHALLENGE -->
   <div id="questPhaseLocation" style="display:none;">
-    <!-- Location scene header -->
-    <div id="locationScene" style="border-radius:0 0 var(--radius) var(--radius);position:relative;min-height:220px;overflow:hidden;padding:32px;display:flex;flex-direction:column;justify-content:flex-end;">
+    <!-- Compact location title bar -->
+    <div id="locationScene" style="position:relative;overflow:hidden;padding:14px 32px;display:flex;align-items:center;gap:16px;min-height:0;">
     </div>
 
-    <!-- Scene illustration placeholder — YOUR ARTWORK GOES HERE -->
-    <div id="sceneArtwork" style="background:var(--card);border:1px solid var(--border);padding:0;margin-top:1px;position:relative;min-height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-      <div id="sceneArtworkContent" style="text-align:center;padding:24px;width:100%;">
-        <div style="font-size:2.5rem;margin-bottom:8px;" id="sceneArtworkEmoji">🏗️</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);max-width:400px;margin:0 auto;">
-          <strong>Scene Illustration Placeholder</strong><br>
-          <span id="sceneArtworkDesc">Replace with 3D scene or artwork showing: temple construction site with workers, scaffolding, a ladder leaning against a wall, and columns under construction.</span>
+    <!-- NPC Dialogue — directly under title -->
+    <div id="npcDialoguePanel" style="background:var(--card);border:1px solid var(--border);padding:14px 24px;margin-top:1px;">
+      <div style="display:flex;gap:14px;align-items:center;">
+        <div style="position:relative;flex-shrink:0;">
+          <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e8d5a3,#c4a96a);display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,0.1);">🏛️</div>
+          <button onclick="playPythagorasVoice()" style="position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.45rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);" title="Listen">🔊</button>
         </div>
-        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
-          <span style="font-size:0.6rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:3px 8px;border-radius:4px;">📷 Upload artwork</span>
-          <span style="font-size:0.6rem;background:rgba(126,87,194,0.1);color:var(--purple);padding:3px 8px;border-radius:4px;">🎮 3D scene ready</span>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;color:var(--gold);font-weight:700;">Pythagoras</div>
+            <span style="font-size:0.5rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:1px 5px;border-radius:3px;font-weight:600;">AI GUIDE</span>
+          </div>
+          <div id="locationNPCDialogue" style="font-size:0.88rem;color:var(--text);line-height:1.55;"></div>
+          <div id="locationDialogueActions" style="margin-top:8px;"></div>
         </div>
       </div>
     </div>
 
-    <!-- NPC Dialogue -->
-    <div style="background:var(--card);border:1px solid var(--border);padding:20px 24px;margin-top:1px;">
-      <div style="display:flex;gap:16px;align-items:flex-start;">
-        <div style="position:relative;flex-shrink:0;">
-          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#e8d5a3,#c4a96a);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.1);">🏛️</div>
-          <button onclick="playPythagorasVoice()" style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.55rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);" title="Listen">🔊</button>
+    <!-- Scene / Game embed frame — fills remaining viewport -->
+    <div id="sceneArtwork" style="background:#1a1a1a;border:1px solid var(--border);padding:0;margin-top:1px;position:relative;height:66vh;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <div id="sceneArtworkContent" style="text-align:center;padding:24px;width:100%;">
+        <div style="font-size:2.5rem;margin-bottom:8px;" id="sceneArtworkEmoji">🏗️</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);max-width:400px;margin:0 auto;">
+          <strong>Scene Illustration Placeholder</strong><br>
+          <span id="sceneArtworkDesc">Replace with 3D scene or artwork.</span>
         </div>
-        <div style="flex:1;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <div style="font-family:var(--font-display);font-size:0.82rem;color:var(--gold);font-weight:700;">Pythagoras</div>
-            <span style="font-size:0.52rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:1px 5px;border-radius:3px;font-weight:600;">AI GUIDE</span>
-          </div>
-          <div id="locationNPCDialogue" style="font-size:0.92rem;color:var(--text);line-height:1.65;"></div>
-          <div id="locationDialogueActions" style="margin-top:12px;"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+          <span style="font-size:0.6rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:3px 8px;border-radius:4px;">📷 Upload artwork</span>
+          <span style="font-size:0.6rem;background:rgba(126,87,194,0.1);color:var(--purple);padding:3px 8px;border-radius:4px;">🎮 3D scene ready</span>
         </div>
       </div>
     </div>
@@ -3521,16 +3520,16 @@ function enterLocation(idx) {
   document.getElementById('questPhaseLocation').style.display = 'block';
   document.getElementById('challengeArea').style.display = 'none';
 
-  // Render scene header
+  // Render compact title bar
   document.getElementById('locationScene').style.background = scene.bg;
   document.getElementById('locationScene').innerHTML = `
-    <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.5));"></div>
-    <div style="position:absolute;top:20px;right:20px;font-size:4rem;opacity:0.2;">${scene.emoji}</div>
-    <div style="position:relative;z-index:2;">
-      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.5);margin-bottom:4px;">${scene.subtitle}</div>
-      <div style="font-family:var(--font-display);font-size:1.6rem;color:white;font-weight:600;">${scene.title}</div>
-      <div style="font-size:0.85rem;color:rgba(255,255,255,0.65);margin-top:8px;max-width:600px;line-height:1.6;font-style:italic;">${scene.ambiance}</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent 60%,rgba(0,0,0,0.2));"></div>
+    <div style="font-size:1.8rem;opacity:0.3;position:relative;z-index:1;">${scene.emoji}</div>
+    <div style="position:relative;z-index:2;flex:1;">
+      <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.5);">${scene.subtitle}</div>
+      <div style="font-family:var(--font-display);font-size:1.15rem;color:white;font-weight:600;">${scene.title}</div>
     </div>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:0.68rem;padding:4px 10px;position:relative;z-index:2;" onclick="backToMap()">← Map</button>
   `;
 
   // Update artwork placeholder
@@ -3835,12 +3834,12 @@ function renderUnityInArtwork(artworkArea) {
 
   const wrapper = document.createElement('div');
   wrapper.id = 'unityEmbedWrapper';
-  wrapper.style.cssText = 'width:100%;';
+  wrapper.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
   wrapper.innerHTML = `
-    <div class="unity-embed-container" id="unityContainer">
+    <div class="unity-embed-container" id="unityContainer" style="flex:1;min-height:0;">
       <iframe id="questsimIframe"
         src="https://py.questsim.com"
-        style="width:100%;height:100%;border:none;"
+        style="width:100%;height:100%;border:none;display:block;"
         allow="autoplay; fullscreen; gamepad; pointer-lock; keyboard-map"
         allowfullscreen>
       </iframe>
