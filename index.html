@@ -3534,8 +3534,20 @@ function enterLocation(idx) {
   `;
 
   // Update artwork placeholder
-  document.getElementById('sceneArtworkEmoji').textContent = scene.artworkEmoji;
-  document.getElementById('sceneArtworkDesc').textContent = scene.artworkDesc;
+  const artworkArea = document.getElementById('sceneArtwork');
+  const artworkContent = document.getElementById('sceneArtworkContent');
+  if (ch.interactiveType === 'unityEmbed') {
+    // Embed the Unity game in the artwork area
+    artworkContent.style.display = 'none';
+    renderUnityInArtwork(artworkArea);
+  } else {
+    // Restore normal artwork placeholder
+    artworkContent.style.display = '';
+    const oldEmbed = document.getElementById('unityEmbedWrapper');
+    if (oldEmbed) oldEmbed.remove();
+    document.getElementById('sceneArtworkEmoji').textContent = scene.artworkEmoji;
+    document.getElementById('sceneArtworkDesc').textContent = scene.artworkDesc;
+  }
 
   // Update diagram placeholder
   document.getElementById('diagramEmoji').textContent = scene.diagramEmoji;
@@ -3816,14 +3828,15 @@ function loadChallenge(idx) {
 let unityInstance = null;
 const UNITY_BUILD_URL = 'https://py-r2.questsim.com';
 
-function renderUnityEmbed(ch, idx) {
-  // Remove old UI if present
-  let existing = document.getElementById('unityEmbedUI');
+function renderUnityInArtwork(artworkArea) {
+  // Remove old embed if present
+  let existing = document.getElementById('unityEmbedWrapper');
   if (existing) existing.remove();
 
-  const container = document.createElement('div');
-  container.id = 'unityEmbedUI';
-  container.innerHTML = `
+  const wrapper = document.createElement('div');
+  wrapper.id = 'unityEmbedWrapper';
+  wrapper.style.cssText = 'width:100%;';
+  wrapper.innerHTML = `
     <div class="unity-embed-container" id="unityContainer">
       <canvas id="unity-canvas-embed" tabindex="-1" style="width:100%;height:100%;"></canvas>
       <div class="unity-loading-overlay" id="unityLoadingOverlay">
@@ -3832,19 +3845,23 @@ function renderUnityEmbed(ch, idx) {
         <div class="unity-loading-text" id="unityLoadingText">Loading game assets...</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
-      <span style="font-size:0.75rem;color:var(--text-muted);">Play through the Triangle Types Activity, then click "Mark Complete" when finished</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
+      <span style="font-size:0.75rem;color:var(--text-muted);">Play through the Triangle Types Activity, then mark complete</span>
       <button class="btn btn-primary btn-sm" id="unityCompleteBtn" onclick="onUnityActivityComplete()" style="opacity:0.5;" disabled>✓ Mark Complete</button>
     </div>
   `;
 
-  // Replace the diagram/artwork placeholder with the Unity embed
-  const diagArea = document.getElementById('challengeDiagram');
-  diagArea.style.display = 'none';
-  diagArea.parentNode.insertBefore(container, diagArea.nextSibling);
+  artworkArea.appendChild(wrapper);
 
   // Load the Unity WebGL build
   loadUnityBuild();
+}
+
+// Legacy hook — if loadChallenge still calls this for the challenge area
+function renderUnityEmbed(ch, idx) {
+  // Unity is already loaded in the artwork area by enterLocation
+  // Just hide the diagram placeholder
+  document.getElementById('challengeDiagram').style.display = 'none';
 }
 
 function loadUnityBuild() {
