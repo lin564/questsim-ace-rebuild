@@ -3838,23 +3838,37 @@ function renderUnityInArtwork(artworkArea) {
   wrapper.style.cssText = 'width:100%;';
   wrapper.innerHTML = `
     <div class="unity-embed-container" id="unityContainer">
-      <canvas id="unity-canvas-embed" tabindex="-1" style="width:100%;height:100%;"></canvas>
+      <iframe id="questsimIframe"
+        src="https://py.questsim.com"
+        style="width:100%;height:100%;border:none;"
+        allow="autoplay; fullscreen; gamepad; pointer-lock; keyboard-map"
+        allowfullscreen>
+      </iframe>
       <div class="unity-loading-overlay" id="unityLoadingOverlay">
         <div class="unity-loading-title">🏛️ Entering the World of Pythagoras...</div>
-        <div class="unity-loading-bar"><div class="unity-loading-fill" id="unityLoadingFill"></div></div>
-        <div class="unity-loading-text" id="unityLoadingText">Loading game assets...</div>
+        <div class="unity-loading-bar"><div class="unity-loading-fill" id="unityLoadingFill" style="width:100%"></div></div>
+        <div class="unity-loading-text" id="unityLoadingText">Connecting to game server...</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
       <span style="font-size:0.75rem;color:var(--text-muted);">Play through the Triangle Types Activity, then mark complete</span>
-      <button class="btn btn-primary btn-sm" id="unityCompleteBtn" onclick="onUnityActivityComplete()" style="opacity:0.5;" disabled>✓ Mark Complete</button>
+      <button class="btn btn-primary btn-sm" id="unityCompleteBtn" onclick="onUnityActivityComplete()">✓ Mark Complete</button>
     </div>
   `;
 
   artworkArea.appendChild(wrapper);
 
-  // Load the Unity WebGL build
-  loadUnityBuild();
+  // Hide loading overlay once iframe loads
+  const iframe = document.getElementById('questsimIframe');
+  iframe.addEventListener('load', () => {
+    const overlay = document.getElementById('unityLoadingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+  });
+  // Fallback: hide overlay after 8 seconds regardless
+  setTimeout(() => {
+    const overlay = document.getElementById('unityLoadingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+  }, 8000);
 }
 
 // Legacy hook — if loadChallenge still calls this for the challenge area
@@ -3864,104 +3878,7 @@ function renderUnityEmbed(ch, idx) {
   document.getElementById('challengeDiagram').style.display = 'none';
 }
 
-function loadUnityBuild() {
-  if (unityInstance) {
-    // Already loaded — just show it
-    document.getElementById('unityLoadingOverlay').classList.add('hidden');
-    enableCompleteButton();
-    return;
-  }
-
-  const loaderUrl = UNITY_BUILD_URL + '/BUILD.loader.js';
-  const config = {
-    dataUrl:      UNITY_BUILD_URL + '/BUILD.data.unityweb',
-    frameworkUrl:  UNITY_BUILD_URL + '/BUILD.framework.js.unityweb',
-    codeUrl:      UNITY_BUILD_URL + '/BUILD.wasm.unityweb',
-    streamingAssetsUrl: 'StreamingAssets',
-    companyName:  'Ultisim',
-    productName:  'Pythagoras',
-    showBanner: function(msg, type) {
-      console.log('[Unity Banner]', type, msg);
-    },
-  };
-
-  const script = document.createElement('script');
-  script.src = loaderUrl;
-  script.onload = () => {
-    const canvas = document.getElementById('unity-canvas-embed');
-    if (!canvas) return;
-
-    createUnityInstance(canvas, config, (progress) => {
-      const pct = Math.round(progress * 100);
-      const fill = document.getElementById('unityLoadingFill');
-      const text = document.getElementById('unityLoadingText');
-      if (fill) fill.style.width = pct + '%';
-      if (text) text.textContent = pct < 100 ? `Loading game assets... ${pct}%` : 'Starting...';
-    }).then((instance) => {
-      unityInstance = instance;
-      window.UNITY = instance;
-
-      // Set up the Do bridge (same as py.questsim.com)
-      instance.Do = function(cmd) {
-        instance.SendMessage('/Do_Bridge', 'Do', cmd);
-      };
-
-      // Register JS functions that Unity calls
-      window.unityCallsJsFns = window.unityCallsJsFns || { Do: {} };
-      window.unityCallsJsFns.Do['Activity.Begin'] = function(prms) {
-        console.log('[ACE] Unity Activity.Begin:', prms);
-        if (prms.trim() === 'Types') {
-          enableCompleteButton();
-        }
-      };
-      window.unityCallsJsFns.Do['Activity.Ev'] = function(prms) {
-        console.log('[ACE] Unity Activity.Ev:', prms);
-      };
-
-      // Set up the message bridge for Unity→JS calls
-      window.message = function(gameObj, data) {
-        if (gameObj === 'Do' && data) {
-          const match = data.match(/^(\S+)\((.*)?\)$/);
-          if (match) {
-            const fn = match[1];
-            const args = match[2] || '';
-            if (window.unityCallsJsFns.Do[fn]) {
-              window.unityCallsJsFns.Do[fn](args);
-            }
-          }
-        }
-      };
-
-      // Hide loading overlay
-      const overlay = document.getElementById('unityLoadingOverlay');
-      if (overlay) overlay.classList.add('hidden');
-
-      // Enable the complete button after a delay to let the player experience the activity
-      setTimeout(enableCompleteButton, 10000);
-
-    }).catch((err) => {
-      console.error('[Unity] Load failed:', err);
-      const text = document.getElementById('unityLoadingText');
-      if (text) text.innerHTML = 'Failed to load 3D world. <a href="https://py.questsim.com" target="_blank" style="color:var(--gold);">Open in new tab →</a>';
-    });
-  };
-
-  script.onerror = () => {
-    console.error('[Unity] Loader script failed to load');
-    const text = document.getElementById('unityLoadingText');
-    if (text) text.innerHTML = 'Could not reach game server. <a href="https://py.questsim.com" target="_blank" style="color:var(--gold);">Open game in new tab →</a>';
-  };
-
-  document.body.appendChild(script);
-}
-
-function enableCompleteButton() {
-  const btn = document.getElementById('unityCompleteBtn');
-  if (btn) {
-    btn.disabled = false;
-    btn.style.opacity = '1';
-  }
-}
+// Unity build loading removed — using iframe to py.questsim.com instead
 
 function onUnityActivityComplete() {
   const ch = challenges[currentChallenge];
