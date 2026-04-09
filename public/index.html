@@ -822,14 +822,9 @@ body {
     <div class="login-title">QuestSim</div>
     <div class="login-subtitle">The Lost Proof of Pythagoras<br>An Adaptive Challenge Engine Adventure</div>
 
-    <div style="margin-bottom:16px;">
-      <input type="text" id="loginPasscode" placeholder="Enter your Pass Code"
-        style="width:100%;padding:14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.95rem;font-family:var(--font-body);text-align:center;"
-        onkeydown="if(event.key==='Enter')loginWithPasscode()">
-    </div>
-
-    <button class="login-btn login-btn-primary" onclick="loginWithPasscode()">
-      🔑 Enter QuestSim
+    <button class="login-btn login-btn-primary" onclick="loginWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Sign in with Google
     </button>
 
     <div id="loginError" style="display:none;font-size:0.78rem;color:var(--red);margin-top:8px;"></div>
@@ -3080,27 +3075,38 @@ body {
 
 <script>
 // ═══ LOGIN ═══
-const QUESTSIM_MINI_URL = 'https://pymini1.questsim.com';
 const QUESTSIM_DEMO_URL = 'https://py-demo.questsim.com';
 let isAuthenticated = false;
-let userPasscode = '';
+let currentUser = null;
 
-function loginWithPasscode() {
-  const input = document.getElementById('loginPasscode');
-  const code = input.value.trim();
-  if (!code) {
-    showLoginError('Please enter your pass code.');
-    input.focus();
-    return;
+// ═══ API CLIENT ═══
+const API = {
+  async get(path) {
+    const res = await fetch(path, { credentials: 'include' });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
   }
-  userPasscode = code;
-  isAuthenticated = true;
-  dismissLogin();
+};
+
+// ═══ AUTH ═══
+function loginWithGoogle() {
+  // Redirect to our Google OAuth endpoint
+  window.location.href = '/api/auth/google';
 }
 
 function loginAsGuest() {
   isAuthenticated = false;
-  userPasscode = '';
+  currentUser = null;
   dismissLogin();
 }
 
@@ -3110,9 +3116,14 @@ function showLoginError(msg) {
   el.style.display = 'block';
 }
 
-function getGameUrl() {
-  if (isAuthenticated && userPasscode) {
-    return QUESTSIM_MINI_URL + '/?AC=' + encodeURIComponent(userPasscode);
+async function getGameUrl() {
+  if (isAuthenticated) {
+    try {
+      const { token } = await API.get('/api/game/token');
+      return 'https://pymini1.questsim.com/?token=' + encodeURIComponent(token);
+    } catch (e) {
+      console.warn('Failed to get game token, using demo', e);
+    }
   }
   return QUESTSIM_DEMO_URL;
 }
@@ -3123,24 +3134,34 @@ function dismissLogin() {
   setTimeout(() => loginScreen.style.display = 'none', 500);
 }
 
-// Check if user was already authenticated (session still valid)
-function checkExistingSession() {
-  // If there's a stored login flag, skip the login screen
+// Check if user is already authenticated via session cookie
+async function checkExistingSession() {
   try {
-    if (sessionStorage.getItem('qs_ace_logged_in')) {
+    const data = await API.get('/api/auth/session');
+    if (data.authenticated && data.user) {
       isAuthenticated = true;
-      const loginScreen = document.getElementById('loginScreen');
-      loginScreen.style.display = 'none';
-    }
-  } catch(e) {}
-}
+      currentUser = data.user;
+      dismissLogin();
 
-// Store login state when dismissing
-const _origDismiss = dismissLogin;
-dismissLogin = function() {
-  try { sessionStorage.setItem('qs_ace_logged_in', '1'); } catch(e) {}
-  _origDismiss();
-};
+      // Update UI with real user info
+      document.getElementById('userName').textContent = data.user.first_name + ' ' + data.user.last_name.charAt(0) + '.';
+      document.getElementById('userAvatar').textContent = data.user.first_name.charAt(0) + data.user.last_name.charAt(0);
+      if (data.user.avatar_url) {
+        const avatar = document.getElementById('userAvatar');
+        avatar.style.backgroundImage = `url(${data.user.avatar_url})`;
+        avatar.style.backgroundSize = 'cover';
+        avatar.textContent = '';
+      }
+
+      // Navigate based on role
+      if (data.user.role === 'admin') navigate('screen-user-management');
+      else if (data.user.role === 'teacher') navigate('screen-teacher-dashboard');
+    }
+  } catch(e) {
+    // API not available (local dev or GitHub Pages fallback) — show login screen
+    console.log('Auth API not available, showing login screen');
+  }
+}
 
 checkExistingSession();
 
@@ -3851,9 +3872,9 @@ function renderUnityInArtwork(artworkArea) {
 
   artworkArea.appendChild(wrapper);
 
-  // Set iframe src based on auth
+  // Set iframe src based on auth (async — fetches game token if authenticated)
   const iframe = document.getElementById('questsimIframe');
-  iframe.src = getGameUrl();
+  getGameUrl().then(url => { iframe.src = url; });
   iframe.addEventListener('load', () => {
     const overlay = document.getElementById('unityLoadingOverlay');
     if (overlay) overlay.classList.add('hidden');

@@ -1,0 +1,18 @@
+name = "questsim-ace"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-04-09"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "questsim-ace-triangle-types"
+database_id = "03d3d8e4-fd55-4913-bb0d-6f0bcd7e6199"
+
+[vars]
+APP_URL = "https://questsim-ace.pages.dev"
+GAME_ORIGIN = "https://pymini1.questsim.com"
+GOOGLE_REDIRECT_URI = "https://questsim-ace.pages.dev/api/auth/google-callback"
+
+# Secrets (set via: npx wrangler pages secret put <NAME>):
+# GOOGLE_CLIENT_ID
+# GOOGLE_CLIENT_SECRET
+# JWT_SECRET
