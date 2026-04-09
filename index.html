@@ -751,6 +751,53 @@ body {
   .app-nav { padding: 0 16px; }
   .screen { padding: 16px; }
 }
+
+/* ═══ TRIANGLE TYPES ACTIVITY ═══ */
+.tri-activity { display:flex; flex-direction:column; gap:16px; user-select:none; }
+.tri-categories { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.tri-drop-zone {
+  min-height:140px; border:2px dashed var(--border); border-radius:var(--radius);
+  padding:12px; text-align:center; transition:var(--transition); position:relative;
+  background:rgba(255,255,255,0.6);
+}
+.tri-drop-zone.drag-over { border-color:var(--teal); background:rgba(42,127,142,0.06); transform:scale(1.02); }
+.tri-drop-zone.completed { border-color:var(--green); background:rgba(67,160,71,0.06); border-style:solid; }
+.tri-drop-zone .zone-label {
+  font-family:var(--font-display); font-size:0.95rem; font-weight:600; color:var(--navy);
+  margin-bottom:4px;
+}
+.tri-drop-zone .zone-desc { font-size:0.7rem; color:var(--text-muted); margin-bottom:8px; }
+.tri-drop-zone .zone-slots { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; min-height:50px; }
+.tri-tiles { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; padding:16px; background:var(--bg); border-radius:var(--radius); }
+.tri-tile {
+  width:100px; height:90px; border:2px solid var(--border); border-radius:var(--radius-sm);
+  background:white; cursor:grab; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:4px; transition:all 0.2s ease; position:relative;
+}
+.tri-tile:hover { border-color:var(--teal); box-shadow:var(--shadow-md); transform:translateY(-2px); }
+.tri-tile.dragging { opacity:0.4; cursor:grabbing; }
+.tri-tile.placed { border-color:var(--green); background:rgba(67,160,71,0.05); cursor:default; }
+.tri-tile.wrong-bounce { animation:wrongBounce 0.5s ease; }
+.tri-tile .tile-label { font-size:0.65rem; color:var(--text-soft); font-weight:600; }
+.tri-tile svg { width:60px; height:50px; }
+.tri-progress-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.tri-progress-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--green)); border-radius:3px; transition:width 0.4s ease; }
+.tri-coin-burst {
+  position:absolute; pointer-events:none; font-size:1.2rem;
+  animation:coinBurst 0.8s ease forwards;
+}
+@keyframes wrongBounce {
+  0%{transform:translateY(0)} 20%{transform:translateY(-20px)} 40%{transform:translateY(0)}
+  60%{transform:translateY(-10px)} 80%{transform:translateY(0)} 100%{transform:translateY(0)}
+}
+@keyframes coinBurst {
+  0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-40px) scale(1.3)}
+}
+@media (max-width: 768px) {
+  .tri-categories { grid-template-columns:1fr; }
+  .tri-tile { width:80px; height:72px; }
+  .tri-tile svg { width:48px; height:40px; }
+}
 </style>
 </head>
 <body>
@@ -789,17 +836,16 @@ body {
       <div style="font-size:0.85rem;color:var(--text-soft);margin:6px 0 12px;max-width:520px;line-height:1.5;">Pythagoras's original proof has been scattered across the ancient Mediterranean. Travel to harbors, temples, and observatories — solve real problems to recover each fragment and rebuild the proof.</div>
       <div class="flex-row gap-sm mb-sm">
         <span class="badge badge-teal">⛵ Extension Waters</span>
-        <span style="font-size:0.82rem;color:var(--text-soft);">3 of 5 proof fragments found</span>
+        <span style="font-size:0.82rem;color:var(--text-soft);">0 of 4 proof fragments found</span>
       </div>
       <div class="flex-row gap-sm" style="margin-bottom:12px;">
         <div style="display:flex;gap:4px;">
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:white;">✓</span>
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:white;">✓</span>
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:white;">✓</span>
           <span style="width:24px;height:24px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.65rem;">🔍</span>
           <span style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);">?</span>
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);">?</span>
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);">?</span>
         </div>
-        <span style="font-size:0.72rem;color:var(--text-muted);margin-left:4px;">Fragment 4: The Harbor of Rhodes</span>
+        <span style="font-size:0.72rem;color:var(--text-muted);margin-left:4px;">Fragment 1: The Classifier's Eye — Samos</span>
       </div>
       <button class="btn btn-primary btn-lg" onclick="navigate('screen-checkin')">
         ⚔️ Continue the Quest
@@ -1045,7 +1091,7 @@ body {
             <div style="font-family:var(--font-display);font-size:0.85rem;color:var(--gold);font-weight:700;">Pythagoras</div>
             <span style="font-size:0.55rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:2px 6px;border-radius:4px;font-weight:600;">AI GUIDE</span>
           </div>
-          <div id="mapNPCDialogue" style="font-size:0.95rem;color:var(--text);line-height:1.6;font-style:italic;">"Welcome back, Maya. We've recovered two fragments from our journey through the villages — the foundations of my proof. Now the real adventure begins. See that golden marker over Athens? Workers are building a new temple on the Acropolis, and they need someone who understands right triangles. <strong>Click on Athens to travel there.</strong>"</div>
+          <div id="mapNPCDialogue" style="font-size:0.95rem;color:var(--text);line-height:1.6;font-style:italic;">"Welcome, Maya! I am Pythagoras, and this is my home — the island of Samos. Before we sail to distant lands to recover the fragments of my proof, you must first learn to see triangles as I do. See that golden marker? <strong>Click on Samos to begin your first lesson.</strong>"</div>
           <div style="margin-top:8px;font-size:0.6rem;color:var(--text-muted);">🔗 Powered by <a href="#" style="color:var(--teal);text-decoration:none;">Historical Figure Chatbot API</a> — historical-figure-voice.workers.dev</div>
         </div>
       </div>
@@ -1097,7 +1143,7 @@ body {
         <div class="flex-row gap-sm mb-sm">
           <span class="badge" id="chCogBadge">Analyze</span>
           <span class="badge" id="chDiffBadge" style="background:rgba(239,140,59,0.1);color:var(--orange);">Difficulty: ●●●○○</span>
-          <span style="font-size:0.72rem;color:var(--text-muted);" id="chProgress">Challenge 3 of 5</span>
+          <span style="font-size:0.72rem;color:var(--text-muted);" id="chProgress">Challenge 1 of 4</span>
         </div>
         <div class="challenge-prompt" id="chPrompt" style="font-size:1.05rem;line-height:1.7;margin:16px 0;color:var(--navy);"></div>
 
@@ -1196,6 +1242,7 @@ body {
       </div>
       <div style="font-size:0.85rem;color:var(--text-soft);margin-bottom:12px;">You unlocked 2 new concepts today</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="padding:6px 12px;background:rgba(67,160,71,0.1);border-radius:20px;font-size:0.78rem;color:var(--green);font-weight:600;">✓ Triangle Classification</span>
         <span style="padding:6px 12px;background:rgba(67,160,71,0.1);border-radius:20px;font-size:0.78rem;color:var(--green);font-weight:600;">✓ Right Triangle ID</span>
         <span style="padding:6px 12px;background:rgba(67,160,71,0.1);border-radius:20px;font-size:0.78rem;color:var(--green);font-weight:600;">✓ Pythagorean Triples</span>
         <span style="padding:6px 12px;background:rgba(212,168,67,0.1);border-radius:20px;font-size:0.78rem;color:var(--gold);font-weight:600;">◐ Real-World Applications</span>
@@ -3000,7 +3047,46 @@ let timerSeconds = 0;
 // ═══ CHALLENGE DATA ═══
 const challenges = [
   {
-    num: 3, total: 5,
+    num: 1, total: 4,
+    tier: "Foundation Harbor",
+    cogLevel: "Understand", cogColor: "badge-green",
+    difficulty: "●○○○○", diffLabel: "Introductory",
+    location: "🏠 The School of Pythagoras — Samos",
+    storyBeat: "On the island of Samos, young Pythagoras has gathered his students in the courtyard. Stone tablets bearing different triangle shapes are spread across the ground. He turns to you: <em>\"Before we can understand the secrets of the right triangle, we must first learn to see the differences between all triangles.\"</em>",
+    prompt: "Sort each triangle tile into its correct category by dragging it to the matching zone. Classify by the lengths of their sides: Equilateral (all equal), Isosceles (two equal), or Scalene (none equal).",
+    visual: "📐",
+    unit: "",
+    answer: "__interactive__",
+    interactiveType: "triangleTypes",
+    interactiveData: {
+      categories: [
+        { id: "equilateral", label: "Equilateral", desc: "All 3 sides equal", accepts: ["tri-eq-1","tri-eq-2"] },
+        { id: "isosceles",   label: "Isosceles",   desc: "Exactly 2 sides equal", accepts: ["tri-iso-1","tri-iso-2"] },
+        { id: "scalene",     label: "Scalene",      desc: "No sides equal", accepts: ["tri-sc-1","tri-sc-2"] },
+      ],
+      tiles: [
+        { id:"tri-eq-1",  label:"5, 5, 5",    svg:'<polygon points="30,5 5,45 55,45" fill="none" stroke="#2A7F8E" stroke-width="2.5"/>' },
+        { id:"tri-iso-1", label:"4, 4, 6",    svg:'<polygon points="30,5 3,45 57,45" fill="none" stroke="#7E57C2" stroke-width="2.5"/>' },
+        { id:"tri-sc-1",  label:"3, 4, 5",    svg:'<polygon points="5,45 45,45 45,10" fill="none" stroke="#EF8C3B" stroke-width="2.5"/>' },
+        { id:"tri-eq-2",  label:"7, 7, 7",    svg:'<polygon points="30,5 5,45 55,45" fill="none" stroke="#2A7F8E" stroke-width="2.5"/>' },
+        { id:"tri-sc-2",  label:"5, 7, 10",   svg:'<polygon points="5,45 55,45 40,8" fill="none" stroke="#EF8C3B" stroke-width="2.5"/>' },
+        { id:"tri-iso-2", label:"6, 6, 3",    svg:'<polygon points="30,2 8,45 52,45" fill="none" stroke="#7E57C2" stroke-width="2.5"/>' },
+      ]
+    },
+    xp: 10,
+    reference: "Triangles can be classified by their sides: Equilateral (3 equal sides), Isosceles (exactly 2 equal sides), or Scalene (no equal sides).",
+    hints: [
+      { title: "Look at the side lengths", content: "Each tile shows three numbers — those are the lengths of the triangle's sides. Count how many sides are equal to each other." },
+      { title: "Equilateral = all the same", content: "If all three numbers are identical (like 5, 5, 5), the triangle is equilateral." },
+      { title: "Isosceles vs. Scalene", content: "If exactly two numbers match (like 4, 4, 6), it's isosceles. If all three are different (like 3, 4, 5), it's scalene." },
+    ],
+    correctFeedback: `All tiles sorted correctly! Pythagoras nods approvingly: <em>"You can see the differences now — equilateral, isosceles, scalene. This is the foundation. Remember: the right triangle, that special scalene shape, holds a secret that we will uncover on our journey."</em> You've recovered your first <strong>proof fragment</strong>: the classifier's eye.`,
+    incorrectFeedback: `Look carefully at the side lengths on each tile. Count how many sides are equal: all three equal → Equilateral, exactly two equal → Isosceles, none equal → Scalene.`,
+    pulseAfter: false,
+    fragmentReward: "🧩 Fragment: The Classifier's Eye",
+  },
+  {
+    num: 2, total: 4,
     tier: "Extension Waters",
     cogLevel: "Apply", cogColor: "badge-teal",
     difficulty: "●●●○○", diffLabel: "Medium",
@@ -3023,7 +3109,7 @@ const challenges = [
     fragmentReward: "🧩 Fragment: The Builder's Application",
   },
   {
-    num: 4, total: 5,
+    num: 3, total: 4,
     tier: "Extension Waters",
     cogLevel: "Analyze", cogColor: "badge-purple",
     difficulty: "●●●●○", diffLabel: "Hard",
@@ -3046,7 +3132,7 @@ const challenges = [
     fragmentReward: "🧩 Fragment: The Navigator's Proof",
   },
   {
-    num: 5, total: 5,
+    num: 4, total: 4,
     tier: "Extension Waters → Mastery Shores",
     cogLevel: "Evaluate", cogColor: "badge-orange",
     difficulty: "●●●●●", diffLabel: "Very Hard",
@@ -3144,6 +3230,22 @@ function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerI
 // ═══ QUEST SCENES ═══
 const questScenes = [
   {
+    bg: 'linear-gradient(180deg,#7ac4e8 0%,#4a9ec8 30%,#3580a8 60%,#1B3A5C 100%)',
+    emoji: '🏠',
+    title: 'The School of Pythagoras',
+    subtitle: 'Samos, Greece — Birthplace of Pythagoras',
+    ambiance: 'Warm Mediterranean sun washes over a stone courtyard overlooking the Aegean Sea. Young students sit in a semicircle as Pythagoras arranges carved stone tablets — each bearing a different triangle shape.',
+    artworkEmoji: '🏠',
+    artworkDesc: 'Replace with 3D scene or artwork showing: a sun-drenched Greek courtyard on the island of Samos with stone benches, carved triangle tablets spread on the ground, olive trees, and the Aegean Sea in the background.',
+    diagramEmoji: '📐',
+    diagramDesc: 'Interactive: Drag each triangle tile to its correct classification zone — Equilateral (all sides equal), Isosceles (two sides equal), or Scalene (no sides equal).',
+    dialogue: [
+      '"Welcome to Samos, Maya — the island where I was born and first fell in love with geometry. Before we sail to distant lands, you must learn to <em>see</em> triangles the way I do."',
+      '"Look at these stone tablets. Each one bears a different triangle. Your task is simple but essential: sort each triangle into its correct type. Drag each tile to its category. <em>This is the foundation — without it, nothing else we discover will make sense.</em>"'
+    ],
+    travelFrom: null,
+  },
+  {
     bg: 'linear-gradient(180deg,#e8c87a 0%,#d4a843 30%,#c49535 60%,#8b7355 100%)',
     emoji: '🏗️',
     title: 'The Temple Construction Site',
@@ -3157,7 +3259,7 @@ const questScenes = [
       '"Maya! Look at this construction site. See those workers trying to reach the top of that wall? They have a ladder, but they need to know — will it reach high enough before they climb?"',
       '"This is how my theorem was first used — not by mathematicians, but by <em>builders</em>. Real people solving real problems. The ladder is 13 cubits long and its base is 5 cubits from the wall. Can you help them figure out how high the ladder reaches?"'
     ],
-    travelFrom: null,
+    travelFrom: { title: 'Voyage: Samos → Athens', desc: '~1,200 stadia by sea across the Aegean • 1-2 days sailing west past the Cyclades islands', distance: '1,200', unit: 'stadia' },
   },
   {
     bg: 'linear-gradient(180deg,#5a8fa8 0%,#3d7a9a 30%,#2a5f7a 60%,#1a3a5c 100%)',
@@ -3213,11 +3315,11 @@ function playPythagorasVoice() {
 let completedLocations = new Set(); // indices of completed challenge locations
 
 const mapLocations = [
-  { id: 'samos', name: 'Samos', emoji: '🏠', top: 170, left: 90, status: 'complete', challengeIdx: null },
-  { id: 'croton', name: 'Croton', emoji: '🏘️', top: 200, left: 200, status: 'complete', challengeIdx: null },
-  { id: 'athens', name: 'Athens', emoji: '🏗️', top: 145, left: 340, status: 'active', challengeIdx: 0 },
-  { id: 'rhodes', name: 'Rhodes', emoji: '⚓', top: 265, left: 480, status: 'next', challengeIdx: 1 },
-  { id: 'alexandria', name: 'Alexandria', emoji: '🔭', top: null, left: null, bottom: 70, right: 100, status: 'locked', challengeIdx: 2 },
+  { id: 'samos', name: 'Samos', emoji: '🏠', top: 170, left: 90, status: 'active', challengeIdx: 0 },
+  { id: 'croton', name: 'Croton', emoji: '🏘️', top: 200, left: 200, status: 'next', challengeIdx: null },
+  { id: 'athens', name: 'Athens', emoji: '🏗️', top: 145, left: 340, status: 'locked', challengeIdx: 1 },
+  { id: 'rhodes', name: 'Rhodes', emoji: '⚓', top: 265, left: 480, status: 'locked', challengeIdx: 2 },
+  { id: 'alexandria', name: 'Alexandria', emoji: '🔭', top: null, left: null, bottom: 70, right: 100, status: 'locked', challengeIdx: 3 },
 ];
 
 const mapPaths = [
@@ -3378,6 +3480,7 @@ function backToMap() {
 // Track student performance for adaptive branching
 let attemptTracker = {}; // { challengeIdx: { attempts: n, hintsUsed: n, timeStarted: Date, firstAttemptTime: null } }
 let masteryState = {
+  'triangle_classification': { level: 'novice', confidence: 0.10 },
   'finding_leg': { level: 'proficient', confidence: 0.88 },
   'finding_hypotenuse': { level: 'developing', confidence: 0.45 },
   'real_world_application': { level: 'developing', confidence: 0.50 },
@@ -3390,7 +3493,34 @@ let fastTrackActive = false;
 
 // Scaffold challenges — appear when student fails main challenge twice
 const scaffoldChallenges = {
-  0: { // Scaffold for Athens (ladder problem)
+  0: { // Scaffold for Samos (Triangle Types)
+    sceneBg: 'linear-gradient(180deg,#8ac4d4 0%,#6aacbc 30%,#4a8ca0 60%,#2a6c80 100%)',
+    sceneEmoji: '🐚',
+    sceneTitle: 'The Beach Lesson',
+    sceneSubtitle: 'Samos — A Quiet Cove',
+    sceneAmbiance: 'Pythagoras draws three triangles in the wet sand. The waves wash gently nearby.',
+    dialogue: [
+      '"Let me simplify this, Maya. Forget the categories for a moment. Let\'s just look at one triangle at a time."',
+      '"This triangle has sides 3, 3, 3. All three sides are the same length. What type of triangle is that? Type: equilateral, isosceles, or scalene."'
+    ],
+    prompt: 'A triangle has sides of length 3, 3, and 3. All three sides are equal. What type of triangle is this? (equilateral, isosceles, or scalene)',
+    answer: 'equilateral',
+    answerAlt: ['equilateral triangle'],
+    unit: '',
+    xp: 5,
+    difficulty: '●○○○○', diffLabel: 'Easy',
+    cogLevel: 'Remember', cogColor: 'badge-green',
+    reference: 'Equilateral = all sides equal. Isosceles = exactly two sides equal. Scalene = no sides equal.',
+    hints: [
+      { title: 'Count the equal sides', content: '3, 3, 3 — how many sides have the same length? All three!' },
+      { title: 'Match the definition', content: 'All 3 sides equal → Equilateral. Two sides equal → Isosceles. No sides equal → Scalene.' },
+      { title: 'The answer', content: 'Since all three sides (3, 3, 3) are equal, this is an equilateral triangle.' },
+    ],
+    correctFeedback: 'Pythagoras smiles warmly. <em>"Yes! When all three sides are equal, we call it equilateral — \'equal sides\' in our language. Now let\'s go back and sort those tablets."</em>',
+    incorrectFeedback: 'Look at the side lengths: 3, 3, 3. All three numbers are the same. The type where all sides are equal is called equilateral.',
+    returnDialogue: '"You understand the building blocks now. Equilateral means equal sides. Let\'s return to the courtyard — those tablets are waiting for you."',
+  },
+  1: { // Scaffold for Athens (ladder problem)
     sceneBg: 'linear-gradient(180deg,#6a9b6a 0%,#4a7a4a 30%,#3a6a3a 60%,#2a4a2a 100%)',
     sceneEmoji: '🌿',
     sceneTitle: 'The Practice Grove',
@@ -3417,7 +3547,7 @@ const scaffoldChallenges = {
     incorrectFeedback: 'Almost there! Remember: a² + b² = c². That means 3² + 4² = c². Calculate 9 + 16, then find the square root.',
     returnDialogue: '"See? The pattern is the same whether the triangle is drawn in dirt or formed by a ladder against a wall. Now let\'s return to the temple — the workers are waiting for you."',
   },
-  1: { // Scaffold for Rhodes (navigation problem)
+  2: { // Scaffold for Rhodes (navigation problem)
     sceneBg: 'linear-gradient(180deg,#8a7a6a 0%,#6a5a4a 30%,#5a4a3a 60%,#3a2a1a 100%)',
     sceneEmoji: '🗺️',
     sceneTitle: 'The Cartographer\'s Hut',
@@ -3444,7 +3574,7 @@ const scaffoldChallenges = {
     incorrectFeedback: 'The cartographer taps the grid chart. The boat went east (horizontal) and north (vertical) — that\'s two legs of a right triangle! Try: 6² + 8² = c².',
     returnDialogue: '"Excellent! You handled the small waters perfectly. Now let\'s return to the harbor master — that merchant ship is still lost, and the numbers are bigger, but the method is exactly the same."',
   },
-  2: { // Scaffold for Alexandria (proof verification)
+  3: { // Scaffold for Alexandria (proof verification)
     sceneBg: 'linear-gradient(180deg,#7a6a8a 0%,#5a4a6a 30%,#4a3a5a 60%,#2a1a3a 100%)',
     sceneEmoji: '📜',
     sceneTitle: 'The Scholar\'s Anteroom',
@@ -3475,7 +3605,8 @@ const scaffoldChallenges = {
 
 // Fast-track variants — harder versions when student solves main challenge very quickly
 const fastTrackVariants = {
-  0: { // Hard variant for Athens
+  // No fast-track for Samos (interactive activity handles its own pacing)
+  1: { // Hard variant for Athens
     prompt: 'A second ladder leans against the opposite wall. This one is 25 cubits long, and the wall is 24 cubits high. How far is the base of the ladder from the wall?',
     answer: '7',
     answerAlt: ['7.0'],
@@ -3492,7 +3623,7 @@ const fastTrackVariants = {
     correctFeedback: '<em>"Magnificent! 7-24-25 — one of the rarer Pythagorean triples. Most students never see this one."</em> Pythagoras looks genuinely impressed. <strong>+10 bonus XP for fast-track mastery!</strong>',
     incorrectFeedback: 'This is a harder variant — the numbers are bigger but the method is the same. The ladder (25 ft) is the hypotenuse, the wall (24 ft) is one leg. Find the other leg: a² + 24² = 25².',
   },
-  1: { // Hard variant for Rhodes
+  2: { // Hard variant for Rhodes
     prompt: 'A second ship departed from Rhodes heading 20 stadia south, then 21 stadia west. The harbor master needs the direct distance back. What is it?',
     answer: '29',
     answerAlt: ['29.0'],
@@ -3558,19 +3689,223 @@ function loadChallenge(idx) {
   `).join('');
 
   // Clear previous state
-  document.getElementById('answerInput').value = '';
-  document.getElementById('answerInput').focus();
   clearFeedback();
   document.getElementById('tierAdvance').style.display = 'none';
-  document.getElementById('chInputRow').style.display = 'flex';
-  
+
+  // Handle interactive challenges (Triangle Types)
+  const diagArea = document.getElementById('challengeDiagram');
+  if (ch.interactiveType === 'triangleTypes') {
+    document.getElementById('chInputRow').style.display = 'none';
+    document.getElementById('answerInput').value = '';
+    diagArea.style.display = 'none';
+    renderTriangleTypesActivity(ch, idx);
+  } else {
+    document.getElementById('chInputRow').style.display = 'flex';
+    document.getElementById('answerInput').value = '';
+    document.getElementById('answerInput').focus();
+    diagArea.style.display = '';
+    // Remove any leftover interactive UI
+    const triUI = document.getElementById('triangleTypesUI');
+    if (triUI) triUI.remove();
+  }
+
   timerSeconds = 0;
 }
 
+// ═══ TRIANGLE TYPES INTERACTIVE ACTIVITY ═══
+let triState = { placed: {}, completed: new Set() };
+
+function renderTriangleTypesActivity(ch, idx) {
+  const data = ch.interactiveData;
+  // Remove old UI if present
+  let existing = document.getElementById('triangleTypesUI');
+  if (existing) existing.remove();
+
+  triState = { placed: {}, completed: new Set() };
+
+  // Shuffle tiles
+  const shuffled = [...data.tiles].sort(() => Math.random() - 0.5);
+
+  const container = document.createElement('div');
+  container.id = 'triangleTypesUI';
+  container.className = 'tri-activity';
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <span style="font-size:0.78rem;color:var(--text-muted);">Drag each triangle to its category</span>
+      <span id="triScore" style="font-size:0.78rem;font-weight:600;color:var(--teal);">0 / ${data.tiles.length} placed</span>
+    </div>
+    <div class="tri-progress-bar"><div class="tri-progress-fill" id="triProgressFill" style="width:0%"></div></div>
+    <div class="tri-categories">
+      ${data.categories.map(cat => `
+        <div class="tri-drop-zone" id="zone-${cat.id}"
+             ondragover="triDragOver(event)" ondragleave="triDragLeave(event)"
+             ondrop="triDrop(event,'${cat.id}')">
+          <div class="zone-label">${cat.label}</div>
+          <div class="zone-desc">${cat.desc}</div>
+          <div class="zone-slots" id="slots-${cat.id}"></div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="tri-tiles" id="triTilesTray">
+      ${shuffled.map(t => `
+        <div class="tri-tile" id="tile-${t.id}" draggable="true"
+             ondragstart="triDragStart(event,'${t.id}')"
+             ontouchstart="triTouchStart(event,'${t.id}')">
+          <svg viewBox="0 0 60 50">${t.svg}</svg>
+          <div class="tile-label">${t.label}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Insert after the diagram area
+  const diagArea = document.getElementById('challengeDiagram');
+  diagArea.parentNode.insertBefore(container, diagArea.nextSibling);
+}
+
+let triDragId = null;
+
+function triDragStart(e, tileId) {
+  triDragId = tileId;
+  e.dataTransfer.setData('text/plain', tileId);
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const el = document.getElementById('tile-' + tileId);
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+
+function triDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function triDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function triDrop(e, categoryId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const tileId = e.dataTransfer ? e.dataTransfer.getData('text/plain') : triDragId;
+  if (!tileId) return;
+  processTileDrop(tileId, categoryId);
+}
+
+// Touch support
+let triTouchId = null;
+let triTouchEl = null;
+let triTouchClone = null;
+
+function triTouchStart(e, tileId) {
+  const tile = document.getElementById('tile-' + tileId);
+  if (!tile || tile.classList.contains('placed')) return;
+  triTouchId = tileId;
+  triTouchEl = tile;
+
+  // Create floating clone
+  triTouchClone = tile.cloneNode(true);
+  triTouchClone.style.position = 'fixed';
+  triTouchClone.style.zIndex = '9999';
+  triTouchClone.style.pointerEvents = 'none';
+  triTouchClone.style.opacity = '0.85';
+  triTouchClone.style.transform = 'scale(1.1)';
+  document.body.appendChild(triTouchClone);
+  tile.classList.add('dragging');
+
+  const moveHandler = (me) => {
+    me.preventDefault();
+    const touch = me.touches[0];
+    triTouchClone.style.left = (touch.clientX - 50) + 'px';
+    triTouchClone.style.top = (touch.clientY - 45) + 'px';
+  };
+  const endHandler = (ee) => {
+    document.removeEventListener('touchmove', moveHandler);
+    document.removeEventListener('touchend', endHandler);
+    if (triTouchClone) { triTouchClone.remove(); triTouchClone = null; }
+    tile.classList.remove('dragging');
+    // Find which zone we're over
+    const touch = ee.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const zone = el?.closest('.tri-drop-zone');
+    if (zone) {
+      const catId = zone.id.replace('zone-', '');
+      processTileDrop(tileId, catId);
+    }
+  };
+  document.addEventListener('touchmove', moveHandler, { passive: false });
+  document.addEventListener('touchend', endHandler);
+}
+
+function processTileDrop(tileId, categoryId) {
+  const ch = challenges[currentChallenge];
+  const data = ch.interactiveData;
+  const tile = document.getElementById('tile-' + tileId);
+  if (!tile || tile.classList.contains('placed')) return;
+  tile.classList.remove('dragging');
+
+  // Check if this tile belongs in this category
+  const cat = data.categories.find(c => c.id === categoryId);
+  if (!cat) return;
+
+  if (cat.accepts.includes(tileId)) {
+    // CORRECT placement
+    tile.classList.add('placed');
+    tile.setAttribute('draggable', 'false');
+    triState.placed[tileId] = categoryId;
+
+    // Move tile into the zone slots
+    const slotsEl = document.getElementById('slots-' + categoryId);
+    slotsEl.appendChild(tile);
+
+    // Coin burst animation
+    const zone = document.getElementById('zone-' + categoryId);
+    const burst = document.createElement('div');
+    burst.className = 'tri-coin-burst';
+    burst.textContent = '🪙';
+    burst.style.left = '50%'; burst.style.top = '30%';
+    zone.appendChild(burst);
+    setTimeout(() => burst.remove(), 900);
+
+    // Check if this category is now complete
+    const catPlaced = cat.accepts.filter(id => triState.placed[id]);
+    if (catPlaced.length === cat.accepts.length) {
+      triState.completed.add(categoryId);
+      zone.classList.add('completed');
+    }
+
+    // Update progress
+    const totalPlaced = Object.keys(triState.placed).length;
+    const totalTiles = data.tiles.length;
+    document.getElementById('triScore').textContent = `${totalPlaced} / ${totalTiles} placed`;
+    document.getElementById('triProgressFill').style.width = `${(totalPlaced/totalTiles)*100}%`;
+
+    // Check if all done
+    if (totalPlaced === totalTiles) {
+      // Activity complete — trigger correct feedback
+      setTimeout(() => {
+        showCorrectFeedback(ch);
+      }, 600);
+    }
+  } else {
+    // WRONG placement — bounce back
+    tile.classList.add('wrong-bounce');
+    setTimeout(() => tile.classList.remove('wrong-bounce'), 500);
+
+    // Track attempt
+    const tracker = attemptTracker[currentChallenge] || { attempts: 0, hintsUsed: 0, timeStarted: Date.now() };
+    tracker.attempts++;
+    attemptTracker[currentChallenge] = tracker;
+  }
+}
+
 function submitAnswer() {
-  const ch = scaffoldActive ? scaffoldChallenges[currentChallenge] : 
+  const ch = scaffoldActive ? scaffoldChallenges[currentChallenge] :
              fastTrackActive ? Object.assign({}, challenges[currentChallenge], fastTrackVariants[currentChallenge]) :
              challenges[currentChallenge];
+  // Interactive challenges handle their own submission
+  if (ch.interactiveType) return;
   const val = document.getElementById('answerInput').value.trim().toLowerCase();
   const tracker = attemptTracker[currentChallenge] || { attempts: 0, hintsUsed: 0, timeStarted: Date.now() };
   
@@ -3825,7 +4160,7 @@ function enterFastTrack(idx) {
 function handleFastTrackComplete(idx, ch) {
   fastTrackActive = false;
   
-  const bonusXP = idx === 0 ? 10 : 15;
+  const bonusXP = idx === 1 ? 10 : 15;
   
   document.getElementById('fbCorrectText').innerHTML = `${ch.correctFeedback}
     <div style="margin-top:8px;padding:10px;background:linear-gradient(135deg,rgba(126,87,194,0.1),rgba(126,87,194,0.03));border-radius:var(--radius);border:1px solid rgba(126,87,194,0.2);">
@@ -3854,14 +4189,18 @@ function handleFastTrackComplete(idx, ch) {
 // ═══ MASTERY STATE ═══
 function updateMasteryAfterCorrect(idx) {
   if (idx === 0) {
+    // Samos — Triangle Types classification
+    masteryState['triangle_classification'].confidence = Math.min(1, masteryState['triangle_classification'].confidence + 0.5);
+    masteryState['triangle_classification'].level = 'proficient';
+  } else if (idx === 1) {
     masteryState['finding_leg'].confidence = Math.min(1, masteryState['finding_leg'].confidence + 0.15);
     masteryState['real_world_application'].confidence = Math.min(1, masteryState['real_world_application'].confidence + 0.1);
     if (fastTrackActive) masteryState['pythagorean_triples'].confidence = Math.min(1, masteryState['pythagorean_triples'].confidence + 0.2);
-  } else if (idx === 1) {
+  } else if (idx === 2) {
     masteryState['finding_hypotenuse'].confidence = Math.min(1, masteryState['finding_hypotenuse'].confidence + 0.2);
     masteryState['real_world_application'].confidence = Math.min(1, masteryState['real_world_application'].confidence + 0.15);
     if (fastTrackActive) masteryState['pythagorean_triples'].confidence = Math.min(1, masteryState['pythagorean_triples'].confidence + 0.25);
-  } else if (idx === 2) {
+  } else if (idx === 3) {
     masteryState['proof_verification'].confidence = Math.min(1, masteryState['proof_verification'].confidence + 0.4);
     masteryState['proof_verification'].level = 'developing';
   }
@@ -4563,6 +4902,27 @@ window.QS = (() => {
   const SEED_THRESHOLDS = { foundation_to_extension: 0.75, extension_to_mastery: 0.85 };
 
     const SEED_CHALLENGES = [
+    // ── Samos (Triangle Types) ──────────────────────────────────────────────
+    {
+      id:           'ch_samos_f1',
+      location:     'samos',
+      tier:         'foundation',
+      tier_label:   'Foundation',
+      cog_badge:    '📐',
+      diff_badge:   '⭐',
+      prompt:       'Sort six triangles into their correct type categories: Equilateral (all sides equal), Isosceles (two sides equal), or Scalene (no sides equal).',
+      diagram_emoji: '📐',
+      diagram_desc:  'Interactive drag-and-drop triangle classification activity.',
+      given:         { type: 'classification' },
+      answer:        'interactive',
+      unit:          '',
+      hint_1:        'Count how many sides share the same length on each triangle.',
+      hint_2:        'All three equal → Equilateral. Exactly two equal → Isosceles. All different → Scalene.',
+      hint_3:        'For example: 5,5,5 is equilateral; 4,4,6 is isosceles; 3,4,5 is scalene.',
+      reference:     'Classify triangles by side lengths',
+      xp_award:      30,
+      fragment:      'Fragment 0: The Classifier\'s Eye'
+    },
     // ── Rhodes ──────────────────────────────────────────────────────────────
     {
       id:           'ch_rhodes_f1',
