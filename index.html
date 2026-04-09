@@ -752,51 +752,27 @@ body {
   .screen { padding: 16px; }
 }
 
-/* ═══ TRIANGLE TYPES ACTIVITY ═══ */
-.tri-activity { display:flex; flex-direction:column; gap:16px; user-select:none; }
-.tri-categories { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-.tri-drop-zone {
-  min-height:140px; border:2px dashed var(--border); border-radius:var(--radius);
-  padding:12px; text-align:center; transition:var(--transition); position:relative;
-  background:rgba(255,255,255,0.6);
+/* ═══ UNITY EMBED ═══ */
+.unity-embed-container {
+  position:relative; width:100%; aspect-ratio:16/9; max-height:70vh;
+  background:#231F20; border-radius:var(--radius); overflow:hidden;
+  box-shadow:var(--shadow-lg);
 }
-.tri-drop-zone.drag-over { border-color:var(--teal); background:rgba(42,127,142,0.06); transform:scale(1.02); }
-.tri-drop-zone.completed { border-color:var(--green); background:rgba(67,160,71,0.06); border-style:solid; }
-.tri-drop-zone .zone-label {
-  font-family:var(--font-display); font-size:0.95rem; font-weight:600; color:var(--navy);
-  margin-bottom:4px;
+.unity-embed-container canvas {
+  width:100%; height:100%; display:block;
 }
-.tri-drop-zone .zone-desc { font-size:0.7rem; color:var(--text-muted); margin-bottom:8px; }
-.tri-drop-zone .zone-slots { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; min-height:50px; }
-.tri-tiles { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; padding:16px; background:var(--bg); border-radius:var(--radius); }
-.tri-tile {
-  width:100px; height:90px; border:2px solid var(--border); border-radius:var(--radius-sm);
-  background:white; cursor:grab; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:4px; transition:all 0.2s ease; position:relative;
+.unity-loading-overlay {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; background:#231F20; z-index:10;
+  color:white; font-family:var(--font-body); transition:opacity 0.5s ease;
 }
-.tri-tile:hover { border-color:var(--teal); box-shadow:var(--shadow-md); transform:translateY(-2px); }
-.tri-tile.dragging { opacity:0.4; cursor:grabbing; }
-.tri-tile.placed { border-color:var(--green); background:rgba(67,160,71,0.05); cursor:default; }
-.tri-tile.wrong-bounce { animation:wrongBounce 0.5s ease; }
-.tri-tile .tile-label { font-size:0.65rem; color:var(--text-soft); font-weight:600; }
-.tri-tile svg { width:60px; height:50px; }
-.tri-progress-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
-.tri-progress-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--green)); border-radius:3px; transition:width 0.4s ease; }
-.tri-coin-burst {
-  position:absolute; pointer-events:none; font-size:1.2rem;
-  animation:coinBurst 0.8s ease forwards;
-}
-@keyframes wrongBounce {
-  0%{transform:translateY(0)} 20%{transform:translateY(-20px)} 40%{transform:translateY(0)}
-  60%{transform:translateY(-10px)} 80%{transform:translateY(0)} 100%{transform:translateY(0)}
-}
-@keyframes coinBurst {
-  0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-40px) scale(1.3)}
-}
+.unity-loading-overlay.hidden { opacity:0; pointer-events:none; }
+.unity-loading-bar { width:60%; height:6px; background:rgba(255,255,255,0.15); border-radius:3px; margin-top:16px; overflow:hidden; }
+.unity-loading-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); border-radius:3px; transition:width 0.3s ease; width:0%; }
+.unity-loading-text { font-size:0.85rem; color:rgba(255,255,255,0.7); margin-top:8px; }
+.unity-loading-title { font-family:var(--font-display); font-size:1.2rem; color:var(--gold); margin-bottom:4px; }
 @media (max-width: 768px) {
-  .tri-categories { grid-template-columns:1fr; }
-  .tri-tile { width:80px; height:72px; }
-  .tri-tile svg { width:48px; height:40px; }
+  .unity-embed-container { aspect-ratio:4/3; max-height:60vh; }
 }
 </style>
 </head>
@@ -3053,26 +3029,11 @@ const challenges = [
     difficulty: "●○○○○", diffLabel: "Introductory",
     location: "🏠 The School of Pythagoras — Samos",
     storyBeat: "On the island of Samos, young Pythagoras has gathered his students in the courtyard. Stone tablets bearing different triangle shapes are spread across the ground. He turns to you: <em>\"Before we can understand the secrets of the right triangle, we must first learn to see the differences between all triangles.\"</em>",
-    prompt: "Sort each triangle tile into its correct category by dragging it to the matching zone. Classify by the lengths of their sides: Equilateral (all equal), Isosceles (two equal), or Scalene (none equal).",
+    prompt: "Play through the Triangle Types activity in the 3D world below. Watch the intro, walk to the activity table, and sort the triangle tiles into their correct categories.",
     visual: "📐",
     unit: "",
     answer: "__interactive__",
-    interactiveType: "triangleTypes",
-    interactiveData: {
-      categories: [
-        { id: "equilateral", label: "Equilateral", desc: "All 3 sides equal", accepts: ["tri-eq-1","tri-eq-2"] },
-        { id: "isosceles",   label: "Isosceles",   desc: "Exactly 2 sides equal", accepts: ["tri-iso-1","tri-iso-2"] },
-        { id: "scalene",     label: "Scalene",      desc: "No sides equal", accepts: ["tri-sc-1","tri-sc-2"] },
-      ],
-      tiles: [
-        { id:"tri-eq-1",  label:"5, 5, 5",    svg:'<polygon points="30,5 5,45 55,45" fill="none" stroke="#2A7F8E" stroke-width="2.5"/>' },
-        { id:"tri-iso-1", label:"4, 4, 6",    svg:'<polygon points="30,5 3,45 57,45" fill="none" stroke="#7E57C2" stroke-width="2.5"/>' },
-        { id:"tri-sc-1",  label:"3, 4, 5",    svg:'<polygon points="5,45 45,45 45,10" fill="none" stroke="#EF8C3B" stroke-width="2.5"/>' },
-        { id:"tri-eq-2",  label:"7, 7, 7",    svg:'<polygon points="30,5 5,45 55,45" fill="none" stroke="#2A7F8E" stroke-width="2.5"/>' },
-        { id:"tri-sc-2",  label:"5, 7, 10",   svg:'<polygon points="5,45 55,45 40,8" fill="none" stroke="#EF8C3B" stroke-width="2.5"/>' },
-        { id:"tri-iso-2", label:"6, 6, 3",    svg:'<polygon points="30,2 8,45 52,45" fill="none" stroke="#7E57C2" stroke-width="2.5"/>' },
-      ]
-    },
+    interactiveType: "unityEmbed",
     xp: 10,
     reference: "Triangles can be classified by their sides: Equilateral (3 equal sides), Isosceles (exactly 2 equal sides), or Scalene (no equal sides).",
     hints: [
@@ -3692,212 +3653,162 @@ function loadChallenge(idx) {
   clearFeedback();
   document.getElementById('tierAdvance').style.display = 'none';
 
-  // Handle interactive challenges (Triangle Types)
+  // Handle interactive challenges
   const diagArea = document.getElementById('challengeDiagram');
-  if (ch.interactiveType === 'triangleTypes') {
+  if (ch.interactiveType === 'unityEmbed') {
     document.getElementById('chInputRow').style.display = 'none';
     document.getElementById('answerInput').value = '';
-    diagArea.style.display = 'none';
-    renderTriangleTypesActivity(ch, idx);
+    renderUnityEmbed(ch, idx);
   } else {
     document.getElementById('chInputRow').style.display = 'flex';
     document.getElementById('answerInput').value = '';
     document.getElementById('answerInput').focus();
     diagArea.style.display = '';
     // Remove any leftover interactive UI
-    const triUI = document.getElementById('triangleTypesUI');
-    if (triUI) triUI.remove();
+    const embedUI = document.getElementById('unityEmbedUI');
+    if (embedUI) embedUI.remove();
   }
 
   timerSeconds = 0;
 }
 
-// ═══ TRIANGLE TYPES INTERACTIVE ACTIVITY ═══
-let triState = { placed: {}, completed: new Set() };
+// ═══ UNITY WEBGL EMBED ═══
+let unityInstance = null;
+const UNITY_BUILD_URL = 'https://py-r2.questsim.com';
 
-function renderTriangleTypesActivity(ch, idx) {
-  const data = ch.interactiveData;
+function renderUnityEmbed(ch, idx) {
   // Remove old UI if present
-  let existing = document.getElementById('triangleTypesUI');
+  let existing = document.getElementById('unityEmbedUI');
   if (existing) existing.remove();
 
-  triState = { placed: {}, completed: new Set() };
-
-  // Shuffle tiles
-  const shuffled = [...data.tiles].sort(() => Math.random() - 0.5);
-
   const container = document.createElement('div');
-  container.id = 'triangleTypesUI';
-  container.className = 'tri-activity';
+  container.id = 'unityEmbedUI';
   container.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-      <span style="font-size:0.78rem;color:var(--text-muted);">Drag each triangle to its category</span>
-      <span id="triScore" style="font-size:0.78rem;font-weight:600;color:var(--teal);">0 / ${data.tiles.length} placed</span>
+    <div class="unity-embed-container" id="unityContainer">
+      <canvas id="unity-canvas-embed" tabindex="-1" style="width:100%;height:100%;"></canvas>
+      <div class="unity-loading-overlay" id="unityLoadingOverlay">
+        <div class="unity-loading-title">🏛️ Entering the World of Pythagoras...</div>
+        <div class="unity-loading-bar"><div class="unity-loading-fill" id="unityLoadingFill"></div></div>
+        <div class="unity-loading-text" id="unityLoadingText">Loading game assets...</div>
+      </div>
     </div>
-    <div class="tri-progress-bar"><div class="tri-progress-fill" id="triProgressFill" style="width:0%"></div></div>
-    <div class="tri-categories">
-      ${data.categories.map(cat => `
-        <div class="tri-drop-zone" id="zone-${cat.id}"
-             ondragover="triDragOver(event)" ondragleave="triDragLeave(event)"
-             ondrop="triDrop(event,'${cat.id}')">
-          <div class="zone-label">${cat.label}</div>
-          <div class="zone-desc">${cat.desc}</div>
-          <div class="zone-slots" id="slots-${cat.id}"></div>
-        </div>
-      `).join('')}
-    </div>
-    <div class="tri-tiles" id="triTilesTray">
-      ${shuffled.map(t => `
-        <div class="tri-tile" id="tile-${t.id}" draggable="true"
-             ondragstart="triDragStart(event,'${t.id}')"
-             ontouchstart="triTouchStart(event,'${t.id}')">
-          <svg viewBox="0 0 60 50">${t.svg}</svg>
-          <div class="tile-label">${t.label}</div>
-        </div>
-      `).join('')}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+      <span style="font-size:0.75rem;color:var(--text-muted);">Play through the Triangle Types Activity, then click "Mark Complete" when finished</span>
+      <button class="btn btn-primary btn-sm" id="unityCompleteBtn" onclick="onUnityActivityComplete()" style="opacity:0.5;" disabled>✓ Mark Complete</button>
     </div>
   `;
 
-  // Insert after the diagram area
+  // Replace the diagram/artwork placeholder with the Unity embed
   const diagArea = document.getElementById('challengeDiagram');
+  diagArea.style.display = 'none';
   diagArea.parentNode.insertBefore(container, diagArea.nextSibling);
+
+  // Load the Unity WebGL build
+  loadUnityBuild();
 }
 
-let triDragId = null;
-
-function triDragStart(e, tileId) {
-  triDragId = tileId;
-  e.dataTransfer.setData('text/plain', tileId);
-  e.dataTransfer.effectAllowed = 'move';
-  setTimeout(() => {
-    const el = document.getElementById('tile-' + tileId);
-    if (el) el.classList.add('dragging');
-  }, 0);
-}
-
-function triDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('drag-over');
-}
-
-function triDragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
-}
-
-function triDrop(e, categoryId) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  const tileId = e.dataTransfer ? e.dataTransfer.getData('text/plain') : triDragId;
-  if (!tileId) return;
-  processTileDrop(tileId, categoryId);
-}
-
-// Touch support
-let triTouchId = null;
-let triTouchEl = null;
-let triTouchClone = null;
-
-function triTouchStart(e, tileId) {
-  const tile = document.getElementById('tile-' + tileId);
-  if (!tile || tile.classList.contains('placed')) return;
-  triTouchId = tileId;
-  triTouchEl = tile;
-
-  // Create floating clone
-  triTouchClone = tile.cloneNode(true);
-  triTouchClone.style.position = 'fixed';
-  triTouchClone.style.zIndex = '9999';
-  triTouchClone.style.pointerEvents = 'none';
-  triTouchClone.style.opacity = '0.85';
-  triTouchClone.style.transform = 'scale(1.1)';
-  document.body.appendChild(triTouchClone);
-  tile.classList.add('dragging');
-
-  const moveHandler = (me) => {
-    me.preventDefault();
-    const touch = me.touches[0];
-    triTouchClone.style.left = (touch.clientX - 50) + 'px';
-    triTouchClone.style.top = (touch.clientY - 45) + 'px';
-  };
-  const endHandler = (ee) => {
-    document.removeEventListener('touchmove', moveHandler);
-    document.removeEventListener('touchend', endHandler);
-    if (triTouchClone) { triTouchClone.remove(); triTouchClone = null; }
-    tile.classList.remove('dragging');
-    // Find which zone we're over
-    const touch = ee.changedTouches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const zone = el?.closest('.tri-drop-zone');
-    if (zone) {
-      const catId = zone.id.replace('zone-', '');
-      processTileDrop(tileId, catId);
-    }
-  };
-  document.addEventListener('touchmove', moveHandler, { passive: false });
-  document.addEventListener('touchend', endHandler);
-}
-
-function processTileDrop(tileId, categoryId) {
-  const ch = challenges[currentChallenge];
-  const data = ch.interactiveData;
-  const tile = document.getElementById('tile-' + tileId);
-  if (!tile || tile.classList.contains('placed')) return;
-  tile.classList.remove('dragging');
-
-  // Check if this tile belongs in this category
-  const cat = data.categories.find(c => c.id === categoryId);
-  if (!cat) return;
-
-  if (cat.accepts.includes(tileId)) {
-    // CORRECT placement
-    tile.classList.add('placed');
-    tile.setAttribute('draggable', 'false');
-    triState.placed[tileId] = categoryId;
-
-    // Move tile into the zone slots
-    const slotsEl = document.getElementById('slots-' + categoryId);
-    slotsEl.appendChild(tile);
-
-    // Coin burst animation
-    const zone = document.getElementById('zone-' + categoryId);
-    const burst = document.createElement('div');
-    burst.className = 'tri-coin-burst';
-    burst.textContent = '🪙';
-    burst.style.left = '50%'; burst.style.top = '30%';
-    zone.appendChild(burst);
-    setTimeout(() => burst.remove(), 900);
-
-    // Check if this category is now complete
-    const catPlaced = cat.accepts.filter(id => triState.placed[id]);
-    if (catPlaced.length === cat.accepts.length) {
-      triState.completed.add(categoryId);
-      zone.classList.add('completed');
-    }
-
-    // Update progress
-    const totalPlaced = Object.keys(triState.placed).length;
-    const totalTiles = data.tiles.length;
-    document.getElementById('triScore').textContent = `${totalPlaced} / ${totalTiles} placed`;
-    document.getElementById('triProgressFill').style.width = `${(totalPlaced/totalTiles)*100}%`;
-
-    // Check if all done
-    if (totalPlaced === totalTiles) {
-      // Activity complete — trigger correct feedback
-      setTimeout(() => {
-        showCorrectFeedback(ch);
-      }, 600);
-    }
-  } else {
-    // WRONG placement — bounce back
-    tile.classList.add('wrong-bounce');
-    setTimeout(() => tile.classList.remove('wrong-bounce'), 500);
-
-    // Track attempt
-    const tracker = attemptTracker[currentChallenge] || { attempts: 0, hintsUsed: 0, timeStarted: Date.now() };
-    tracker.attempts++;
-    attemptTracker[currentChallenge] = tracker;
+function loadUnityBuild() {
+  if (unityInstance) {
+    // Already loaded — just show it
+    document.getElementById('unityLoadingOverlay').classList.add('hidden');
+    enableCompleteButton();
+    return;
   }
+
+  const loaderUrl = UNITY_BUILD_URL + '/BUILD.loader.js';
+  const config = {
+    dataUrl:      UNITY_BUILD_URL + '/BUILD.data.unityweb',
+    frameworkUrl:  UNITY_BUILD_URL + '/BUILD.framework.js.unityweb',
+    codeUrl:      UNITY_BUILD_URL + '/BUILD.wasm.unityweb',
+    streamingAssetsUrl: 'StreamingAssets',
+    companyName:  'Ultisim',
+    productName:  'Pythagoras',
+    showBanner: function(msg, type) {
+      console.log('[Unity Banner]', type, msg);
+    },
+  };
+
+  const script = document.createElement('script');
+  script.src = loaderUrl;
+  script.onload = () => {
+    const canvas = document.getElementById('unity-canvas-embed');
+    if (!canvas) return;
+
+    createUnityInstance(canvas, config, (progress) => {
+      const pct = Math.round(progress * 100);
+      const fill = document.getElementById('unityLoadingFill');
+      const text = document.getElementById('unityLoadingText');
+      if (fill) fill.style.width = pct + '%';
+      if (text) text.textContent = pct < 100 ? `Loading game assets... ${pct}%` : 'Starting...';
+    }).then((instance) => {
+      unityInstance = instance;
+      window.UNITY = instance;
+
+      // Set up the Do bridge (same as py.questsim.com)
+      instance.Do = function(cmd) {
+        instance.SendMessage('/Do_Bridge', 'Do', cmd);
+      };
+
+      // Register JS functions that Unity calls
+      window.unityCallsJsFns = window.unityCallsJsFns || { Do: {} };
+      window.unityCallsJsFns.Do['Activity.Begin'] = function(prms) {
+        console.log('[ACE] Unity Activity.Begin:', prms);
+        if (prms.trim() === 'Types') {
+          enableCompleteButton();
+        }
+      };
+      window.unityCallsJsFns.Do['Activity.Ev'] = function(prms) {
+        console.log('[ACE] Unity Activity.Ev:', prms);
+      };
+
+      // Set up the message bridge for Unity→JS calls
+      window.message = function(gameObj, data) {
+        if (gameObj === 'Do' && data) {
+          const match = data.match(/^(\S+)\((.*)?\)$/);
+          if (match) {
+            const fn = match[1];
+            const args = match[2] || '';
+            if (window.unityCallsJsFns.Do[fn]) {
+              window.unityCallsJsFns.Do[fn](args);
+            }
+          }
+        }
+      };
+
+      // Hide loading overlay
+      const overlay = document.getElementById('unityLoadingOverlay');
+      if (overlay) overlay.classList.add('hidden');
+
+      // Enable the complete button after a delay to let the player experience the activity
+      setTimeout(enableCompleteButton, 10000);
+
+    }).catch((err) => {
+      console.error('[Unity] Load failed:', err);
+      const text = document.getElementById('unityLoadingText');
+      if (text) text.innerHTML = 'Failed to load 3D world. <a href="https://py.questsim.com" target="_blank" style="color:var(--gold);">Open in new tab →</a>';
+    });
+  };
+
+  script.onerror = () => {
+    console.error('[Unity] Loader script failed to load');
+    const text = document.getElementById('unityLoadingText');
+    if (text) text.innerHTML = 'Could not reach game server. <a href="https://py.questsim.com" target="_blank" style="color:var(--gold);">Open game in new tab →</a>';
+  };
+
+  document.body.appendChild(script);
+}
+
+function enableCompleteButton() {
+  const btn = document.getElementById('unityCompleteBtn');
+  if (btn) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
+
+function onUnityActivityComplete() {
+  const ch = challenges[currentChallenge];
+  showCorrectFeedback(ch);
 }
 
 function submitAnswer() {
