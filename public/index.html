@@ -3183,6 +3183,8 @@ async function checkExistingSession() {
     if (data.authenticated && data.user) {
       isAuthenticated = true;
       currentUser = data.user;
+      window.currentUser = data.user;
+      window.currentRole = data.user.role;
       currentRole = data.user.role; // 'admin', 'teacher', or 'student'
       dismissLogin();
 
@@ -3399,6 +3401,12 @@ async function loadStudentDashboard() {
     welcome.innerHTML = `Welcome back, ${currentUser.first_name}! 🎉`;
   }
 
+  // If an admin is previewing, show a banner instead of loading their profile
+  if (currentUser && currentUser.role !== 'student') {
+    if (subtitle) subtitle.textContent = `Previewing the student experience as ${currentUser.role}. Real student data won't load here.`;
+    return;
+  }
+
   // Try to load profile from API
   try {
     const data = await API.get('/api/student/profile');
@@ -3408,7 +3416,6 @@ async function loadStudentDashboard() {
         ? `Ready for today's quest? Your ${streak}-day streak is going strong.`
         : `Ready for today's quest?`;
     }
-    // Update the XP display if available
     if (data.profile) {
       const xpEl = document.getElementById('dashXP');
       if (xpEl) xpEl.textContent = data.profile.xp || 0;
@@ -5582,14 +5589,29 @@ window.QS = (() => {
   // ── DASHBOARD ─────────────────────────────────────────────────────────────
 
   function renderDashboard() {
-    const profile = load('profile') || SEED_PROFILE;
+    // Prefer the real authenticated user over the SEED profile
+    let profile = load('profile') || SEED_PROFILE;
+    if (typeof window !== 'undefined' && window.currentUser) {
+      profile = {
+        ...profile,
+        name: window.currentUser.first_name + ' ' + (window.currentUser.last_name || '').charAt(0) + '.',
+        avatar: (window.currentUser.first_name || '?').charAt(0) + (window.currentUser.last_name || '').charAt(0),
+        avatar_url: window.currentUser.avatar_url,
+      };
+    }
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
     };
     set('dashXP',     profile.xp);
     set('userName',   profile.name);
-    set('userAvatar', profile.avatar);
+
+    // Don't overwrite avatar if we have a real avatar image
+    const avatarEl = document.getElementById('userAvatar');
+    if (avatarEl && !profile.avatar_url) {
+      avatarEl.textContent = profile.avatar;
+      avatarEl.style.backgroundImage = '';
+    }
 
     // data-qs attribute hook: any element with data-qs="xp" (etc.) updates automatically
     document.querySelectorAll('[data-qs]').forEach(el => {
