@@ -1127,16 +1127,32 @@ body {
     </div>
 
     <!-- Travel Info Panel (shown between locations) -->
-    <div id="travelInfoPanel" style="display:none;background:linear-gradient(90deg,#0d1f33,#1a3a5c);padding:16px 24px;margin-top:-2px;color:white;border-top:2px solid var(--gold);">
+    <div id="travelInfoPanel" style="display:none;background:linear-gradient(90deg,#0d1f33,#1a3a5c);padding:16px 24px;margin-top:-2px;color:white;border-top:2px solid var(--gold);cursor:pointer;transition:background 0.2s;" onclick="openVoyageModal()" onmouseover="this.style.background='linear-gradient(90deg,#0f2640,#1e4870)'" onmouseout="this.style.background='linear-gradient(90deg,#0d1f33,#1a3a5c)'">
       <div style="display:flex;align-items:center;gap:16px;">
         <div style="font-size:1.5rem;">⛵</div>
         <div style="flex:1;">
           <div style="font-size:0.82rem;font-weight:700;color:var(--gold);margin-bottom:2px;" id="travelTitle">Voyage: Athens → Rhodes</div>
-          <div style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-top:2px;line-height:1.5;" id="travelDesc">~2,160 stadia by sea across the Aegean • 2-3 days sailing at favorable winds • Route follows the island chain past Delos and Kos</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-top:2px;line-height:1.5;" id="travelDesc">~2,160 stadia by sea across the Aegean</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.55);margin-top:4px;">📖 Click to learn about the voyage, ancient navigation, and daily life at sea →</div>
         </div>
         <div style="text-align:center;padding:4px 16px;border-left:2px solid rgba(255,255,255,0.15);min-width:80px;">
           <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--gold);" id="travelDistance">216</div>
-          <div style="font-size:0.68rem;color:rgba(255,255,255,0.6);font-weight:600;" id="travelUnit">stadia</div>
+          <div style="font-size:0.68rem;color:rgba(255,255,255,0.6);font-weight:600;cursor:help;" id="travelUnit" title="Stadia: an ancient Greek unit of distance ≈ 185 meters or 600 feet. Click the panel for more info.">stadia <span style="opacity:0.6;">ⓘ</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VOYAGE INFO MODAL ═══ -->
+    <div id="voyageModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="if(event.target===this)closeVoyageModal()">
+      <div style="background:var(--bg-warm);border-radius:var(--radius-lg);max-width:720px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+        <div id="voyageModalHeader" style="background:linear-gradient(135deg,#0d1f33,#2a5f7a);padding:24px 32px;color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;position:relative;">
+          <button onclick="closeVoyageModal()" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:white;font-size:1.1rem;cursor:pointer;">✕</button>
+          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);margin-bottom:4px;">Voyage Journal</div>
+          <div id="voyageModalTitle" style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;">Athens → Rhodes</div>
+          <div id="voyageModalSubtitle" style="font-size:0.85rem;color:rgba(255,255,255,0.75);margin-top:6px;">A journey across the Aegean Sea</div>
+        </div>
+        <div id="voyageModalBody" style="padding:28px 32px;">
+          <!-- Populated by openVoyageModal() -->
         </div>
       </div>
     </div>
@@ -3867,6 +3883,126 @@ let questDialogueStep = 0;
 // ═══ PYTHAGORAS VOICE NARRATION ═══
 // Uses the ElevenLabs voice via /api/voice/speak. Falls back to the
 // browser's SpeechSynthesis API if ElevenLabs is unavailable.
+// ═══ VOYAGE INFO (historical content for travel modals) ═══
+const voyageDetails = {
+  'Samos → Athens': {
+    distance_stadia: 1200,
+    distance_km: 222,
+    duration: '1–2 days of sailing with favorable winds',
+    boat: 'Penteconter (a 50-oar long ship) or a smaller merchant bireme',
+    boatDesc: 'These sleek wooden vessels were propelled by both sails and oars. Open to the sky, they hugged the coastline and island-hopped to avoid the dangers of the open sea.',
+    route: 'Westward from Samos, past the sacred island of Delos, through the Cyclades, skirting Attica, and into the port of Piraeus — the harbor of Athens.',
+    who: 'Traders carrying olive oil, wine, pottery, and ideas. Philosophers and students traveled this route to study in Athens. Pilgrims visited the shrines of Delos along the way.',
+    navigation: 'Ancient Greek sailors navigated by coastal landmarks during the day and by the stars at night. The constellation Ursa Minor (the Little Bear) guided them north. They also watched seabirds, cloud patterns, and wave behavior.',
+    dailyLife: 'Sailors ate salted fish, barley bread, olives, and dried figs. Fresh water was rationed from ceramic amphorae. At night, the ship would often anchor in a sheltered cove — open-sea sailing after dark was considered dangerous.',
+    dangers: 'Sudden summer storms (called *meltemi*), pirates from Cilicia and Illyria, and running aground on hidden rocks. Most voyages happened between April and October; winter sailing was almost unheard of.',
+    funFact: 'Pythagoras himself made this journey many times. He left Samos as a young man because he disagreed with the tyrant Polycrates, and eventually settled in Croton (southern Italy) where he founded his school.'
+  },
+  'Athens → Rhodes': {
+    distance_stadia: 2160,
+    distance_km: 400,
+    duration: '2–3 days of sailing with favorable winds',
+    boat: 'Merchant round-ship (holkas) — wide, deep, sail-powered',
+    boatDesc: 'Unlike the sleek war galleys, merchant ships were bulky and built for cargo. A single square sail and a small crew of 10–20 sailors.',
+    route: 'East from Piraeus across the Aegean, passing Naxos, Amorgos, and Kos. The final approach to Rhodes offered a stunning view of the (now fallen) Colossus that once guarded its harbor.',
+    who: 'Merchants trading Athenian silver and pottery for Rhodian wine and perfume. Diplomats, scholars, and wealthy tourists visiting the famous Rhodian school of rhetoric.',
+    navigation: 'Rhodian sailors were among the best navigators in the ancient world. They used the rising and setting of Polaris (the North Star), the midday sun position, and knowledge of Mediterranean currents.',
+    dailyLife: 'On longer voyages, passengers slept on deck under the stars. They carried their own food in woven baskets and leather wineskins. Wealthy travelers paid for a small cabin in the stern.',
+    dangers: 'The Aegean is dotted with hidden reefs. Sudden weather changes could force a ship to put in at an unfamiliar island. Pirates remained a constant threat until Rome suppressed them in the 1st century BCE.',
+    funFact: 'Rhodes was famous for the Colossus — a 33-meter bronze statue of the sun god Helios that once stood at the harbor entrance. By the time Pythagoras lived, it was already a ruin, toppled by an earthquake in 226 BCE.'
+  },
+  'Rhodes → Alexandria': {
+    distance_stadia: 3500,
+    distance_km: 650,
+    duration: '4–5 days of sailing with favorable winds',
+    boat: 'Large grain freighter — wooden, up to 150 tons cargo',
+    boatDesc: 'These massive merchant ships (some over 50 meters long) were the 18-wheelers of the ancient world. They hauled Egyptian grain to feed Athens, Rome, and the cities of the Aegean.',
+    route: 'The only leg of the journey that crossed open water. Sail south past Cyprus, then follow the Egyptian coast west to Alexandria. Captains watched for the famous Pharos lighthouse — one of the Seven Wonders — visible from 40+ km away.',
+    who: 'Grain merchants, scholars traveling to the Library of Alexandria, Greek-Egyptian priests, and adventurers drawn to the Ptolemaic capital. Cleopatra\'s Alexandria attracted the brightest minds of the ancient world.',
+    navigation: 'Out of sight of land for days. Sailors relied on the sun, stars, and a deep understanding of the winds. Alexandria\'s famous lighthouse (Pharos) was built specifically because this approach was so dangerous without a landmark.',
+    dailyLife: 'Cramped, hot, and smelly. Passengers lived on salted provisions. Drinking water was strictly rationed. Those who could afford it hired slaves to fan them and tend to their needs.',
+    dangers: 'The open Mediterranean crossing was the most dangerous leg. A single storm could sink a ship with all hands. The Egyptian coast is low and featureless — ships that missed Alexandria by even a few kilometers could run aground on sandbars.',
+    funFact: 'Alexandria\'s Great Library held an estimated 400,000+ scrolls and attracted scholars from across the known world. Anyone who stepped off a ship with books was required to lend them for copying — the originals often never returned.'
+  }
+};
+
+function openVoyageModal() {
+  const title = document.getElementById('travelTitle')?.textContent || '';
+  // Extract the "A → B" part from "Voyage: Samos → Athens"
+  const match = title.match(/([A-Za-z]+)\s*→\s*([A-Za-z]+)/);
+  if (!match) return;
+  const key = `${match[1]} → ${match[2]}`;
+  const data = voyageDetails[key];
+
+  document.getElementById('voyageModalTitle').textContent = key;
+
+  const body = document.getElementById('voyageModalBody');
+  if (!data) {
+    body.innerHTML = `<div style="color:var(--text-muted);font-style:italic;text-align:center;padding:40px;">Voyage details coming soon.</div>`;
+  } else {
+    document.getElementById('voyageModalSubtitle').textContent = `${data.distance_stadia.toLocaleString()} stadia (≈${data.distance_km} km) · ${data.duration}`;
+
+    body.innerHTML = `
+      <div class="card" style="background:rgba(212,168,67,0.06);border-left:4px solid var(--gold);margin-bottom:20px;">
+        <div class="card-header" style="color:var(--gold);">📏 What is a stadion?</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">
+          A <strong>stadion</strong> (plural: <strong>stadia</strong>) was the standard unit of distance in ancient Greece — about <strong>185 meters</strong> (600 feet). The word comes from the length of the running track at the Olympic Games. So <strong>${data.distance_stadia.toLocaleString()} stadia</strong> is roughly <strong>${data.distance_km} kilometers</strong> (${Math.round(data.distance_km * 0.621)} miles).
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:20px;margin-bottom:20px;">
+        <div>
+          <div class="section-label" style="color:var(--teal);">⛵ The Ship</div>
+          <div style="font-weight:600;font-size:0.9rem;color:var(--navy);margin-bottom:4px;">${data.boat}</div>
+          <div style="font-size:0.85rem;color:var(--text-soft);line-height:1.6;">${data.boatDesc}</div>
+        </div>
+        <div>
+          <div class="section-label" style="color:var(--teal);">🗺️ The Route</div>
+          <div style="font-size:0.85rem;color:var(--text-soft);line-height:1.6;">${data.route}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--teal);">👥 Who Made This Journey?</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.who}</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--teal);">🌟 Ancient Navigation</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.navigation}</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--teal);">🏺 Daily Life at Sea</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.dailyLife}</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--red);">⚠️ Dangers of the Voyage</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.dangers}</div>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,rgba(126,87,194,0.06),rgba(42,127,142,0.04));border-left:4px solid var(--purple);">
+        <div class="card-header" style="color:var(--purple);">💡 Did You Know?</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;font-style:italic;">${data.funFact}</div>
+      </div>
+    `;
+  }
+
+  const modal = document.getElementById('voyageModal');
+  modal.style.display = 'flex';
+}
+
+function closeVoyageModal() {
+  const modal = document.getElementById('voyageModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Close voyage modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeVoyageModal();
+});
+
 let currentAudio = null;
 
 async function playPythagorasVoice(text, btn) {
@@ -4016,7 +4152,11 @@ function renderPin(loc) {
   
   if (status === 'complete') {
     pinCircle = `width:48px;height:48px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:${baseShadow} rgba(67,160,71,0.4);margin:0 auto;border:3px solid rgba(255,255,255,0.7);`;
-    labelSub = `<div style="font-size:0.6rem;color:rgba(255,255,255,0.7);">${loc.emoji} Complete</div>`;
+    labelSub = `<div style="font-size:0.6rem;color:rgba(255,255,255,0.7);">${loc.emoji} Complete · Replay</div>`;
+    // Completed locations can be re-visited
+    if (loc.challengeIdx !== null && loc.challengeIdx !== undefined) {
+      clickHandler = ` onclick="enterLocation(${loc.challengeIdx})"`;
+    }
   } else if (status === 'active') {
     pinCircle = `width:52px;height:52px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 0 20px rgba(212,168,67,0.6),0 0 40px rgba(212,168,67,0.2);margin:0 auto;animation:pulse 2s infinite;border:3px solid white;`;
     labelSub = `<div style="font-size:0.62rem;color:var(--gold);font-weight:700;">⚔️ Active Quest</div>`;
@@ -4032,7 +4172,7 @@ function renderPin(loc) {
   
   const pinIcon = status === 'complete' ? '✓' : (status === 'locked' ? '🔒' : loc.emoji);
   const labelBg = status === 'active' ? 'rgba(0,0,0,0.7);border:1px solid rgba(212,168,67,0.4)' : 'rgba(0,0,0,0.6)';
-  const cursor = (status === 'active' || status === 'next') ? 'cursor:pointer;' : '';
+  const cursor = (status === 'active' || status === 'next' || (status === 'complete' && loc.challengeIdx !== null && loc.challengeIdx !== undefined)) ? 'cursor:pointer;' : '';
   
   return `<div${clickHandler} style="${pos}z-index:5;text-align:center;${cursor}">
     <div style="${pinCircle}">${pinIcon}</div>

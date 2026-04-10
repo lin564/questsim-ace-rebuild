@@ -21,7 +21,7 @@ export const onRequestPost: PagesFunction<VoiceEnv, any, DataContext> = async (c
   }
 
   // Default to the Pythagoras voice set in environment; allow override
-  const voiceId = voice || context.env.ELEVENLABS_VOICE_PYTHAGORAS || '21m00Tcm4TlvDq8ikWAM';
+  const voiceId = voice || context.env.ELEVENLABS_VOICE_PYTHAGORAS || 'ZDi4oaitXxvjeTFrFkh2';
 
   // Strip HTML and clean up text
   const cleaned = text
