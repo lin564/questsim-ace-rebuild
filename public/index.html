@@ -865,6 +865,27 @@ body {
 
 <!-- SCREEN 1: STUDENT DASHBOARD -->
 <div class="screen" id="screen-student-dashboard">
+  <!-- Join Class Panel -->
+  <div class="card mb-md" style="background:linear-gradient(135deg,rgba(42,127,142,0.06),rgba(212,168,67,0.04));border:1px solid rgba(42,127,142,0.2);">
+    <div class="flex-between">
+      <div>
+        <div class="card-header" style="margin-bottom:4px;">🎓 Join a Class</div>
+        <div style="font-size:0.82rem;color:var(--text-soft);">Enter the class code your teacher gave you to join their class.</div>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="document.getElementById('joinClassPanel').style.display='block';">Join Class</button>
+    </div>
+    <div id="joinClassPanel" style="display:none;margin-top:12px;padding:14px;background:white;border-radius:8px;">
+      <div class="flex-row gap-sm">
+        <input type="text" id="joinClassCodeInput" placeholder="e.g. ABC123" maxlength="6"
+          style="padding:10px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:1rem;font-family:var(--font-body);text-transform:uppercase;letter-spacing:0.1em;flex:1;"
+          onkeydown="if(event.key==='Enter')joinClassByCode()">
+        <button class="btn btn-primary btn-sm" onclick="joinClassByCode()">Join</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('joinClassPanel').style.display='none';">Cancel</button>
+      </div>
+      <div id="joinClassError" style="display:none;color:var(--red);font-size:0.78rem;margin-top:8px;"></div>
+    </div>
+  </div>
+
   <div class="page-title">Welcome back, Maya! 🎉</div>
   <div class="page-subtitle">Ready for today's quest? Your 5-day streak is going strong.</div>
 
@@ -2700,10 +2721,10 @@ body {
 <div class="screen" id="screen-user-management">
   <div class="flex-between mb-md">
     <div>
-      <div class="page-title">Class Management</div>
-      <div class="page-subtitle">Manage students, sections, and pathway assignments</div>
+      <div class="page-title">User Management</div>
+      <div class="page-subtitle">Manage admins, teachers, and students</div>
     </div>
-    <button class="btn btn-outline" onclick="navigate('screen-teacher-dashboard')">← Dashboard</button>
+    <button class="btn btn-outline" onclick="navigate('screen-teacher-dashboard')">View Teacher Dashboard</button>
   </div>
 
   <div class="tab-bar">
@@ -2713,6 +2734,21 @@ body {
   </div>
 
   <div class="tab-content active" id="mgmt-students">
+    <!-- Demo Data Controls (admin only) -->
+    <div class="card mb-md" style="background:linear-gradient(135deg,rgba(126,87,194,0.05),rgba(42,127,142,0.04));border:1px solid rgba(126,87,194,0.2);">
+      <div class="flex-between mb-sm">
+        <div>
+          <div class="card-header" style="margin-bottom:4px;">🎭 Demo Data</div>
+          <div style="font-size:0.8rem;color:var(--text-soft);">Seed a fake teacher, class, and 20 students so you have something to demo before adding real users.</div>
+        </div>
+        <div class="flex-row gap-sm">
+          <button class="btn btn-sm btn-primary" onclick="seedDemoData()">Seed Demo Data</button>
+          <button class="btn btn-sm btn-outline" onclick="clearDemoData()" style="color:var(--red);">Clear Demo</button>
+        </div>
+      </div>
+      <div id="seedDemoResult" style="display:none;margin-top:12px;padding:10px;background:white;border-radius:6px;font-size:0.82rem;"></div>
+    </div>
+
     <div class="card mb-md">
       <div class="flex-between mb-sm">
         <div class="card-header" style="margin-bottom:0;" id="rosterTitle">All Users</div>
@@ -3345,6 +3381,7 @@ function navigate(screenId) {
     }
     // Load real data when navigating to data-driven screens
     if (screenId === 'screen-user-management') loadUsers();
+    if (screenId === 'screen-teacher-dashboard') loadTeacherDashboard();
   }
 }
 
@@ -3426,6 +3463,126 @@ async function removeUser(id) {
     loadUsers();
   } catch (e) {
     alert('Error removing user: ' + e.message);
+  }
+}
+
+async function seedDemoData() {
+  if (!confirm('This will create 1 demo teacher, 1 demo class, and 20 demo students with fake game data. Continue?')) return;
+  const resultEl = document.getElementById('seedDemoResult');
+  resultEl.style.display = 'block';
+  resultEl.textContent = 'Seeding demo data...';
+  try {
+    const data = await API.post('/api/admin/seed-demo', {});
+    resultEl.innerHTML = `✓ ${data.message}<br><strong>Class code:</strong> <code style="background:var(--bg);padding:2px 8px;border-radius:4px;">${data.class_code}</code> — share this with students to let them join.`;
+    loadUsers();
+  } catch (e) {
+    resultEl.innerHTML = '<span style="color:var(--red);">Error: ' + e.message + '</span>';
+  }
+}
+
+async function clearDemoData() {
+  if (!confirm('Remove all demo teacher/class/student data? Real users will not be affected.')) return;
+  const resultEl = document.getElementById('seedDemoResult');
+  resultEl.style.display = 'block';
+  try {
+    const data = await API.post('/api/admin/clear-demo', {});
+    resultEl.textContent = `✓ Removed ${data.removed || 0} demo users.`;
+    loadUsers();
+  } catch (e) {
+    resultEl.innerHTML = '<span style="color:var(--red);">Error: ' + e.message + '</span>';
+  }
+}
+
+// ═══ TEACHER DASHBOARD WIRING ═══
+// Fetch live roster from API and convert to format expected by existing renderTeacherDashboard
+async function loadTeacherDashboard() {
+  try {
+    // Get list of classes for this teacher (or all if admin)
+    const classesData = await API.get('/api/teacher/classes');
+    const classes = classesData.classes || [];
+    if (classes.length === 0) {
+      console.log('[Teacher] No classes yet');
+      return;
+    }
+
+    // Use the first class (could be expanded to a dropdown later)
+    const classId = classes[0].id;
+    const rosterData = await API.get('/api/teacher/roster?class_id=' + classId);
+
+    // Transform API format into legacy roster format used by QS.renderTeacherDashboard
+    const roster = (rosterData.students || []).map(s => {
+      const initials = s.name.split(' ').map(n => n[0] || '').slice(0, 2).join('').toUpperCase();
+      const mastery = s.mastery || 0;
+      // Derive a human confidence (1-5) from the correct ratio
+      const confidence = s.confidence >= 0.8 ? 5 : s.confidence >= 0.6 ? 4 : s.confidence >= 0.4 ? 3 : s.confidence >= 0.2 ? 2 : 1;
+      const lastActive = s.last_active ? formatLastActive(s.last_active) : 'Never';
+      return {
+        student_id: 's_' + s.student_id,
+        name: s.name,
+        avatar: initials,
+        class_code: rosterData.class.class_code,
+        xp: s.xp,
+        level: s.level,
+        tier: s.tier,
+        mastery: mastery,
+        challenges_completed: s.challenges_completed,
+        sessions_completed: s.sessions_completed,
+        last_active: lastActive,
+        confidence: confidence,
+        pyth: { tier: s.tier, mastery, xp: s.xp, challenges: s.challenges_completed, sessions: s.sessions_completed },
+        proofs: { tier: null, mastery: 0, xp: 0, challenges: 0, sessions: 0 },
+      };
+    });
+
+    // Store in localStorage so existing getRoster() picks it up
+    try { localStorage.setItem('qs_roster', JSON.stringify(roster)); } catch(e) {}
+
+    // Re-render the dashboard
+    if (window.QS && typeof window.QS.renderTeacherDashboard === 'function') {
+      window.QS.renderTeacherDashboard();
+    }
+  } catch (e) {
+    console.warn('[Teacher] Failed to load dashboard:', e.message);
+  }
+}
+
+function formatLastActive(dateStr) {
+  if (!dateStr) return 'Never';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return diffDays + ' days ago';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ═══ CLASS CODE JOIN (Student) ═══
+async function joinClassByCode() {
+  const input = document.getElementById('joinClassCodeInput');
+  const code = input.value.trim().toUpperCase();
+  const errEl = document.getElementById('joinClassError');
+  errEl.style.display = 'none';
+
+  if (!code) {
+    errEl.textContent = 'Please enter a class code.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const data = await API.post('/api/student/join-class', { class_code: code });
+    if (data.already_member) {
+      alert("You're already in this class: " + data.class.name);
+    } else {
+      alert('Joined: ' + data.class.name);
+    }
+    // Hide the panel
+    document.getElementById('joinClassPanel').style.display = 'none';
+    input.value = '';
+  } catch (e) {
+    errEl.textContent = 'Invalid class code. Ask your teacher for the correct code.';
+    errEl.style.display = 'block';
   }
 }
 
