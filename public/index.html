@@ -1230,7 +1230,7 @@ body {
               <div class="feedback-npc">
                 <div class="mini-avatar" style="position:relative;">
                   🏛️
-                  <button onclick="playPythagorasVoice(document.getElementById('fbCorrectText').textContent, this)" title="Hear Pythagoras read this aloud" style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🔊</button>
+                  <button onclick="playPythagorasVoice(document.getElementById('fbCorrectText').textContent, this)" title="Hear Pythagoras read this aloud" style="position:absolute;bottom:-4px;right:-4px;width:24px;height:24px;border-radius:50%;background:var(--gold);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.7rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);color:#2D2D2D;">🔊</button>
                 </div>
                 <div>
                   <div class="feedback-text" id="fbCorrectText"></div>
@@ -3865,16 +3865,13 @@ const questScenes = [
 let questDialogueStep = 0;
 
 // ═══ PYTHAGORAS VOICE NARRATION ═══
-// Uses the browser's built-in SpeechSynthesis API to read Pythagoras's
-// words aloud. This gives us voice output with no network call and no
-// API keys. When historical-figure-voice is ready, swap this out.
-function playPythagorasVoice(text, btn) {
-  if (!window.speechSynthesis) {
-    console.warn('SpeechSynthesis not supported in this browser');
-    return;
-  }
-  // Stop any current speech before starting a new one
-  window.speechSynthesis.cancel();
+// Uses the ElevenLabs voice via /api/voice/speak. Falls back to the
+// browser's SpeechSynthesis API if ElevenLabs is unavailable.
+let currentAudio = null;
+
+async function playPythagorasVoice(text, btn) {
+  // Stop any current narration (either audio or speech synthesis)
+  stopPythagorasVoice();
 
   // Pull the text to speak: argument first, then data-narration attr, then nearest quoted text
   if (!text && btn) {
@@ -3883,37 +3880,72 @@ function playPythagorasVoice(text, btn) {
   }
   if (!text) return;
 
-  // Strip HTML and markdown-ish characters
+  // Strip HTML
   text = text.replace(/<[^>]*>/g, '').replace(/[*_]/g, '').trim();
 
+  // Visual feedback on the button
+  let originalText, originalBg;
+  if (btn) {
+    originalText = btn.textContent;
+    originalBg = btn.style.background;
+    btn.textContent = '⏳';
+  }
+  const restoreBtn = () => {
+    if (btn) {
+      btn.textContent = originalText || '🔊';
+      if (originalBg) btn.style.background = originalBg;
+    }
+  };
+
+  // Try ElevenLabs first (real Pythagoras voice)
+  try {
+    const res = await fetch('/api/voice/speak', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      currentAudio = new Audio(url);
+      if (btn) btn.textContent = '🔈';
+      currentAudio.onended = () => { restoreBtn(); URL.revokeObjectURL(url); currentAudio = null; };
+      currentAudio.onerror = () => { restoreBtn(); URL.revokeObjectURL(url); currentAudio = null; };
+      await currentAudio.play();
+      return;
+    }
+  } catch (e) {
+    console.warn('[Voice] ElevenLabs failed, falling back:', e.message);
+  }
+
+  // Fallback: browser SpeechSynthesis
+  if (!window.speechSynthesis) {
+    restoreBtn();
+    return;
+  }
+  window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 0.95;
   utter.pitch = 0.85;
-  utter.volume = 1;
-
-  // Prefer a deep/older male English voice for Pythagoras
   const voices = window.speechSynthesis.getVoices();
   const preferred =
     voices.find(v => /daniel|alex|arthur|george|fred/i.test(v.name) && /en/i.test(v.lang)) ||
     voices.find(v => /male/i.test(v.name) && /en/i.test(v.lang)) ||
-    voices.find(v => /en-GB/.test(v.lang)) ||
-    voices.find(v => /en/.test(v.lang));
+    voices.find(v => /en-GB/.test(v.lang));
   if (preferred) utter.voice = preferred;
-
-  // Visual feedback on the button
-  if (btn) {
-    const originalText = btn.textContent;
-    const originalBg = btn.style.background;
-    btn.textContent = '🔈';
-    btn.style.background = 'var(--gold)';
-    utter.onend = () => {
-      btn.textContent = originalText;
-      btn.style.background = originalBg;
-    };
-    utter.onerror = utter.onend;
-  }
-
+  if (btn) btn.textContent = '🔈';
+  utter.onend = restoreBtn;
+  utter.onerror = restoreBtn;
   window.speechSynthesis.speak(utter);
+}
+
+function stopPythagorasVoice() {
+  if (currentAudio) {
+    try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e) {}
+    currentAudio = null;
+  }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
 // Extract the first quoted segment from a string (curly or straight quotes)
@@ -4111,8 +4143,8 @@ function backToMap() {
 function stopUnityEmbed() {
   const wrapper = document.getElementById('unityEmbedWrapper');
   if (wrapper) wrapper.remove();
-  // Stop any speech currently playing
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  // Stop any narration currently playing (ElevenLabs audio or browser TTS)
+  stopPythagorasVoice();
 }
 
 // ═══ ADAPTIVE CHALLENGE ENGINE ═══
@@ -4363,9 +4395,9 @@ function renderUnityInArtwork(artworkArea) {
   wrapper.id = 'unityEmbedWrapper';
   wrapper.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
   wrapper.innerHTML = `
-    <div style="background:linear-gradient(90deg,rgba(212,168,67,0.12),rgba(42,127,142,0.1));border-bottom:1px solid rgba(212,168,67,0.3);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-      <div style="font-size:0.82rem;color:var(--navy);">
-        <strong style="color:var(--gold);">🎯 Your Task:</strong> Play only the <strong>Triangle Types</strong> activity (Activity 1). When you finish sorting all the tiles, click <strong>Mark Complete</strong> below.
+    <div style="background:#FAF8F4;border-bottom:2px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="font-size:0.85rem;color:var(--navy);line-height:1.4;">
+        <strong style="color:#B8860B;">🎯 Your Task:</strong> Play only the <strong>Triangle Types</strong> activity (Activity 1). When you finish sorting all the tiles, click <strong>Mark Complete</strong> below.
       </div>
     </div>
     <div class="unity-embed-container" id="unityContainer" style="flex:1;min-height:0;position:relative;">
