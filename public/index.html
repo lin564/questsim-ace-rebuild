@@ -915,23 +915,23 @@ body {
     </div>
   </div>
 
-  <div class="grid-4 mb-md">
+  <div class="grid-4 mb-md" id="studentStatsRow">
     <div class="stat-card" style="position:relative;overflow:hidden;">
-      <div style="position:absolute;top:8px;right:10px;font-size:0.65rem;font-weight:700;color:var(--gold);background:rgba(212,168,67,0.12);padding:2px 8px;border-radius:10px;">LEVEL 7</div>
-      <div class="stat-value" style="color:var(--gold);" id="dashXP">830</div>
+      <div style="position:absolute;top:8px;right:10px;font-size:0.65rem;font-weight:700;color:var(--gold);background:rgba(212,168,67,0.12);padding:2px 8px;border-radius:10px;" id="dashLevel">LEVEL 1</div>
+      <div class="stat-value" style="color:var(--gold);" id="dashXP">0</div>
       <div class="stat-label">Experience Points</div>
-      <div class="progress-bar" style="margin-top:8px;"><div class="fill fill-gold" style="width:83%;"></div></div>
-      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">170 XP to Level 8</div>
+      <div class="progress-bar" style="margin-top:8px;"><div class="fill fill-gold" id="dashXPBar" style="width:0%;"></div></div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;" id="dashXPToNext">100 XP to Level 2</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">47</div>
+      <div class="stat-value" id="dashChallenges">0</div>
       <div class="stat-label">Challenges Completed</div>
-      <div class="stat-trend up">↑ 8 this week</div>
+      <div class="stat-trend up" id="dashChallengesTrend">—</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="color:var(--green);">⚡</div>
-      <div class="stat-label">Learning Velocity</div>
-      <div class="stat-trend up">Trending up</div>
+      <div class="stat-value" style="color:var(--green);" id="dashStreak">—</div>
+      <div class="stat-label">Day Streak</div>
+      <div class="stat-trend" id="dashStreakTrend">Keep it up!</div>
     </div>
     <div class="stat-card" style="cursor:pointer;" onclick="navigate('screen-progress-map')">
       <div class="stat-value">🗺️</div>
@@ -940,8 +940,9 @@ body {
     </div>
   </div>
 
+  <div id="recentSessionsSection">
   <div class="section-label">Recent Quest Sessions</div>
-  <div class="grid-3">
+  <div class="grid-3" id="recentSessionsGrid">
     <div class="card" style="cursor:pointer;" onclick="navigate('screen-reflection')">
       <div class="flex-between mb-sm">
         <span class="badge badge-green">Completed</span>
@@ -972,6 +973,7 @@ body {
       <div style="font-size:0.72rem;color:var(--gold);margin-top:4px;">🧩 Seeking the final fragment...</div>
       <div class="progress-bar"><div class="fill fill-gold" style="width:50%;"></div></div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -3394,35 +3396,86 @@ function navigate(screenId) {
 
 // ═══ STUDENT DASHBOARD ═══
 async function loadStudentDashboard() {
-  // Update welcome text with real user name
   const welcome = document.getElementById('studentWelcome');
   const subtitle = document.getElementById('studentSubtitle');
+  const statsRow = document.getElementById('studentStatsRow');
+  const recentSessions = document.getElementById('recentSessionsSection');
+
   if (welcome && currentUser) {
     welcome.innerHTML = `Welcome back, ${currentUser.first_name}! 🎉`;
   }
 
-  // If an admin is previewing, show a banner instead of loading their profile
+  // If an admin/teacher is previewing, hide the student-specific widgets
   if (currentUser && currentUser.role !== 'student') {
-    if (subtitle) subtitle.textContent = `Previewing the student experience as ${currentUser.role}. Real student data won't load here.`;
+    if (subtitle) subtitle.textContent = `Previewing the student experience as ${currentUser.role}. Real student data only appears here when a student is logged in.`;
+    if (statsRow) statsRow.style.display = 'none';
+    if (recentSessions) recentSessions.style.display = 'none';
     return;
   }
+
+  // Real student — show widgets
+  if (statsRow) statsRow.style.display = '';
+  if (recentSessions) recentSessions.style.display = '';
 
   // Try to load profile from API
   try {
     const data = await API.get('/api/student/profile');
-    if (data.profile && subtitle) {
-      const streak = data.profile.streak || 0;
+    const p = data.profile || { xp: 0, level: 1, streak: 0 };
+
+    if (subtitle) {
+      const streak = p.streak || 0;
       subtitle.textContent = streak > 0
         ? `Ready for today's quest? Your ${streak}-day streak is going strong.`
         : `Ready for today's quest?`;
     }
-    if (data.profile) {
-      const xpEl = document.getElementById('dashXP');
-      if (xpEl) xpEl.textContent = data.profile.xp || 0;
-    }
+
+    // Update stat cards with real data
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('dashXP', p.xp || 0);
+    set('dashLevel', 'LEVEL ' + (p.level || 1));
+    set('dashStreak', p.streak || 0);
+
+    // XP progress bar (100 XP per level)
+    const xpInLevel = (p.xp || 0) % 100;
+    const xpBar = document.getElementById('dashXPBar');
+    if (xpBar) xpBar.style.width = xpInLevel + '%';
+    set('dashXPToNext', (100 - xpInLevel) + ' XP to Level ' + ((p.level || 1) + 1));
+
+    // Challenges completed from recent_attempts
+    const challenges = (data.recent_attempts || []).filter(a => a.is_correct).length;
+    set('dashChallenges', challenges);
+
+    // Recent sessions
+    renderRecentSessions(data.recent_sessions || []);
   } catch (e) {
     console.warn('[Student] Dashboard load failed:', e.message);
   }
+}
+
+function renderRecentSessions(sessions) {
+  const grid = document.getElementById('recentSessionsGrid');
+  if (!grid) return;
+  if (sessions.length === 0) {
+    grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:24px;">No quest sessions yet. Start your first quest to see your progress here!</div>';
+    return;
+  }
+  grid.innerHTML = sessions.slice(0, 3).map(s => {
+    const status = s.ended_at ? 'Completed' : 'In Progress';
+    const badge = s.ended_at ? 'badge-green' : 'badge-gold';
+    const timeAgo = formatLastActive(s.ended_at || s.started_at);
+    const duration = s.duration_seconds ? Math.round(s.duration_seconds / 60) + ' min' : '—';
+    return `
+      <div class="card">
+        <div class="flex-between mb-sm">
+          <span class="badge ${badge}">${status}</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);">${timeAgo}</span>
+        </div>
+        <div style="font-weight:600;font-size:0.9rem;">🏛️ Quest Session</div>
+        <div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;">${s.challenges_correct || 0}/${s.challenges_attempted || 0} correct · ${duration}</div>
+        <div style="font-size:0.72rem;color:var(--gold);margin-top:4px;">+${s.xp_earned || 0} XP</div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ═══ USER MANAGEMENT (Admin) ═══
