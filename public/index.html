@@ -855,6 +855,7 @@ body {
   </div>
   <div class="nav-user">
     <span id="userName">Maya Chen</span>
+    <span id="userRoleBadge" class="badge" style="display:none;font-size:0.6rem;padding:2px 8px;margin-right:4px;"></span>
     <div class="avatar" id="userAvatar">MC</div>
     <button class="role-switch" onclick="switchRole()">Switch to <span id="switchLabel">Teacher</span></button>
     <button class="role-switch" onclick="logout()" title="Sign out" style="margin-left:8px;">Logout</button>
@@ -3201,6 +3202,9 @@ async function checkExistingSession() {
         switchLabel.textContent = currentRole === 'admin' ? 'Teacher' : currentRole === 'teacher' ? 'Student' : 'Admin';
       }
 
+      // Show role badge
+      updateRoleBadge();
+
       // Rebuild nav for the user's role
       buildNav();
 
@@ -3627,13 +3631,34 @@ function switchRole() {
   } else {
     currentRole = currentRole === 'student' ? 'teacher' : 'student';
   }
-  const labels = { admin: 'Admin', teacher: 'Teacher', student: 'Student' };
   const next = currentRole === 'admin' ? 'Teacher' : currentRole === 'teacher' ? 'Student' : 'Admin';
   document.getElementById('switchLabel').textContent = next;
+  updateRoleBadge();
   const target = currentRole === 'admin' ? 'screen-user-management'
                : currentRole === 'teacher' ? 'screen-teacher-dashboard'
                : 'screen-student-dashboard';
   navigate(target);
+}
+
+function updateRoleBadge() {
+  const badge = document.getElementById('userRoleBadge');
+  if (!badge) return;
+  badge.style.display = 'inline-block';
+  badge.textContent = currentRole.toUpperCase();
+  if (currentRole === 'admin') {
+    badge.style.background = 'rgba(126,87,194,0.2)';
+    badge.style.color = '#D1B3FF';
+  } else if (currentRole === 'teacher') {
+    badge.style.background = 'rgba(42,127,142,0.2)';
+    badge.style.color = '#7FDBEB';
+  } else {
+    badge.style.background = 'rgba(67,160,71,0.2)';
+    badge.style.color = '#B7E6BA';
+  }
+  // Indicate "previewing" if currentRole differs from actual user role
+  if (currentUser && currentUser.role !== currentRole) {
+    badge.textContent = 'PREVIEW: ' + currentRole.toUpperCase();
+  }
 }
 
 // ═══ TIMER ═══
