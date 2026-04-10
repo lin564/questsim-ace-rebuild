@@ -3161,14 +3161,9 @@ function showLoginError(msg) {
 }
 
 async function getGameUrl() {
-  if (isAuthenticated) {
-    try {
-      const { token } = await API.get('/api/game/token');
-      return 'https://pymini1.questsim.com/?token=' + encodeURIComponent(token);
-    } catch (e) {
-      console.warn('Failed to get game token, using demo', e);
-    }
-  }
+  // Always use the demo URL which has no auth requirement
+  // (pymini1 requires a passcode that can't be bypassed without modifying that repo)
+  // When pymini1 supports JWT tokens, we can pass the token from /api/game/token
   return QUESTSIM_DEMO_URL;
 }
 
@@ -3391,6 +3386,7 @@ function navigate(screenId) {
     if (screenId === 'screen-user-management') loadUsers();
     if (screenId === 'screen-teacher-dashboard') loadTeacherDashboard();
     if (screenId === 'screen-student-dashboard') loadStudentDashboard();
+    if (screenId === 'screen-gradebook') loadGradebookData();
   }
 }
 
@@ -3651,6 +3647,66 @@ function formatLastActive(dateStr) {
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return diffDays + ' days ago';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ═══ GRADEBOOK DATA LOADER ═══
+// Fetches real D1 roster data and stores it in localStorage under 'qs_roster'
+// so the existing buildGradebookData() / getRoster() pipeline picks it up.
+async function loadGradebookData() {
+  try {
+    // If loadTeacherDashboard already populated the roster during this session,
+    // just re-render from the cached data — no need to re-fetch.
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem('qs_roster') || 'null'); } catch(e) {}
+
+    if (!cached || !Array.isArray(cached) || cached.length === 0) {
+      // Fetch classes, pick first, fetch roster
+      const classesData = await API.get('/api/teacher/classes');
+      const classes = classesData.classes || [];
+      if (classes.length === 0) {
+        console.log('[Gradebook] No classes yet');
+        return;
+      }
+      const classId = classes[0].id;
+      const rosterData = await API.get('/api/teacher/roster?class_id=' + classId);
+
+      // Transform API response into the legacy roster format expected by
+      // buildGradebookData() — mirrors the transform in loadTeacherDashboard().
+      const roster = (rosterData.students || []).map(s => {
+        const initials = s.name.split(' ').map(n => n[0] || '').slice(0, 2).join('').toUpperCase();
+        const mastery = s.mastery || 0;
+        const confidence = s.confidence >= 0.8 ? 5 : s.confidence >= 0.6 ? 4 : s.confidence >= 0.4 ? 3 : s.confidence >= 0.2 ? 2 : 1;
+        const lastActive = s.last_active ? formatLastActive(s.last_active) : 'Never';
+        return {
+          student_id: 's_' + s.student_id,
+          name: s.name,
+          avatar: initials,
+          class_code: rosterData.class.class_code,
+          xp: s.xp,
+          level: s.level,
+          tier: s.tier,
+          mastery: mastery,
+          challenges_completed: s.challenges_completed,
+          sessions_completed: s.sessions_completed,
+          last_active: lastActive,
+          confidence: confidence,
+          pyth: { tier: s.tier, mastery, xp: s.xp, challenges: s.challenges_completed, sessions: s.sessions_completed },
+          proofs: { tier: null, mastery: 0, xp: 0, challenges: 0, sessions: 0 },
+        };
+      });
+
+      try { localStorage.setItem('qs_roster', JSON.stringify(roster)); } catch(e) {}
+    }
+
+    // Re-render the gradebook using the currently selected pathway
+    const sel = document.getElementById('gradebookPathway');
+    const pathway = sel && sel.value ? sel.value : 'pyth';
+    if (typeof switchGradebookPathway === 'function') {
+      switchGradebookPathway(pathway);
+    }
+  } catch (e) {
+    console.warn('[Gradebook] Failed to load data:', e.message);
+  }
 }
 
 // ═══ CLASS CODE JOIN (Student) ═══
@@ -4293,6 +4349,61 @@ function onUnityActivityComplete() {
   showCorrectFeedback(ch);
 }
 
+// ═══ PROGRESS SAVE TO D1 ═══
+let activeGameSessionId = null;
+
+async function ensureGameSession() {
+  if (activeGameSessionId) return activeGameSessionId;
+  if (!isAuthenticated || !currentUser || currentUser.role !== 'student') return null;
+  try {
+    const data = await API.post('/api/student/session', { action: 'start' });
+    activeGameSessionId = data.session_id;
+    return activeGameSessionId;
+  } catch (e) {
+    console.warn('[Progress] Failed to start session:', e.message);
+    return null;
+  }
+}
+
+async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
+  if (!isAuthenticated || !currentUser || currentUser.role !== 'student') return;
+  const sessionId = await ensureGameSession();
+  if (!sessionId) return;
+
+  const locMatch = (ch.location || '').toLowerCase().match(/samos|athens|rhodes|alexandria/);
+  const location = locMatch ? locMatch[0] : 'samos';
+  const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || idx+1}`;
+
+  try {
+    await API.post('/api/student/progress', {
+      session_id: sessionId,
+      challenge_id: challengeId,
+      location,
+      tier: ch.tier || 'foundation',
+      user_answer: String(val),
+      is_correct: isCorrect,
+      attempt_number: tracker.attempts,
+      hints_used: tracker.hintsUsed,
+      time_spent_seconds: Math.round((Date.now() - tracker.timeStarted) / 1000),
+      was_scaffold: scaffoldActive,
+      was_fast_track: fastTrackActive,
+      xp_awarded: isCorrect ? (ch.xp || 0) : 0,
+    });
+  } catch (e) {
+    console.warn('[Progress] Failed to save attempt:', e.message);
+  }
+}
+
+async function endGameSession() {
+  if (!activeGameSessionId) return;
+  try {
+    await API.post('/api/student/session', { action: 'end', session_id: activeGameSessionId });
+    activeGameSessionId = null;
+  } catch (e) {
+    console.warn('[Progress] Failed to end session:', e.message);
+  }
+}
+
 function submitAnswer() {
   const ch = scaffoldActive ? scaffoldChallenges[currentChallenge] :
              fastTrackActive ? Object.assign({}, challenges[currentChallenge], fastTrackVariants[currentChallenge]) :
@@ -4301,16 +4412,19 @@ function submitAnswer() {
   if (ch.interactiveType) return;
   const val = document.getElementById('answerInput').value.trim().toLowerCase();
   const tracker = attemptTracker[currentChallenge] || { attempts: 0, hintsUsed: 0, timeStarted: Date.now() };
-  
+
   tracker.attempts++;
   if (!tracker.firstAttemptTime && !scaffoldActive) {
     tracker.firstAttemptTime = Date.now() - tracker.timeStarted;
   }
   attemptTracker[currentChallenge] = tracker;
-  
+
   clearFeedback();
 
   const isCorrect = val === ch.answer || (ch.answerAlt && ch.answerAlt.includes(val));
+
+  // Fire-and-forget save to D1 (students only, authenticated only)
+  saveAttemptToD1(ch, currentChallenge, isCorrect, val, tracker);
 
   if (isCorrect) {
     // ═══ CORRECT ANSWER PATH ═══
@@ -4661,6 +4775,8 @@ function finishSession() {
   document.getElementById('reflXPEarned').textContent = `+${sessionXP}`;
   document.getElementById('reflChallenges').textContent = challenges.length;
   stopTimer();
+  // Close out the D1 game session
+  endGameSession();
   navigate('screen-reflection');
 }
 
