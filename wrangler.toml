@@ -8,9 +8,9 @@ database_name = "questsim-ace-triangle-types"
 database_id = "03d3d8e4-fd55-4913-bb0d-6f0bcd7e6199"
 
 [vars]
-APP_URL = "https://questsim-ace.pages.dev"
+APP_URL = "https://questsim-ace-rebuild.pages.dev"
 GAME_ORIGIN = "https://pymini1.questsim.com"
-GOOGLE_REDIRECT_URI = "https://questsim-ace.pages.dev/api/auth/google-callback"
+GOOGLE_REDIRECT_URI = "https://questsim-ace-rebuild.pages.dev/api/auth/google-callback"
 
 # Secrets (set via: npx wrangler pages secret put <NAME>):
 # GOOGLE_CLIENT_ID
