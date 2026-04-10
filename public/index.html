@@ -857,6 +857,7 @@ body {
     <span id="userName">Maya Chen</span>
     <div class="avatar" id="userAvatar">MC</div>
     <button class="role-switch" onclick="switchRole()">Switch to <span id="switchLabel">Teacher</span></button>
+    <button class="role-switch" onclick="logout()" title="Sign out" style="margin-left:8px;">Logout</button>
   </div>
 </nav>
 
@@ -2714,42 +2715,39 @@ body {
   <div class="tab-content active" id="mgmt-students">
     <div class="card mb-md">
       <div class="flex-between mb-sm">
-        <div class="card-header" style="margin-bottom:0;">Student Roster — Period 3</div>
+        <div class="card-header" style="margin-bottom:0;" id="rosterTitle">All Users</div>
         <div class="flex-row gap-sm">
-          <button class="btn btn-sm btn-primary">+ Add Student</button>
-          <button class="btn btn-sm btn-outline">Import CSV</button>
-          <button class="btn btn-sm btn-outline">Invite via Link</button>
+          <select id="userTypeFilter" onchange="loadUsers()" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.78rem;font-family:var(--font-body);">
+            <option value="all">All Users</option>
+            <option value="admin">Admins</option>
+            <option value="teacher">Teachers</option>
+            <option value="student">Students</option>
+          </select>
+          <button class="btn btn-sm btn-primary" onclick="document.getElementById('addUserPanel').style.display='block';">+ Add User</button>
         </div>
       </div>
-      <div style="padding:16px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:16px;">
-        <div class="flex-row gap-sm" style="flex-wrap:wrap;">
-          <input type="text" placeholder="Student name..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:200px;">
-          <input type="email" placeholder="Student email..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:200px;">
-          <select style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);">
-            <option>Period 3 — Geometry</option>
-            <option>Period 5 — Geometry</option>
-            <option>Period 7 — Algebra II</option>
+      <div id="addUserPanel" style="display:none;padding:16px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:16px;">
+        <div class="flex-row gap-sm" style="flex-wrap:wrap;align-items:center;">
+          <input type="text" id="newUserFirstName" placeholder="First name..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:120px;">
+          <input type="text" id="newUserLastName" placeholder="Last name..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:120px;">
+          <input type="email" id="newUserEmail" placeholder="Email..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:200px;">
+          <select id="newUserRole" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);">
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
           </select>
-          <button class="btn btn-sm btn-primary">Add</button>
+          <button class="btn btn-sm btn-primary" onclick="addUser()">Add</button>
+          <button class="btn btn-sm btn-outline" onclick="document.getElementById('addUserPanel').style.display='none';">Cancel</button>
         </div>
+        <div id="addUserError" style="display:none;color:var(--red);font-size:0.78rem;margin-top:8px;"></div>
       </div>
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
-          <thead><tr style="border-bottom:2px solid var(--border);"><th style="text-align:left;padding:8px 10px;"><input type="checkbox"></th><th style="text-align:left;padding:8px;">Name</th><th style="text-align:left;padding:8px;">Email</th><th style="text-align:center;padding:8px;">Section</th><th style="text-align:center;padding:8px;">Status</th><th style="text-align:center;padding:8px;">Joined</th><th style="text-align:center;padding:8px;">Actions</th></tr></thead>
-          <tbody>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Jaylen R.</td><td style="padding:8px;color:var(--text-muted);">jaylen.r@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 15</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Liam T.</td><td style="padding:8px;color:var(--text-muted);">liam.t@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 15</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Maya C.</td><td style="padding:8px;color:var(--text-muted);">maya.c@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 15</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Aisha S.</td><td style="padding:8px;color:var(--text-muted);">aisha.s@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 16</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Noah K.</td><td style="padding:8px;color:var(--text-muted);">noah.k@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge" style="background:rgba(239,140,59,0.1);color:var(--orange);">Invited</span></td><td style="text-align:center;font-size:0.78rem;">—</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Resend</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr><td style="padding:8px 10px;color:var(--text-muted);font-style:italic;" colspan="7">+ 23 more students...</td></tr>
+          <thead><tr style="border-bottom:2px solid var(--border);"><th style="text-align:left;padding:8px;">Name</th><th style="text-align:left;padding:8px;">Email</th><th style="text-align:center;padding:8px;">Role</th><th style="text-align:center;padding:8px;">Status</th><th style="text-align:center;padding:8px;">Joined</th><th style="text-align:center;padding:8px;">Actions</th></tr></thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">Loading users...</td></tr>
           </tbody>
         </table>
-      </div>
-      <div class="flex-row mt-md gap-sm">
-        <button class="btn btn-sm btn-outline">Select All</button>
-        <button class="btn btn-sm btn-outline">Bulk Move Section</button>
-        <button class="btn btn-sm btn-outline" style="color:var(--red);">Bulk Remove</button>
       </div>
     </div>
   </div>
@@ -3110,6 +3108,13 @@ function loginAsGuest() {
   dismissLogin();
 }
 
+async function logout() {
+  try {
+    await API.post('/api/auth/logout', {});
+  } catch(e) {}
+  window.location.reload();
+}
+
 function showLoginError(msg) {
   const el = document.getElementById('loginError');
   el.textContent = msg;
@@ -3141,6 +3146,7 @@ async function checkExistingSession() {
     if (data.authenticated && data.user) {
       isAuthenticated = true;
       currentUser = data.user;
+      currentRole = data.user.role; // 'admin', 'teacher', or 'student'
       dismissLogin();
 
       // Update UI with real user info
@@ -3153,17 +3159,31 @@ async function checkExistingSession() {
         avatar.textContent = '';
       }
 
-      // Navigate based on role
+      // Update switch button label
+      const switchLabel = document.getElementById('switchLabel');
+      if (switchLabel) {
+        switchLabel.textContent = currentRole === 'admin' ? 'Teacher' : currentRole === 'teacher' ? 'Student' : 'Admin';
+      }
+
+      // Rebuild nav for the user's role
+      buildNav();
+
+      // Navigate to role-appropriate landing page
       if (data.user.role === 'admin') navigate('screen-user-management');
       else if (data.user.role === 'teacher') navigate('screen-teacher-dashboard');
+      else navigate('screen-student-dashboard');
     }
   } catch(e) {
-    // API not available (local dev or GitHub Pages fallback) — show login screen
     console.log('Auth API not available, showing login screen');
   }
 }
 
-checkExistingSession();
+// Run on page load (after DOM is ready)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', checkExistingSession);
+} else {
+  checkExistingSession();
+}
 
 // ═══ STATE ═══
 let currentRole = 'student';
@@ -3286,17 +3306,23 @@ const teacherNav = [
   { id: 'screen-teacher-dashboard', label: 'Dashboard' },
   { id: 'screen-gradebook', label: 'Gradebook' },
   { id: 'screen-pathway-designer', label: 'Pathways' },
-  { id: 'screen-narrative-editor', label: 'Narratives' },
-  { id: 'screen-template-library', label: 'Templates' },
   { id: 'screen-analytics', label: 'Analytics' },
   { id: 'screen-user-management', label: 'Management' },
+];
+const adminNav = [
+  { id: 'screen-user-management', label: 'Users' },
+  { id: 'screen-teacher-dashboard', label: 'Teacher View' },
+  { id: 'screen-student-dashboard', label: 'Student View' },
+  { id: 'screen-analytics', label: 'Analytics' },
 ];
 
 // ═══ NAVIGATION ═══
 function buildNav() {
   const links = document.getElementById('navLinks');
-  const items = currentRole === 'student' ? studentNav : teacherNav;
-  links.innerHTML = items.map(item => 
+  const items = currentRole === 'admin' ? adminNav
+              : currentRole === 'teacher' ? teacherNav
+              : studentNav;
+  links.innerHTML = items.map(item =>
     `<div class="nav-link ${item.id === currentScreen ? 'active' : ''}" onclick="navigate('${item.id}')">${item.label}</div>`
   ).join('');
 }
@@ -3317,15 +3343,108 @@ function navigate(screenId) {
     } else {
       stopTimer();
     }
+    // Load real data when navigating to data-driven screens
+    if (screenId === 'screen-user-management') loadUsers();
+  }
+}
+
+// ═══ USER MANAGEMENT (Admin) ═══
+async function loadUsers() {
+  const tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+  const filter = document.getElementById('userTypeFilter')?.value || 'all';
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">Loading...</td></tr>';
+  try {
+    const url = filter === 'all' ? '/api/admin/users' : `/api/admin/users?role=${filter}`;
+    const data = await API.get(url);
+    if (!data.users || data.users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">No users yet. Add one above to get started.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.users.map(u => `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px;font-weight:600;">${u.first_name} ${u.last_name}</td>
+        <td style="padding:10px;color:var(--text-muted);">${u.email}</td>
+        <td style="text-align:center;padding:10px;">
+          <span class="badge ${u.role === 'admin' ? 'badge-purple' : u.role === 'teacher' ? 'badge-teal' : 'badge-green'}">${u.role}</span>
+        </td>
+        <td style="text-align:center;padding:10px;">
+          ${u.last_login_at ? '<span class="badge badge-green">Active</span>' : '<span class="badge" style="background:rgba(239,140,59,0.1);color:var(--orange);">Invited</span>'}
+        </td>
+        <td style="text-align:center;font-size:0.78rem;padding:10px;">${formatDate(u.created_at)}</td>
+        <td style="text-align:center;padding:10px;">
+          <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);" onclick="removeUser(${u.id})">Remove</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--red);">Error loading users: ${e.message}</td></tr>`;
+  }
+}
+
+function formatDate(s) {
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return s; }
+}
+
+async function addUser() {
+  const first_name = document.getElementById('newUserFirstName').value.trim();
+  const last_name = document.getElementById('newUserLastName').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  const errEl = document.getElementById('addUserError');
+  errEl.style.display = 'none';
+
+  if (!first_name || !last_name || !email) {
+    errEl.textContent = 'All fields are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    await API.post('/api/admin/users', { first_name, last_name, email, role });
+    // Clear form
+    document.getElementById('newUserFirstName').value = '';
+    document.getElementById('newUserLastName').value = '';
+    document.getElementById('newUserEmail').value = '';
+    document.getElementById('addUserPanel').style.display = 'none';
+    // Reload list
+    loadUsers();
+  } catch (e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function removeUser(id) {
+  if (!confirm('Remove this user? This cannot be undone.')) return;
+  try {
+    await fetch('/api/admin/users/' + id, { method: 'DELETE', credentials: 'include' });
+    loadUsers();
+  } catch (e) {
+    alert('Error removing user: ' + e.message);
   }
 }
 
 function switchRole() {
-  currentRole = currentRole === 'student' ? 'teacher' : 'student';
-  document.getElementById('switchLabel').textContent = currentRole === 'student' ? 'Teacher' : 'Student';
-  document.getElementById('userName').textContent = currentRole === 'student' ? 'Maya Chen' : 'Mrs Bernard';
-  document.getElementById('userAvatar').textContent = currentRole === 'student' ? 'MC' : 'LB';
-  navigate(currentRole === 'student' ? 'screen-student-dashboard' : 'screen-teacher-dashboard');
+  // Admin can preview all roles; teacher can preview student
+  if (currentUser && currentUser.role === 'admin') {
+    currentRole = currentRole === 'admin' ? 'teacher' : currentRole === 'teacher' ? 'student' : 'admin';
+  } else if (currentUser && currentUser.role === 'teacher') {
+    currentRole = currentRole === 'teacher' ? 'student' : 'teacher';
+  } else {
+    currentRole = currentRole === 'student' ? 'teacher' : 'student';
+  }
+  const labels = { admin: 'Admin', teacher: 'Teacher', student: 'Student' };
+  const next = currentRole === 'admin' ? 'Teacher' : currentRole === 'teacher' ? 'Student' : 'Admin';
+  document.getElementById('switchLabel').textContent = next;
+  const target = currentRole === 'admin' ? 'screen-user-management'
+               : currentRole === 'teacher' ? 'screen-teacher-dashboard'
+               : 'screen-student-dashboard';
+  navigate(target);
 }
 
 // ═══ TIMER ═══
