@@ -5657,7 +5657,11 @@ window.QS = (() => {
 
     const barSet = (id, n) => {
       const el = document.getElementById(id);
-      if (el) { el.style.width = Math.round(n / total * 100) + "%"; el.textContent = n; }
+      if (el) {
+        // Bar chart uses data-value attribute for the label above the bar (CSS ::before)
+        el.setAttribute('data-value', n);
+        el.style.height = Math.round(n / total * 100) + "%";
+      }
     };
     barSet("td-bar-found", tiers.foundation);
     barSet("td-bar-ext",   tiers.extension);
