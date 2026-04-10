@@ -3178,10 +3178,14 @@ function showLoginError(msg) {
 }
 
 async function getGameUrl() {
-  // Always use the demo URL which has no auth requirement
-  // (pymini1 requires a passcode that can't be bypassed without modifying that repo)
-  // When pymini1 supports JWT tokens, we can pass the token from /api/game/token
-  return QUESTSIM_DEMO_URL;
+  // Use the demo URL with ?only=Types to lock the embedded game to
+  // just the Triangle Types activity (see pythagoras-unity branch
+  // claude/ace-url-param-lock). Once that build is deployed to R2,
+  // the iframe will auto-enter Types, hide Seek and City, and post
+  // an 'ace_activity_complete' message when the student finishes.
+  // Until the new build is deployed, the param is simply ignored
+  // and the student sees the normal 3-activity mini game.
+  return QUESTSIM_DEMO_URL + '/?only=Types';
 }
 
 function dismissLogin() {
@@ -4625,6 +4629,23 @@ function renderUnityEmbed(ch, idx) {
 }
 
 // Unity build loading removed — using iframe to py.questsim.com instead
+
+// Listen for postMessage events from the embedded Unity game.
+// When the new pythagoras-unity build with ACE_UrlParamLock is
+// deployed, it will send { source:'pythagoras-unity',
+// type:'ace_activity_complete', activity:'Types' } when the student
+// finishes Triangle Types. We use that as an automatic trigger for
+// the "Mark Complete" flow so students don't have to click the button.
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (!data || data.source !== 'pythagoras-unity') return;
+  console.log('[ACE] Unity postMessage:', data);
+
+  if (data.type === 'ace_activity_complete') {
+    // Auto-trigger the completion flow — same as clicking Mark Complete
+    onUnityActivityComplete();
+  }
+});
 
 function onUnityActivityComplete() {
   const ch = challenges[currentChallenge];
