@@ -138,16 +138,22 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
 
   const activeToday = activeTodayResult?.active_count ?? 0;
 
-  // Parse mastery_state JSON and compute per-student mastery percentage
+  // Parse mastery_state JSON and compute per-student mastery percentage.
+  // mastery_state structure: { concept1: { level: string, confidence: number }, ... }
   function computeMastery(masteryState: string | null): number {
     if (!masteryState) return 0;
     try {
       const state = JSON.parse(masteryState);
       if (typeof state === 'object' && state !== null) {
-        const values = Object.values(state) as number[];
-        if (values.length === 0) return 0;
-        const sum = values.reduce((a: number, b: number) => a + b, 0);
-        return Math.round((sum / values.length) * 100) / 100;
+        const entries = Object.values(state) as any[];
+        if (entries.length === 0) return 0;
+        // Extract confidence numbers (skip entries missing confidence)
+        const confidences = entries
+          .map(e => (e && typeof e === 'object' && typeof e.confidence === 'number') ? e.confidence : null)
+          .filter((c): c is number => c !== null);
+        if (confidences.length === 0) return 0;
+        const sum = confidences.reduce((a, b) => a + b, 0);
+        return Math.round((sum / confidences.length) * 100) / 100;
       }
     } catch {
       // ignore parse errors

@@ -886,8 +886,8 @@ body {
     </div>
   </div>
 
-  <div class="page-title">Welcome back, Maya! 🎉</div>
-  <div class="page-subtitle">Ready for today's quest? Your 5-day streak is going strong.</div>
+  <div class="page-title" id="studentWelcome">Welcome back! 🎉</div>
+  <div class="page-subtitle" id="studentSubtitle">Ready for today's quest?</div>
 
   <div class="card mb-md" style="background:linear-gradient(135deg,rgba(42,127,142,0.06),rgba(212,168,67,0.04));border:1px solid rgba(42,127,142,0.15);position:relative;overflow:hidden;">
     <div style="position:absolute;top:0;right:0;bottom:0;width:180px;background:linear-gradient(135deg,transparent 40%,rgba(212,168,67,0.06));display:flex;align-items:center;justify-content:center;font-size:4rem;opacity:0.3;">🏛️</div>
@@ -3382,6 +3382,35 @@ function navigate(screenId) {
     // Load real data when navigating to data-driven screens
     if (screenId === 'screen-user-management') loadUsers();
     if (screenId === 'screen-teacher-dashboard') loadTeacherDashboard();
+    if (screenId === 'screen-student-dashboard') loadStudentDashboard();
+  }
+}
+
+// ═══ STUDENT DASHBOARD ═══
+async function loadStudentDashboard() {
+  // Update welcome text with real user name
+  const welcome = document.getElementById('studentWelcome');
+  const subtitle = document.getElementById('studentSubtitle');
+  if (welcome && currentUser) {
+    welcome.innerHTML = `Welcome back, ${currentUser.first_name}! 🎉`;
+  }
+
+  // Try to load profile from API
+  try {
+    const data = await API.get('/api/student/profile');
+    if (data.profile && subtitle) {
+      const streak = data.profile.streak || 0;
+      subtitle.textContent = streak > 0
+        ? `Ready for today's quest? Your ${streak}-day streak is going strong.`
+        : `Ready for today's quest?`;
+    }
+    // Update the XP display if available
+    if (data.profile) {
+      const xpEl = document.getElementById('dashXP');
+      if (xpEl) xpEl.textContent = data.profile.xp || 0;
+    }
+  } catch (e) {
+    console.warn('[Student] Dashboard load failed:', e.message);
   }
 }
 
@@ -3513,7 +3542,6 @@ async function loadTeacherDashboard() {
     const roster = (rosterData.students || []).map(s => {
       const initials = s.name.split(' ').map(n => n[0] || '').slice(0, 2).join('').toUpperCase();
       const mastery = s.mastery || 0;
-      // Derive a human confidence (1-5) from the correct ratio
       const confidence = s.confidence >= 0.8 ? 5 : s.confidence >= 0.6 ? 4 : s.confidence >= 0.4 ? 3 : s.confidence >= 0.2 ? 2 : 1;
       const lastActive = s.last_active ? formatLastActive(s.last_active) : 'Never';
       return {
@@ -3536,6 +3564,10 @@ async function loadTeacherDashboard() {
 
     // Store in localStorage so existing getRoster() picks it up
     try { localStorage.setItem('qs_roster', JSON.stringify(roster)); } catch(e) {}
+
+    // Update the dashboard subtitle with real class info
+    const subtitle = document.getElementById('td-subtitle');
+    if (subtitle) subtitle.textContent = `${rosterData.class.name} · ${rosterData.students.length} students`;
 
     // Re-render the dashboard
     if (window.QS && typeof window.QS.renderTeacherDashboard === 'function') {
