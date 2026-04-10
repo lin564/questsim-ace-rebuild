@@ -1160,18 +1160,17 @@ body {
     <!-- Pythagoras speaking panel below map -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:20px 24px;margin-top:-2px;">
       <div style="display:flex;gap:16px;align-items:flex-start;">
-        <!-- Pythagoras portrait placeholder — replace with your chatbot image -->
+        <!-- Pythagoras portrait + voice button -->
         <div style="position:relative;flex-shrink:0;">
           <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e8d5a3,#c4a96a);display:flex;align-items:center;justify-content:center;font-size:1.8rem;box-shadow:0 2px 8px rgba(0,0,0,0.1);">🏛️</div>
-          <!-- Voice button placeholder — connects to historical-figure-voice worker -->
-          <button onclick="playPythagorasVoice()" style="position:absolute;bottom:-4px;right:-4px;width:24px;height:24px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);" title="Listen (connects to Historical Figure Voice API)">🔊</button>
+          <button onclick="playPythagorasVoice(document.getElementById('mapNPCDialogue').textContent, this)" style="position:absolute;bottom:-4px;right:-4px;width:26px;height:26px;border-radius:50%;background:var(--gold);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);color:#2D2D2D;" title="Hear Pythagoras speak">🔊</button>
         </div>
         <div style="flex:1;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div style="font-family:var(--font-display);font-size:0.85rem;color:var(--gold);font-weight:700;">Pythagoras</div>
             <span style="font-size:0.55rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:2px 6px;border-radius:4px;font-weight:600;">AI GUIDE</span>
           </div>
-          <div id="mapNPCDialogue" style="font-size:0.95rem;color:var(--text);line-height:1.6;font-style:italic;">"Welcome, Maya! I am Pythagoras, and this is my home — the island of Samos. Before we sail to distant lands to recover the fragments of my proof, you must first learn to see triangles as I do. See that golden marker? <strong>Click on Samos to begin your first lesson.</strong>"</div>
+          <div id="mapNPCDialogue" style="font-size:0.95rem;color:var(--text);line-height:1.6;font-style:italic;">"Welcome! I am Pythagoras, and this is my home — the island of Samos. Before we sail to distant lands to recover the fragments of my proof, you must first learn to see triangles as I do. See that golden marker? <strong>Click on Samos to begin your first lesson.</strong>"</div>
           <div style="margin-top:8px;font-size:0.6rem;color:var(--text-muted);">🔗 Powered by <a href="#" style="color:var(--teal);text-decoration:none;">Historical Figure Chatbot API</a> — historical-figure-voice.workers.dev</div>
         </div>
       </div>
@@ -3398,8 +3397,12 @@ function navigate(screenId) {
       document.getElementById('questPhaseLocation').style.display = 'none';
       updateMapState();
       startTimer();
+      // Personalize the Pythagoras welcome with the real user's name and auto-narrate
+      personalizeMapDialogue();
     } else {
       stopTimer();
+      // Stop any map narration when leaving the quest screen
+      stopPythagorasVoice();
     }
     // Load real data when navigating to data-driven screens
     if (screenId === 'screen-user-management') loadUsers();
@@ -4082,6 +4085,27 @@ function stopPythagorasVoice() {
     currentAudio = null;
   }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+// Personalize the map NPC dialogue with the real user's first name and auto-narrate
+function personalizeMapDialogue() {
+  const el = document.getElementById('mapNPCDialogue');
+  if (!el) return;
+  const firstName = (currentUser && currentUser.first_name) ? currentUser.first_name : '';
+  const greeting = firstName ? `Welcome, ${firstName}!` : 'Welcome!';
+  el.innerHTML = `"${greeting} I am Pythagoras, and this is my home — the island of Samos. Before we sail to distant lands to recover the fragments of my proof, you must first learn to see triangles as I do. See that golden marker? <strong>Click on Samos to begin your first lesson.</strong>"`;
+
+  // Auto-narrate — but only once per page load (so it doesn't repeat every navigation)
+  if (!window._mapDialogueNarrated) {
+    window._mapDialogueNarrated = true;
+    // Small delay to let the UI settle
+    setTimeout(() => {
+      const text = extractQuoted(el.textContent) || el.textContent;
+      // Find the speaker button near this dialogue to show visual feedback
+      const btn = el.closest('div').parentElement?.querySelector('button[title*="Pythagoras"]');
+      playPythagorasVoice(text, btn);
+    }, 700);
+  }
 }
 
 // Extract the first quoted segment from a string (curly or straight quotes)
@@ -5021,7 +5045,14 @@ function advanceChallenge() {
   } else {
     // Return to map — update map NPC dialogue and show travel info
     const nextScene = questScenes[currentChallenge];
-    document.getElementById('mapNPCDialogue').innerHTML = `"Excellent work! We recovered the fragment. But our journey isn't over — the next piece of my proof awaits at <strong>${nextScene.title}</strong>. Click the marker to travel there."`;
+    const mapDlgEl = document.getElementById('mapNPCDialogue');
+    const mapMsg = `"Excellent work! We recovered the fragment. But our journey isn't over — the next piece of my proof awaits at <strong>${nextScene.title}</strong>. Click the marker to travel there."`;
+    mapDlgEl.innerHTML = mapMsg;
+    // Narrate the new message in Pythagoras's voice
+    setTimeout(() => {
+      const text = extractQuoted(mapDlgEl.textContent) || mapDlgEl.textContent;
+      playPythagorasVoice(text);
+    }, 500);
     
     // Show travel info if available
     const travelPanel = document.getElementById('travelInfoPanel');
