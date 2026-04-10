@@ -3396,8 +3396,10 @@ function navigate(screenId) {
       document.getElementById('questPhaseLocation').style.display = 'none';
       updateMapState();
       startTimer();
-      // Personalize the Pythagoras welcome with the real user's name and auto-narrate
-      personalizeMapDialogue();
+      // Personalize the Pythagoras welcome with the real user's name.
+      // Skip auto-narration if this nav happened during initial page load
+      // (autoplay policy will block it) — user can click the speaker button.
+      personalizeMapDialogue(!window._userHasInteracted);
     } else {
       stopTimer();
       // Stop any map narration when leaving the quest screen
@@ -4087,24 +4089,29 @@ function stopPythagorasVoice() {
 }
 
 // Personalize the map NPC dialogue with the real user's first name and auto-narrate
-function personalizeMapDialogue() {
+// Only auto-plays if the navigation was user-initiated (skipped for page-load hash routing)
+function personalizeMapDialogue(skipNarration) {
   const el = document.getElementById('mapNPCDialogue');
   if (!el) return;
   const firstName = (currentUser && currentUser.first_name) ? currentUser.first_name : '';
   const greeting = firstName ? `Welcome, ${firstName}!` : 'Welcome!';
   el.innerHTML = `"${greeting} I am Pythagoras, and this is my home — the island of Samos. Before we sail to distant lands to recover the fragments of my proof, you must first learn to see triangles as I do. See that golden marker? <strong>Click on Samos to begin your first lesson.</strong>"`;
 
-  // Auto-narrate — but only once per page load (so it doesn't repeat every navigation)
-  if (!window._mapDialogueNarrated) {
-    window._mapDialogueNarrated = true;
-    // Small delay to let the UI settle
-    setTimeout(() => {
-      const text = extractQuoted(el.textContent) || el.textContent;
-      // Find the speaker button near this dialogue to show visual feedback
-      const btn = el.closest('div').parentElement?.querySelector('button[title*="Pythagoras"]');
-      playPythagorasVoice(text, btn);
-    }, 700);
-  }
+  // Auto-narrate only on a user-initiated navigation (not page load)
+  // and only once per session (so repeat visits don't re-play)
+  if (skipNarration) return;
+  if (window._mapDialogueNarrated) return;
+  window._mapDialogueNarrated = true;
+
+  setTimeout(() => {
+    // Guard: if the user has navigated away, don't play
+    if (currentScreen !== 'screen-simulation') return;
+    const mapPhase = document.getElementById('questPhaseMap');
+    if (!mapPhase || mapPhase.style.display === 'none') return;
+    const text = extractQuoted(el.textContent) || el.textContent;
+    const btn = el.closest('div').parentElement?.querySelector('button[title*="Pythagoras"]');
+    playPythagorasVoice(text, btn);
+  }, 700);
 }
 
 // Extract the first quoted segment from a string (curly or straight quotes)
@@ -4118,6 +4125,12 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = () => {};
   window.speechSynthesis.getVoices();
 }
+
+// Track if the user has interacted with the page at all (for autoplay gating)
+window._userHasInteracted = false;
+['click', 'keydown', 'touchstart'].forEach(ev => {
+  document.addEventListener(ev, () => { window._userHasInteracted = true; }, { once: false, passive: true });
+});
 
 // ═══ MAP STATE MANAGEMENT ═══
 // Track which locations have been completed
