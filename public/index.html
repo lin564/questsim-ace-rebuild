@@ -1228,7 +1228,10 @@ body {
             <!-- Feedback panels -->
             <div class="feedback-panel correct" id="feedbackCorrect" style="display:none;">
               <div class="feedback-npc">
-                <div class="mini-avatar">🏛️</div>
+                <div class="mini-avatar" style="position:relative;">
+                  🏛️
+                  <button onclick="playPythagorasVoice(document.getElementById('fbCorrectText').textContent, this)" title="Hear Pythagoras read this aloud" style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);">🔊</button>
+                </div>
                 <div>
                   <div class="feedback-text" id="fbCorrectText"></div>
                   <div class="flex-row mt-sm" id="fbCorrectActions"></div>
@@ -3861,17 +3864,68 @@ const questScenes = [
 
 let questDialogueStep = 0;
 
-// Voice placeholder — connects to your historical-figure-voice Cloudflare Worker
-function playPythagorasVoice() {
-  const btn = event.target;
-  btn.textContent = '🔈';
-  btn.style.background = 'var(--gold)';
-  setTimeout(() => {
-    btn.textContent = '🔊';
-    btn.style.background = 'var(--teal)';
-  }, 2000);
-  // TODO: Connect to historical-figure-voice.YOUR_SUBDOMAIN.workers.dev
-  console.log('🔊 Voice API placeholder — connect to historical-figure-voice worker');
+// ═══ PYTHAGORAS VOICE NARRATION ═══
+// Uses the browser's built-in SpeechSynthesis API to read Pythagoras's
+// words aloud. This gives us voice output with no network call and no
+// API keys. When historical-figure-voice is ready, swap this out.
+function playPythagorasVoice(text, btn) {
+  if (!window.speechSynthesis) {
+    console.warn('SpeechSynthesis not supported in this browser');
+    return;
+  }
+  // Stop any current speech before starting a new one
+  window.speechSynthesis.cancel();
+
+  // Pull the text to speak: argument first, then data-narration attr, then nearest quoted text
+  if (!text && btn) {
+    const parent = btn.closest('[data-narration], .feedback-npc, .npc-frame') || btn.parentElement;
+    text = parent?.dataset?.narration || extractQuoted(parent?.textContent || '') || parent?.textContent?.trim();
+  }
+  if (!text) return;
+
+  // Strip HTML and markdown-ish characters
+  text = text.replace(/<[^>]*>/g, '').replace(/[*_]/g, '').trim();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.95;
+  utter.pitch = 0.85;
+  utter.volume = 1;
+
+  // Prefer a deep/older male English voice for Pythagoras
+  const voices = window.speechSynthesis.getVoices();
+  const preferred =
+    voices.find(v => /daniel|alex|arthur|george|fred/i.test(v.name) && /en/i.test(v.lang)) ||
+    voices.find(v => /male/i.test(v.name) && /en/i.test(v.lang)) ||
+    voices.find(v => /en-GB/.test(v.lang)) ||
+    voices.find(v => /en/.test(v.lang));
+  if (preferred) utter.voice = preferred;
+
+  // Visual feedback on the button
+  if (btn) {
+    const originalText = btn.textContent;
+    const originalBg = btn.style.background;
+    btn.textContent = '🔈';
+    btn.style.background = 'var(--gold)';
+    utter.onend = () => {
+      btn.textContent = originalText;
+      btn.style.background = originalBg;
+    };
+    utter.onerror = utter.onend;
+  }
+
+  window.speechSynthesis.speak(utter);
+}
+
+// Extract the first quoted segment from a string (curly or straight quotes)
+function extractQuoted(str) {
+  const m = str.match(/[""]([^""]+)[""]/) || str.match(/"([^"]+)"/);
+  return m ? m[1] : '';
+}
+
+// Preload voices on page load (some browsers need this nudge)
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => {};
+  window.speechSynthesis.getVoices();
 }
 
 // ═══ MAP STATE MANAGEMENT ═══
@@ -4050,6 +4104,15 @@ function backToMap() {
   document.getElementById('questPhaseMap').style.display = 'block';
   document.getElementById('questPhaseLocation').style.display = 'none';
   updateMapState();
+  // Stop the Unity game audio by removing the iframe entirely
+  stopUnityEmbed();
+}
+
+function stopUnityEmbed() {
+  const wrapper = document.getElementById('unityEmbedWrapper');
+  if (wrapper) wrapper.remove();
+  // Stop any speech currently playing
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
 // ═══ ADAPTIVE CHALLENGE ENGINE ═══
@@ -4300,7 +4363,12 @@ function renderUnityInArtwork(artworkArea) {
   wrapper.id = 'unityEmbedWrapper';
   wrapper.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
   wrapper.innerHTML = `
-    <div class="unity-embed-container" id="unityContainer" style="flex:1;min-height:0;">
+    <div style="background:linear-gradient(90deg,rgba(212,168,67,0.12),rgba(42,127,142,0.1));border-bottom:1px solid rgba(212,168,67,0.3);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="font-size:0.82rem;color:var(--navy);">
+        <strong style="color:var(--gold);">🎯 Your Task:</strong> Play only the <strong>Triangle Types</strong> activity (Activity 1). When you finish sorting all the tiles, click <strong>Mark Complete</strong> below.
+      </div>
+    </div>
+    <div class="unity-embed-container" id="unityContainer" style="flex:1;min-height:0;position:relative;">
       <iframe id="questsimIframe"
         src=""
         style="width:100%;height:100%;border:none;display:block;"
@@ -4312,10 +4380,16 @@ function renderUnityInArtwork(artworkArea) {
         <div class="unity-loading-bar"><div class="unity-loading-fill" id="unityLoadingFill" style="width:100%"></div></div>
         <div class="unity-loading-text" id="unityLoadingText">Connecting to game server...</div>
       </div>
+      <!-- Lockout overlay: appears when student marks complete to stop them playing more activities -->
+      <div id="unityLockoutOverlay" style="display:none;position:absolute;inset:0;background:rgba(27,58,92,0.92);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:20;">
+        <div style="font-size:3rem;margin-bottom:12px;">🏛️</div>
+        <div style="font-family:var(--font-display);font-size:1.4rem;color:var(--gold);font-weight:600;margin-bottom:8px;">Activity 1 Complete!</div>
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.85);max-width:480px;line-height:1.6;">Well done, student of Pythagoras. Return to the map to continue your quest — more activities await at Athens, Rhodes, and Alexandria.</div>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
-      <span style="font-size:0.75rem;color:var(--text-muted);">Play through the Triangle Types Activity, then mark complete</span>
-      <button class="btn btn-primary btn-sm" id="unityCompleteBtn" onclick="onUnityActivityComplete()">✓ Mark Complete</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);">
+      <span style="font-size:0.78rem;color:var(--text-soft);">✓ Finished sorting the triangle tiles? Click the button to continue →</span>
+      <button class="btn btn-primary" id="unityCompleteBtn" onclick="onUnityActivityComplete()" style="padding:10px 20px;font-weight:600;">✓ Mark Complete</button>
     </div>
   `;
 
@@ -4346,7 +4420,35 @@ function renderUnityEmbed(ch, idx) {
 
 function onUnityActivityComplete() {
   const ch = challenges[currentChallenge];
+
+  // Show the "Activity 1 Complete!" lockout overlay to prevent playing more activities
+  const lockout = document.getElementById('unityLockoutOverlay');
+  if (lockout) lockout.style.display = 'flex';
+
+  // Stop the game audio by clearing the iframe src (fully stops WebGL audio)
+  const iframe = document.getElementById('questsimIframe');
+  if (iframe) {
+    try { iframe.src = 'about:blank'; } catch(e) {}
+  }
+
+  // Show the correct feedback panel
   showCorrectFeedback(ch);
+
+  // Narrate the correct feedback with Pythagoras's voice
+  // Extract the quoted portion (his actual words) from the HTML
+  setTimeout(() => {
+    const fbText = document.getElementById('fbCorrectText')?.textContent || '';
+    const quoted = extractQuoted(fbText);
+    if (quoted) playPythagorasVoice(quoted);
+  }, 500);
+
+  // Also record this as a progress event for students
+  if (isAuthenticated && currentUser && currentUser.role === 'student') {
+    saveAttemptToD1(
+      ch, currentChallenge, true, '__interactive_complete__',
+      { attempts: 1, hintsUsed: 0, timeStarted: Date.now() - 60000 }
+    );
+  }
 }
 
 // ═══ PROGRESS SAVE TO D1 ═══
