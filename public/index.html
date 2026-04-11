@@ -5441,7 +5441,10 @@ function advanceChallenge() {
     // Return to map — update map NPC dialogue and show travel info
     const nextScene = questScenes[currentChallenge];
     const mapDlgEl = document.getElementById('mapNPCDialogue');
-    const mapMsg = `"Excellent work! We recovered the fragment. But our journey isn't over — the next piece of my proof awaits at <strong>${nextScene.title}</strong>. Click the marker to travel there."`;
+    // Extract just the city name from the subtitle (e.g. "Athens, Greece — The Acropolis" → "Athens")
+    // so the dialogue reads naturally: "awaits at Athens" instead of "awaits at The Temple Construction Site".
+    const nextCity = (nextScene.subtitle || '').split(',')[0].trim() || nextScene.title;
+    const mapMsg = `"Excellent work! We recovered the fragment. But our journey isn't over — the next piece of my proof awaits at <strong>${nextCity}</strong>. Click the marker to travel there."`;
     mapDlgEl.innerHTML = mapMsg;
     // Narrate the new message in Pythagoras's voice
     setTimeout(() => {
