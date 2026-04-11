@@ -854,9 +854,9 @@ body {
     <!-- Dynamically populated -->
   </div>
   <div class="nav-user">
-    <span id="userName">Maya Chen</span>
+    <span id="userName">—</span>
     <span id="userRoleBadge" class="badge" style="display:none;font-size:0.6rem;padding:2px 8px;margin-right:4px;"></span>
-    <div class="avatar" id="userAvatar">MC</div>
+    <div class="avatar" id="userAvatar">?</div>
     <button class="role-switch" onclick="switchRole()">Switch to <span id="switchLabel">Teacher</span></button>
     <button class="role-switch" onclick="logout()" title="Sign out" style="margin-left:8px;">Logout</button>
   </div>
@@ -3278,6 +3278,11 @@ async function loadRealProfileIntoCurrentUser() {
       tier: p.tier ?? 'foundation',
       mastery_state: p.mastery_state ?? null,
     });
+    // Sync the client-side HUD counter with the real value so awardXP()
+    // increments from the correct baseline instead of Maya's seeded 830.
+    if (typeof totalXP !== 'undefined') {
+      totalXP = p.xp ?? 0;
+    }
     // Log the real handoff so the console clearly shows the transition from
     // the QS seed-cache log to the authenticated user's actual stats.
     const u = window.currentUser;
@@ -3310,7 +3315,12 @@ let currentRole = 'student';
 let currentScreen = 'screen-student-dashboard';
 let currentChallenge = 0;
 let sessionXP = 0;
-let totalXP = 830;
+// Client-side XP counter used by awardXP() for HUD animation when a
+// text-input challenge is solved. Starts at 0 and is synced to the
+// real authenticated user's xp by loadRealProfileIntoCurrentUser()
+// when /api/student/profile returns. For unauthenticated demo visitors
+// it stays at 0 until they earn something in-session.
+let totalXP = 0;
 let timerInterval = null;
 let timerSeconds = 0;
 
