@@ -4018,6 +4018,14 @@ document.addEventListener('keydown', e => {
 });
 
 let currentAudio = null;
+// Monotonic generation counter for Pythagoras narration. Incremented every
+// time stopPythagorasVoice() runs. A playback attempt captures the current
+// generation at request time and refuses to play if the generation has moved
+// on — this cancels in-flight ElevenLabs fetches that haven't returned yet.
+let pythagorasVoiceGeneration = 0;
+// AbortController for the in-flight ElevenLabs fetch so we can cut it off
+// the instant the user navigates away.
+let pythagorasVoiceAbort = null;
 
 async function playPythagorasVoice(text, btn) {
   // Stop any current narration (either audio or speech synthesis)
@@ -4032,6 +4040,12 @@ async function playPythagorasVoice(text, btn) {
 
   // Strip HTML
   text = text.replace(/<[^>]*>/g, '').replace(/[*_]/g, '').trim();
+
+  // Capture the generation at request time. If it moves (because
+  // stopPythagorasVoice ran), we abort before starting playback.
+  const myGen = pythagorasVoiceGeneration;
+  pythagorasVoiceAbort = new AbortController();
+  const mySignal = pythagorasVoiceAbort.signal;
 
   // Visual feedback on the button
   let originalText, originalBg;
@@ -4054,9 +4068,21 @@ async function playPythagorasVoice(text, btn) {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
+      signal: mySignal,
     });
+    // If the generation moved while we were waiting for the response,
+    // someone called stopPythagorasVoice() — drop this response on the floor.
+    if (myGen !== pythagorasVoiceGeneration) {
+      restoreBtn();
+      return;
+    }
     if (res.ok) {
       const blob = await res.blob();
+      // Second check after the blob download
+      if (myGen !== pythagorasVoiceGeneration) {
+        restoreBtn();
+        return;
+      }
       const url = URL.createObjectURL(blob);
       currentAudio = new Audio(url);
       if (btn) btn.textContent = '🔈';
@@ -4066,6 +4092,11 @@ async function playPythagorasVoice(text, btn) {
       return;
     }
   } catch (e) {
+    if (e.name === 'AbortError') {
+      // Normal cancellation path — student navigated away before audio loaded.
+      restoreBtn();
+      return;
+    }
     console.warn('[Voice] ElevenLabs failed, falling back:', e.message);
   }
 
@@ -4074,6 +4105,7 @@ async function playPythagorasVoice(text, btn) {
     restoreBtn();
     return;
   }
+  if (myGen !== pythagorasVoiceGeneration) { restoreBtn(); return; }
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   utter.rate = 0.95;
@@ -4091,6 +4123,12 @@ async function playPythagorasVoice(text, btn) {
 }
 
 function stopPythagorasVoice() {
+  // Bump the generation — any in-flight fetch will see this and bail.
+  pythagorasVoiceGeneration++;
+  if (pythagorasVoiceAbort) {
+    try { pythagorasVoiceAbort.abort(); } catch(e) {}
+    pythagorasVoiceAbort = null;
+  }
   if (currentAudio) {
     try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e) {}
     currentAudio = null;
