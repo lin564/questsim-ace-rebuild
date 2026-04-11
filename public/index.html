@@ -4364,6 +4364,10 @@ function revealChallenge() {
   if (ch && ch.interactiveType === 'unityEmbed') {
     unityChallengeAccepted = true;
     unityChallengeAcceptedAt = Date.now();
+    // Kick off the Unity game load now that the student has committed to
+    // the challenge. Until this point the iframe has no src and is covered
+    // by the gate overlay, so the student cannot play early.
+    startUnityLoad();
     startMarkCompleteTimer();
   }
 }
@@ -4702,6 +4706,14 @@ function renderUnityInArtwork(artworkArea) {
         <div style="font-size:0.95rem;color:rgba(255,255,255,0.88);max-width:480px;line-height:1.55;margin-bottom:22px;">You've correctly classified every triangle on Pythagoras's table. Click the glowing <strong>Mark Complete</strong> button below to continue your quest.</div>
         <div style="font-size:2rem;animation:pulse 1.4s ease-in-out infinite;">⬇</div>
       </div>
+      <!-- Pre-game gate overlay: shown until the student clicks Accept the
+           Challenge in the dialogue below. Prevents playing the game early. -->
+      <div id="unityGateOverlay" style="display:flex;position:absolute;inset:0;background:linear-gradient(160deg,rgba(15,38,64,0.96) 0%,rgba(27,58,92,0.96) 50%,rgba(42,127,142,0.96) 100%);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:18;pointer-events:auto;">
+        <div style="font-size:3rem;margin-bottom:10px;">🏛️</div>
+        <div style="font-family:var(--font-display);font-size:1.4rem;color:var(--gold);font-weight:600;margin-bottom:10px;">Awaiting your decision...</div>
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.88);max-width:480px;line-height:1.55;margin-bottom:22px;">Read Pythagoras's words below, then click <strong>⚔️ Accept the Challenge</strong> to enter the classroom and begin the activity.</div>
+        <div style="font-size:2rem;animation:pulse 1.4s ease-in-out infinite;">⬇</div>
+      </div>
       <!-- Lockout overlay: appears when student marks complete to stop them playing more activities -->
       <div id="unityLockoutOverlay" style="display:none;position:absolute;inset:0;background:rgba(27,58,92,0.92);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:20;">
         <div style="font-size:3rem;margin-bottom:12px;">🏛️</div>
@@ -4717,24 +4729,40 @@ function renderUnityInArtwork(artworkArea) {
 
   artworkArea.appendChild(wrapper);
 
-  // Set the iframe name BEFORE setting src. This is read by Unity's
-  // ACE_GetUrlParam jslib function inside the iframe as window.name.
-  // Critical: window.name survives the auth redirect on pymini1, so
-  // the Unity game can detect the lock even after the user logs in.
+  // Set the iframe name so Unity's ACE_GetUrlParam jslib can read it as
+  // window.name (survives auth redirects on pymini1).
   const iframe = document.getElementById('questsimIframe');
   iframe.name = 'only=Types';
 
-  // Set iframe src based on auth (async — fetches game token if authenticated)
-  getGameUrl().then(url => { iframe.src = url; });
+  // NOTE: we intentionally do NOT set iframe.src here. Unity loading is
+  // gated behind the student clicking "⚔️ Accept the Challenge" in the
+  // dialogue panel below — see startUnityLoad(), called from revealChallenge().
+  // Until then, the unityGateOverlay covers the iframe and blocks clicks.
+  // Also hide the unity loading overlay since nothing is loading yet.
+  const loadingOverlay = document.getElementById('unityLoadingOverlay');
+  if (loadingOverlay) loadingOverlay.classList.add('hidden');
+}
+
+// Kick off the actual Unity load. Called from revealChallenge() when the
+// student clicks "Accept the Challenge" on a unityEmbed challenge.
+function startUnityLoad() {
+  const iframe = document.getElementById('questsimIframe');
+  if (!iframe) return;
+  // Swap the gate overlay for the loading overlay
+  const gate = document.getElementById('unityGateOverlay');
+  if (gate) gate.style.display = 'none';
+  const loadingOverlay = document.getElementById('unityLoadingOverlay');
+  if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+  // Wire up the load listener, then set src
   iframe.addEventListener('load', () => {
-    const overlay = document.getElementById('unityLoadingOverlay');
-    if (overlay) overlay.classList.add('hidden');
-  });
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+  }, { once: true });
   // Fallback: hide overlay after 8 seconds regardless
   setTimeout(() => {
-    const overlay = document.getElementById('unityLoadingOverlay');
-    if (overlay) overlay.classList.add('hidden');
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
   }, 8000);
+  // Finally, set the src — this starts the Unity load.
+  getGameUrl().then(url => { iframe.src = url; });
 }
 
 // ═══ LISTEN FOR UNITY EVENTS ═══
