@@ -1474,7 +1474,7 @@ body {
     <div style="position:absolute;top:10px;right:20px;font-size:5rem;opacity:0.08;">📐</div>
     <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.15em;color:rgba(255,255,255,0.45);">Quest Capstone · Mastery Challenge</div>
     <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;margin:6px 0;">Build the Visual Proof</div>
-    <div style="font-size:0.88rem;color:rgba(255,255,255,0.65);max-width:700px;line-height:1.6;font-style:italic;">"You have traveled from Samos to Alexandria, solving problems that builders, navigators, and scholars have faced for generations. Now, Maya, it is time to do what I did two thousand years ago — construct the proof itself." — Pythagoras</div>
+    <div style="font-size:0.88rem;color:rgba(255,255,255,0.65);max-width:700px;line-height:1.6;font-style:italic;">"You have traveled from Samos to Alexandria, solving problems that builders, navigators, and scholars have faced for generations. Now, <span class="js-player-name">Maya</span>, it is time to do what I did two thousand years ago — construct the proof itself." — Pythagoras</div>
     <div style="display:flex;gap:12px;margin-top:14px;">
       <span class="badge" style="background:rgba(126,87,194,0.2);color:rgba(200,180,255,0.9);">CREATE</span>
       <span class="badge" style="background:rgba(212,168,67,0.2);color:rgba(255,230,160,0.9);">Mastery Shores</span>
@@ -1622,7 +1622,7 @@ body {
               <div style="font-size:0.82rem;font-weight:700;color:var(--navy);">Simplify — cancel what appears on both sides</div>
             </div>
             <div style="font-size:0.85rem;color:var(--text);margin-bottom:4px;">Look at your equation from Step C. The term <strong>2ab</strong> appears on <em>both</em> sides. Subtract it from both sides. What's left?</div>
-            <div style="font-size:0.82rem;color:var(--text-soft);margin-bottom:8px;font-style:italic;">"This is the moment of truth, Maya. What remains when you remove 2ab from both sides?"</div>
+            <div style="font-size:0.82rem;color:var(--text-soft);margin-bottom:8px;font-style:italic;">"This is the moment of truth, <span class="js-player-name">Maya</span>. What remains when you remove 2ab from both sides?"</div>
             <div style="display:flex;align-items:center;gap:8px;">
               <input type="text" class="challenge-input" id="proofStepD" placeholder="a² + b² = c²" style="flex:1;font-family:monospace;font-size:1.1rem;font-weight:700;" oninput="checkProofSteps()">
               <span id="proofStepDCheck" style="font-size:1.2rem;">❓</span>
@@ -1687,7 +1687,7 @@ body {
         <div style="text-align:center;padding:8px;">
           <div style="font-size:1.5rem;margin-bottom:4px;">🏆</div>
           <div style="font-family:var(--font-display);font-size:1.15rem;color:var(--navy);font-weight:600;">Submit Your Proof to the Council</div>
-          <div style="font-size:0.82rem;color:var(--text-soft);margin:6px 0 16px;max-width:500px;margin-left:auto;margin-right:auto;">"When you submit, your proof goes before the Council of Alexandria — and to Mrs Bernard for review. This is your moment, Maya."</div>
+          <div style="font-size:0.82rem;color:var(--text-soft);margin:6px 0 16px;max-width:500px;margin-left:auto;margin-right:auto;">"When you submit, your proof goes before the Council of Alexandria — and to Mrs Bernard for review. This is your moment, <span class="js-player-name">Maya</span>."</div>
           <button class="btn btn-primary btn-lg" onclick="submitCapstone()">📜 Submit Proof to the Council</button>
         </div>
       </div>
@@ -1775,7 +1775,7 @@ body {
         <div><span style="font-family:var(--font-display);font-size:1.3rem;color:var(--purple);font-weight:700;">MASTERY</span><div style="font-size:0.65rem;color:var(--text-muted);">Tier achieved</div></div>
       </div>
     </div>
-    <div style="font-size:0.92rem;color:var(--text);font-style:italic;margin-bottom:24px;line-height:1.65;">"You have done what only the greatest minds achieve, Maya. You didn't just learn my theorem — you understood <em>why</em> it is true. That understanding can never be taken from you. Go well, young scholar."</div>
+    <div style="font-size:0.92rem;color:var(--text);font-style:italic;margin-bottom:24px;line-height:1.65;">"You have done what only the greatest minds achieve, <span class="js-player-name">Maya</span>. You didn't just learn my theorem — you understood <em>why</em> it is true. That understanding can never be taken from you. Go well, young scholar."</div>
     <div style="display:flex;gap:12px;justify-content:center;">
       <button class="btn btn-primary btn-lg" onclick="navigate('screen-student-dashboard')">🏠 Return to Dashboard</button>
       <button class="btn btn-outline" onclick="navigate('screen-progress-map')">📊 View Progress Map</button>
@@ -3261,6 +3261,35 @@ async function checkExistingSession() {
   }
 }
 
+// ═══ PLAYER NAME TEMPLATING ═══
+// The narrative content (Pythagoras's dialogue, challenge feedback, capstone
+// text) historically addressed the student as "Maya" directly. To personalize
+// it for the real authenticated user, all those strings now use {PLAYER} as
+// a placeholder and are substituted through these helpers at render time.
+// Unauthenticated demo visitors fall back to "Maya" — the canonical character.
+
+function getPlayerName() {
+  if (window.currentUser && window.currentUser.first_name) {
+    return window.currentUser.first_name;
+  }
+  return 'Maya';
+}
+
+// Replace {PLAYER} tokens in a string with the current player's first name.
+// Safe to call on null/undefined — returns an empty string.
+function withPlayerName(text) {
+  return String(text || '').replace(/\{PLAYER\}/g, getPlayerName());
+}
+
+// Walk the DOM and replace the textContent of any element with the
+// .js-player-name class with the current player's first name. Used for
+// static HTML narrative (capstone screens) that can't be wrapped at read time.
+function updatePlayerNameInDom() {
+  document.querySelectorAll('.js-player-name').forEach(el => {
+    el.textContent = getPlayerName();
+  });
+}
+
 // Fetch the authenticated user's real profile (xp/level/streak/tier/mastery)
 // and merge it onto window.currentUser so the QS demo shim can display real
 // values instead of Maya's seeded localStorage mock. Safe for all roles —
@@ -3298,6 +3327,8 @@ async function loadRealProfileIntoCurrentUser() {
     if (window.QS && typeof window.QS.renderDashboard === 'function') {
       window.QS.renderDashboard();
     }
+    // Substitute any static-HTML Maya references with the real player name.
+    updatePlayerNameInDom();
   } catch (e) {
     console.warn('[Auth] Failed to load real profile:', e.message);
   }
@@ -3368,7 +3399,7 @@ const challenges = [
       { title: "Set up the equation", content: "If a² + b² = c², and you know c = 13 and a = 5, solve for b." },
       { title: "Calculate step by step", content: "5² = 25, 13² = 169. So b² = 169 - 25 = 144. What's the square root of 144?" },
     ],
-    correctFeedback: `Excellent, <em>Maya</em>! The workers can reach 12 cubits — the temple construction continues! You've recovered a <strong>proof fragment</strong>: the builders' application. Pythagoras smiles: <em>"See? My theorem wasn't born in a classroom — it was born on scaffolding like this."</em>`,
+    correctFeedback: `Excellent, <em>{PLAYER}</em>! The workers can reach 12 cubits — the temple construction continues! You've recovered a <strong>proof fragment</strong>: the builders' application. Pythagoras smiles: <em>"See? My theorem wasn't born in a classroom — it was born on scaffolding like this."</em>`,
     incorrectFeedback: `The temple workers are waiting! Try labeling the sides first: the <em>ladder is the hypotenuse</em> (13 ft), and the <em>base is one leg</em> (5 ft). Now use a² + b² = c² to find how high the ladder reaches.`,
     pulseAfter: false,
     fragmentReward: "🧩 Fragment: The Builder's Application",
@@ -3402,7 +3433,7 @@ const challenges = [
     cogLevel: "Evaluate", cogColor: "badge-orange",
     difficulty: "●●●●●", diffLabel: "Very Hard",
     location: "🔭 The Observatory at Alexandria",
-    storyBeat: "At the great library, a young scholar presents a claim to the council: <em>\"I've found a new right triangle!\"</em> Pythagoras raises an eyebrow: <em>\"Anyone can claim. The question is — can you verify? Maya, the council needs an evaluator, not a solver. Can you judge this claim?\"</em>",
+    storyBeat: "At the great library, a young scholar presents a claim to the council: <em>\"I've found a new right triangle!\"</em> Pythagoras raises an eyebrow: <em>\"Anyone can claim. The question is — can you verify? {PLAYER}, the council needs an evaluator, not a solver. Can you judge this claim?\"</em>",
     prompt: "A student claims: \"If a triangle has sides of length 7, 24, and 25, it must be a right triangle.\" Is the student correct? Type YES or NO, and the value of 7² + 24² to prove it.",
     visual: "🔭",
     unit: "",
@@ -3950,7 +3981,7 @@ const questScenes = [
     diagramEmoji: '📐',
     diagramDesc: 'Interactive: Drag each triangle tile to its correct classification zone — Equilateral (all sides equal), Isosceles (two sides equal), or Scalene (no sides equal).',
     dialogue: [
-      '"Welcome to Samos, Maya — the island where I was born and first fell in love with geometry. Before we sail to distant lands, you must learn to <em>see</em> triangles the way I do."',
+      '"Welcome to Samos, {PLAYER} — the island where I was born and first fell in love with geometry. Before we sail to distant lands, you must learn to <em>see</em> triangles the way I do."',
       '"Look at these stone tablets. Each one bears a different triangle. Your task is simple but essential: sort each triangle into its correct type. Drag each tile to its category. <em>This is the foundation — without it, nothing else we discover will make sense.</em>"'
     ],
     travelFrom: null,
@@ -3966,7 +3997,7 @@ const questScenes = [
     diagramEmoji: '📐',
     diagramDesc: 'Diagram: Right triangle showing ladder (13-cubit hypotenuse), wall (unknown height), and ground distance (5 cubits from wall). Labels: a = ?, b = 5, c = 13 (cubits).',
     dialogue: [
-      '"Maya! Look at this construction site. See those workers trying to reach the top of that wall? They have a ladder, but they need to know — will it reach high enough before they climb?"',
+      '"{PLAYER}! Look at this construction site. See those workers trying to reach the top of that wall? They have a ladder, but they need to know — will it reach high enough before they climb?"',
       '"This is how my theorem was first used — not by mathematicians, but by <em>builders</em>. Real people solving real problems. The ladder is 13 cubits long and its base is 5 cubits from the wall. Can you help them figure out how high the ladder reaches?"'
     ],
     travelFrom: { title: 'Voyage: Samos → Athens', desc: '~1,200 stadia by sea across the Aegean • 1-2 days sailing west past the Cyclades islands', distance: '1,200', unit: 'stadia' },
@@ -3983,7 +4014,7 @@ const questScenes = [
     diagramDesc: 'Diagram: Coordinate grid showing a ship\'s path — 8 stadia east (horizontal), then 15 stadia north (vertical). Dashed hypotenuse line from start to current position with "?" label.',
     dialogue: [
       '"We\'ve arrived at Rhodes — one of the great shipping ports of the ancient world. A merchant vessel has gone off course and the harbor master needs to calculate the shortest route back to port."',
-      '"Here\'s the thing about my theorem, Maya — it doesn\'t just measure walls and ladders. It measures the <em>invisible straight line</em> between any two points. The path the crow flies. The ship sailed 8 stadia east and 15 stadia north. Can you find the direct distance home?"'
+      '"Here\'s the thing about my theorem, {PLAYER} — it doesn\'t just measure walls and ladders. It measures the <em>invisible straight line</em> between any two points. The path the crow flies. The ship sailed 8 stadia east and 15 stadia north. Can you find the direct distance home?"'
     ],
     travelFrom: { title: 'Voyage: Athens → Rhodes', desc: '~2,160 stadia by sea across the Aegean • 2-3 days sailing at favorable winds • Route follows the island chain past Delos, Naxos, and Kos', distance: '2,160', unit: 'stadia' },
   },
@@ -3998,7 +4029,7 @@ const questScenes = [
     diagramEmoji: '✅',
     diagramDesc: 'Diagram: A triangle labeled with sides 9, 12, and 15. Student must verify: does 9² + 12² = 15²? Show the three squares on each side for visual proof.',
     dialogue: [
-      '"This is the Library of Alexandria, Maya. The most brilliant minds in the world come here to share their discoveries. But here, <em>nothing is accepted without proof</em>."',
+      '"This is the Library of Alexandria, {PLAYER}. The most brilliant minds in the world come here to share their discoveries. But here, <em>nothing is accepted without proof</em>."',
       '"A young scholar has just stood before the council claiming to have found a new right triangle with sides 9, 12, and 15. But claiming isn\'t enough — someone must <em>verify</em> the claim with evidence. The council has asked <em>you</em> to be that evaluator. Check: does 9² + 12² = 15²?"'
     ],
     travelFrom: { title: 'Voyage: Rhodes → Alexandria', desc: '~3,500 stadia by sea across the open Mediterranean • 4-5 days sailing south past Cyprus • Ancient mariners navigated by the North Star and coastal landmarks', distance: '3,500', unit: 'stadia' },
@@ -4451,7 +4482,7 @@ function enterLocation(idx) {
 function showDialogue(locIdx, step) {
   const scene = questScenes[locIdx];
   questDialogueStep = step;
-  document.getElementById('locationNPCDialogue').innerHTML = scene.dialogue[step];
+  document.getElementById('locationNPCDialogue').innerHTML = withPlayerName(scene.dialogue[step]);
   const actionsEl = document.getElementById('locationDialogueActions');
 
   if (step < scene.dialogue.length - 1) {
@@ -4527,7 +4558,7 @@ const scaffoldChallenges = {
     sceneSubtitle: 'Samos — A Quiet Cove',
     sceneAmbiance: 'Pythagoras draws three triangles in the wet sand. The waves wash gently nearby.',
     dialogue: [
-      '"Let me simplify this, Maya. Forget the categories for a moment. Let\'s just look at one triangle at a time."',
+      '"Let me simplify this, {PLAYER}. Forget the categories for a moment. Let\'s just look at one triangle at a time."',
       '"This triangle has sides 3, 3, 3. All three sides are the same length. What type of triangle is that? Type: equilateral, isosceles, or scalene."'
     ],
     prompt: 'A triangle has sides of length 3, 3, and 3. All three sides are equal. What type of triangle is this? (equilateral, isosceles, or scalene)',
@@ -4554,7 +4585,7 @@ const scaffoldChallenges = {
     sceneSubtitle: 'Near Athens — A Quiet Olive Grove',
     sceneAmbiance: 'Pythagoras leads you away from the noisy construction site to a quiet grove of olive trees. He draws a triangle in the dirt with a stick.',
     dialogue: [
-      '"Don\'t worry, Maya. Even my best students at Croton needed practice before they could help builders. Let me draw something simpler in the dirt."',
+      '"Don\'t worry, {PLAYER}. Even my best students at Croton needed practice before they could help builders. Let me draw something simpler in the dirt."',
       '"See this triangle? The two shorter sides are 3 and 4. Before we go back to that tall wall, let\'s find the longest side — the hypotenuse. Just use <em>a² + b² = c²</em> and solve for c."'
     ],
     prompt: 'A right triangle has legs of length 3 and 4. What is the length of the hypotenuse?',
@@ -4646,7 +4677,7 @@ const fastTrackVariants = {
       { title: 'Set up the equation', content: 'a² + 24² = 25². So a² = 625 - 576.' },
       { title: 'Solve', content: 'a² = 49. a = √49 = 7. The 7-24-25 triple!' },
     ],
-    pythagorasIntro: '"By the tetractys, Maya! You solved that faster than my best student at Croton. The workers have a second, taller wall. Let me give you something worthy of your speed."',
+    pythagorasIntro: '"By the tetractys, {PLAYER}! You solved that faster than my best student at Croton. The workers have a second, taller wall. Let me give you something worthy of your speed."',
     correctFeedback: '<em>"Magnificent! 7-24-25 — one of the rarer Pythagorean triples. Most students never see this one."</em> Pythagoras looks genuinely impressed. <strong>+10 bonus XP for fast-track mastery!</strong>',
     incorrectFeedback: 'This is a harder variant — the numbers are bigger but the method is the same. The ladder (25 ft) is the hypotenuse, the wall (24 ft) is one leg. Find the other leg: a² + 24² = 25².',
   },
@@ -4663,7 +4694,7 @@ const fastTrackVariants = {
       { title: 'Set up', content: '20² + 21² = c². That\'s 400 + 441 = c².' },
       { title: 'Solve', content: 'c² = 841. c = √841 = 29. The 20-21-29 triple!' },
     ],
-    pythagorasIntro: '"You navigate charts like a born sailor, Maya! But here\'s a vessel in deeper trouble — the numbers aren\'t as friendly this time."',
+    pythagorasIntro: '"You navigate charts like a born sailor, {PLAYER}! But here\'s a vessel in deeper trouble — the numbers aren\'t as friendly this time."',
     correctFeedback: '"<em>29 stadia! That\'s a triple most harbor masters have never seen: 20, 21, 29.</em>" Pythagoras marks it on the star chart. <strong>+15 bonus XP for fast-track mastery!</strong>',
     incorrectFeedback: 'The method is identical — 20² + 21² = c². The numbers are larger: 400 + 441 = 841. What\'s √841?',
   },
@@ -5227,7 +5258,7 @@ function submitAnswer() {
 }
 
 function showCorrectFeedback(ch) {
-  document.getElementById('fbCorrectText').innerHTML = ch.correctFeedback;
+  document.getElementById('fbCorrectText').innerHTML = withPlayerName(ch.correctFeedback);
   
   const isLast = currentChallenge >= challenges.length - 1;
   const nextLabel = isLast ? 'Complete Quest →' : 'Next Challenge →';
@@ -5277,7 +5308,7 @@ function handleIncorrectAnswer(idx, ch, tracker) {
     // Third+ attempt — more direct guidance, warmer tone
     feedbackHTML = `<div style="margin-bottom:8px;">${ch.incorrectFeedback}</div>
       <div style="font-size:0.8rem;color:var(--text-soft);margin-top:8px;font-style:italic;">
-        "You're closer than you think, Maya. ${tracker.hintsUsed === 0 ? 'Open the hints in the Scholar\'s Toolkit — no shame in that. Even I needed guidance from my teachers.' : 'Look at Hint ' + Math.min(tracker.attempts - 1, 3) + ' again carefully — the answer is almost in your hands.'}"
+        "You're closer than you think, ${getPlayerName()}. ${tracker.hintsUsed === 0 ? 'Open the hints in the Scholar\'s Toolkit — no shame in that. Even I needed guidance from my teachers.' : 'Look at Hint ' + Math.min(tracker.attempts - 1, 3) + ' again carefully — the answer is almost in your hands.'}"
       </div>`;
     if (scaffoldChallenges[idx] && !scaffoldActive) {
       feedbackHTML += `<div style="margin-top:8px;"><button class="btn btn-sm" style="background:var(--teal);color:white;border:none;padding:6px 14px;" onclick="enterScaffold(${idx})">🌿 Practice with easier numbers first</button></div>`;
@@ -5336,9 +5367,9 @@ function handleScaffoldComplete(idx, ch) {
   const scaffold = scaffoldChallenges[idx];
   
   // Show success with return dialogue
-  document.getElementById('fbCorrectText').innerHTML = `${ch.correctFeedback}
+  document.getElementById('fbCorrectText').innerHTML = `${withPlayerName(ch.correctFeedback)}
     <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,rgba(42,127,142,0.08),rgba(42,127,142,0.02));border:1px solid rgba(42,127,142,0.2);border-radius:var(--radius);">
-      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${scaffold.returnDialogue}</div>
+      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${withPlayerName(scaffold.returnDialogue)}</div>
     </div>`;
   
   document.getElementById('fbCorrectActions').innerHTML = `
@@ -5378,7 +5409,7 @@ function returnFromScaffold(idx) {
 
   // Show return dialogue from Pythagoras
   const dialogueEl = document.getElementById('locationNPCDialogue');
-  dialogueEl.innerHTML = `"<em>Welcome back, Maya. You've practiced with simpler numbers and you understand the pattern now. This time, the wall is taller and the numbers are bigger — but the method is exactly the same. I believe in you.</em>"`;
+  dialogueEl.innerHTML = `"<em>Welcome back, ${getPlayerName()}. You've practiced with simpler numbers and you understand the pattern now. This time, the wall is taller and the numbers are bigger — but the method is exactly the same. I believe in you.</em>"`;
   const actionsEl = document.getElementById('locationDialogueActions');
   actionsEl.innerHTML = '<button class="btn btn-primary" onclick="revealChallenge()">⚔️ Try the Challenge Again</button>';
   
@@ -5392,10 +5423,10 @@ function returnFromScaffold(idx) {
 function handleFastTrackOffer(idx, ch, solveTime) {
   const variant = fastTrackVariants[idx];
   
-  document.getElementById('fbCorrectText').innerHTML = `${ch.correctFeedback}
+  document.getElementById('fbCorrectText').innerHTML = `${withPlayerName(ch.correctFeedback)}
     <div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,rgba(126,87,194,0.08),rgba(126,87,194,0.02));border:1px solid rgba(126,87,194,0.25);border-radius:var(--radius);">
       <div style="font-size:0.82rem;color:var(--purple);font-weight:700;margin-bottom:4px;">⚡ Fast-Track Challenge Available!</div>
-      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${variant.pythagorasIntro}</div>
+      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${withPlayerName(variant.pythagorasIntro)}</div>
       <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">Solved in ${Math.round(solveTime)}s on first attempt — you've earned a harder challenge for bonus XP!</div>
     </div>`;
   
@@ -5423,7 +5454,7 @@ function enterFastTrack(idx) {
   
   // Show fast-track intro dialogue
   const dialogueEl = document.getElementById('locationNPCDialogue');
-  dialogueEl.innerHTML = `<em>${variant.pythagorasIntro}</em>`;
+  dialogueEl.innerHTML = `<em>${withPlayerName(variant.pythagorasIntro)}</em>`;
   const actionsEl = document.getElementById('locationDialogueActions');
   actionsEl.innerHTML = '<span style="font-size:0.78rem;color:var(--purple);font-weight:600;">⚡ Fast-Track challenge active</span>';
   
@@ -5439,7 +5470,7 @@ function handleFastTrackComplete(idx, ch) {
   
   const bonusXP = idx === 1 ? 10 : 15;
   
-  document.getElementById('fbCorrectText').innerHTML = `${ch.correctFeedback}
+  document.getElementById('fbCorrectText').innerHTML = `${withPlayerName(ch.correctFeedback)}
     <div style="margin-top:8px;padding:10px;background:linear-gradient(135deg,rgba(126,87,194,0.1),rgba(126,87,194,0.03));border-radius:var(--radius);border:1px solid rgba(126,87,194,0.2);">
       <div style="font-size:0.78rem;color:var(--purple);font-weight:600;">⚡ Fast-Track Mastery Demonstrated!</div>
       <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">This achievement is recorded in your Mastery Map and visible to your teacher.</div>
@@ -5888,7 +5919,7 @@ function showLabelSuccess() {
     feedback = document.createElement('div');
     feedback.id = 'labelFeedback';
     feedback.style.cssText = 'margin-top:12px;padding:12px;background:rgba(67,160,71,0.06);border:1px solid rgba(67,160,71,0.2);border-radius:8px;animation:fadeIn 0.5s ease;';
-    feedback.innerHTML = '<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ All labels correct!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"Excellent labeling, Maya. You understand the geometry. Now express it in algebra." — Pythagoras</div>';
+    feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ All labels correct!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"Excellent labeling, ${getPlayerName()}. You understand the geometry. Now express it in algebra." — Pythagoras</div>`;
     document.getElementById('labelSection').appendChild(feedback);
   }
 }
@@ -5974,7 +6005,7 @@ function showProofSuccess() {
     feedback = document.createElement('div');
     feedback.id = 'proofFeedback';
     feedback.style.cssText = 'margin-top:12px;padding:12px;background:rgba(126,87,194,0.06);border:1px solid rgba(126,87,194,0.2);border-radius:8px;animation:fadeIn 0.5s ease;';
-    feedback.innerHTML = '<div style="font-size:0.82rem;color:var(--purple);font-weight:600;">✓ Proof steps complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"You have constructed the proof, Maya — algebraically and in your own words. You don\'t just know the theorem. You understand <em>why</em> it must be true." — Pythagoras</div>';
+    feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--purple);font-weight:600;">✓ Proof steps complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"You have constructed the proof, ${getPlayerName()} — algebraically and in your own words. You don't just know the theorem. You understand <em>why</em> it must be true." — Pythagoras</div>`;
     document.getElementById('capstoneStep3').querySelector('[style*="background:var(--bg)"]').appendChild(feedback);
   }
 }
@@ -6009,7 +6040,7 @@ function checkVerification() {
       feedback = document.createElement('div');
       feedback.id = 'verifyFeedback';
       feedback.style.cssText = 'margin-top:12px;padding:12px;background:rgba(67,160,71,0.06);border:1px solid rgba(67,160,71,0.2);border-radius:8px;animation:fadeIn 0.5s ease;';
-      feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ Verification complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"${a}² + ${b}² = ${a*a} + ${b*b} = ${a*a+b*b} = ${c}². The numbers confirm what the proof already told us must be true. You have the mind of a mathematician, Maya!" — Pythagoras</div>`;
+      feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ Verification complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"${a}² + ${b}² = ${a*a} + ${b*b} = ${a*a+b*b} = ${c}². The numbers confirm what the proof already told us must be true. You have the mind of a mathematician, ${getPlayerName()}!" — Pythagoras</div>`;
       document.getElementById('verifySection').appendChild(feedback);
     }
   } else {
@@ -6033,7 +6064,7 @@ function submitCapstone() {
   
   if (incomplete.length > 0) {
     const missing = incomplete.join(', ');
-    alert(`"The council requires a complete proof, Maya. You still need to finish: ${missing}. Take your time — there is no shame in thoroughness." — Pythagoras`);
+    alert(`"The council requires a complete proof, ${getPlayerName()}. You still need to finish: ${missing}. Take your time — there is no shame in thoroughness." — Pythagoras`);
     // Scroll to first incomplete step
     if (!capstoneState.triangle) document.getElementById('capstoneStep1').scrollIntoView({ behavior: 'smooth' });
     else if (!capstoneState.labels) document.getElementById('capstoneStep2').scrollIntoView({ behavior: 'smooth' });
