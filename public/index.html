@@ -4452,7 +4452,8 @@ function revealChallenge() {
   area.scrollIntoView({ behavior: 'smooth' });
   loadChallenge(currentChallenge);
 
-  // Anti-cheat: begin tracking play time for interactive challenges
+  // Begin tracking play time for interactive challenges. The button stays
+  // disabled until Unity fires activity_complete — no time-based unlock.
   const ch = challenges[currentChallenge];
   if (ch && ch.interactiveType === 'unityEmbed') {
     unityChallengeAccepted = true;
@@ -4461,38 +4462,10 @@ function revealChallenge() {
     // the challenge. Until this point the iframe has no src and is covered
     // by the gate overlay, so the student cannot play early.
     startUnityLoad();
-    startMarkCompleteTimer();
-  }
-}
-
-function startMarkCompleteTimer() {
-  // Update the Mark Complete button state once per second:
-  //  - locked/gray while time < MIN_PLAY_SECONDS
-  //  - enabled once time passes OR when Unity sends completion event
-  if (unityMarkCompleteInterval) clearInterval(unityMarkCompleteInterval);
-  const updateBtn = () => {
-    const btn = document.getElementById('unityCompleteBtn');
+    // Update the hint text to tell the student to finish the activity.
     const hint = document.getElementById('unityMarkCompleteHint');
-    if (!btn) { clearInterval(unityMarkCompleteInterval); return; }
-    const elapsed = Math.floor((Date.now() - unityChallengeAcceptedAt) / 1000);
-    const remaining = Math.max(0, MIN_PLAY_SECONDS - elapsed);
-    if (unityGameCompletedEvent || remaining === 0) {
-      // Enable the button
-      btn.disabled = false;
-      btn.style.background = 'var(--teal)';
-      btn.style.color = 'white';
-      btn.style.cursor = 'pointer';
-      if (hint) hint.innerHTML = '✓ <strong>Finished sorting the triangle tiles?</strong> Click the button to continue →';
-      clearInterval(unityMarkCompleteInterval);
-      unityMarkCompleteInterval = null;
-    } else {
-      // Still locked — show countdown
-      btn.disabled = true;
-      if (hint) hint.innerHTML = `⏳ Keep playing... you can mark complete in <strong>${remaining}s</strong>`;
-    }
-  };
-  updateBtn();
-  unityMarkCompleteInterval = setInterval(updateBtn, 1000);
+    if (hint) hint.innerHTML = '⏳ Play through the activity — Mark Complete will light up when you finish.';
+  }
 }
 
 function backToMap() {
@@ -4749,12 +4722,10 @@ function loadChallenge(idx) {
 let unityInstance = null;
 const UNITY_BUILD_URL = 'https://py-r2.questsim.com';
 
-// State for anti-cheat: student must accept the challenge AND spend
-// a minimum amount of time in the game before Mark Complete is allowed.
+// Anti-cheat state: Mark Complete is ONLY enabled when Unity fires
+// activity_complete via postMessage. No time-based unlock.
 let unityChallengeAccepted = false;
 let unityChallengeAcceptedAt = 0;
-const MIN_PLAY_SECONDS = 30; // require at least 30s of play before mark complete
-let unityMarkCompleteInterval = null;
 let unityGameCompletedEvent = false; // flipped to true when Unity postMessages completion
 
 function renderUnityInArtwork(artworkArea) {
@@ -4766,7 +4737,6 @@ function renderUnityInArtwork(artworkArea) {
   unityChallengeAccepted = false;
   unityChallengeAcceptedAt = 0;
   unityGameCompletedEvent = false;
-  if (unityMarkCompleteInterval) { clearInterval(unityMarkCompleteInterval); unityMarkCompleteInterval = null; }
 
   const wrapper = document.createElement('div');
   wrapper.id = 'unityEmbedWrapper';
@@ -4988,19 +4958,13 @@ function renderUnityEmbed(ch, idx) {
 // the button themselves — we no longer auto-invoke the handler.
 
 function onUnityActivityComplete() {
-  // Anti-cheat guard: require that the student accepted the challenge
-  // and spent at least MIN_PLAY_SECONDS in the activity before allowing
-  // completion. Unity postMessage events always bypass this check.
+  // Anti-cheat guard: the ONLY way this handler should fire is after Unity
+  // sends activity_complete via postMessage, which sets unityGameCompletedEvent
+  // and enables the button. If it runs without that flag, the student has
+  // somehow bypassed the disabled state (e.g. devtools), so we refuse.
   if (!unityGameCompletedEvent) {
-    if (!unityChallengeAccepted) {
-      alert('Please click "⚔️ Accept the Challenge" in the dialogue above before marking complete.');
-      return;
-    }
-    const elapsed = (Date.now() - unityChallengeAcceptedAt) / 1000;
-    if (elapsed < MIN_PLAY_SECONDS) {
-      alert(`Please spend at least ${MIN_PLAY_SECONDS} seconds on the activity. You've spent ${Math.floor(elapsed)}s so far.`);
-      return;
-    }
+    alert('Please finish the Triangle Types activity before marking complete.');
+    return;
   }
 
   const ch = challenges[currentChallenge];
