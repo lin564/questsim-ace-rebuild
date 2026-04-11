@@ -4937,7 +4937,9 @@ function onUnityActivityComplete() {
   // The buffer was populated by the postMessage listener between
   // activity_begin and activity_complete. We use it to compute
   // accuracy, duration, wrong-attempt count, and a mastery confidence.
-  if (isAuthenticated && currentUser && currentUser.role === 'student') {
+  // Admins/teachers playing in test mode are also recorded so the
+  // learning-analytics pipeline can be validated without a student login.
+  if (isAuthenticated && currentUser) {
     const buf = unityEventBuffer;
     const totalPickups = buf.pickups.length;
     const correctDrops = buf.correct_drops;
@@ -5003,7 +5005,11 @@ let activeGameSessionId = null;
 
 async function ensureGameSession() {
   if (activeGameSessionId) return activeGameSessionId;
-  if (!isAuthenticated || !currentUser || currentUser.role !== 'student') return null;
+  // Only bail if no authenticated user at all. Admins and teachers playing
+  // through the activity in testing mode should still record their attempts,
+  // so we no longer gate on role === 'student'. The backend /api/student/*
+  // middleware only requires auth, not a specific role.
+  if (!isAuthenticated || !currentUser) return null;
   try {
     const data = await API.post('/api/student/session', { action: 'start' });
     activeGameSessionId = data.session_id;
@@ -5015,7 +5021,7 @@ async function ensureGameSession() {
 }
 
 async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
-  if (!isAuthenticated || !currentUser || currentUser.role !== 'student') return;
+  if (!isAuthenticated || !currentUser) return;
   const sessionId = await ensureGameSession();
   if (!sessionId) return;
 
@@ -5048,7 +5054,7 @@ async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
 // and a mastery_state update — all derived from the event buffer built up
 // by the postMessage listener between activity_begin and activity_complete.
 async function saveUnityAttemptToD1(opts) {
-  if (!isAuthenticated || !currentUser || currentUser.role !== 'student') return;
+  if (!isAuthenticated || !currentUser) return;
   const sessionId = await ensureGameSession();
   if (!sessionId) return;
 
