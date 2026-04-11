@@ -4646,13 +4646,23 @@ function renderUnityInArtwork(artworkArea) {
       <iframe id="questsimIframe"
         src=""
         style="width:100%;height:100%;border:none;display:block;"
-        allow="autoplay; fullscreen; gamepad; pointer-lock; keyboard-map; web-share; clipboard-write; clipboard-read"
+        allow="autoplay; fullscreen; gamepad; keyboard-map; web-share; clipboard-write; clipboard-read"
         allowfullscreen>
       </iframe>
       <div class="unity-loading-overlay" id="unityLoadingOverlay">
         <div class="unity-loading-title">🏛️ Entering the World of Pythagoras...</div>
         <div class="unity-loading-bar"><div class="unity-loading-fill" id="unityLoadingFill" style="width:100%"></div></div>
         <div class="unity-loading-text" id="unityLoadingText">Connecting to game server...</div>
+      </div>
+      <!-- Post-game overlay: appears the moment Unity signals activity_complete.
+           Covers the iframe so Unity's in-game Continue button can't be seen or
+           clicked (it grabs pointer lock and confuses the student). The only
+           path forward is the Mark Complete button below. -->
+      <div id="unityPostGameOverlay" style="display:none;position:absolute;inset:0;background:linear-gradient(160deg,rgba(15,38,64,0.96) 0%,rgba(27,58,92,0.96) 50%,rgba(42,127,142,0.96) 100%);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:15;pointer-events:auto;">
+        <div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>
+        <div style="font-family:var(--font-display);font-size:1.5rem;color:var(--gold);font-weight:600;margin-bottom:10px;">Activity Finished!</div>
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.88);max-width:480px;line-height:1.55;margin-bottom:22px;">You've correctly classified every triangle on Pythagoras's table. Click the glowing <strong>Mark Complete</strong> button below to continue your quest.</div>
+        <div style="font-size:2rem;animation:pulse 1.4s ease-in-out infinite;">⬇</div>
       </div>
       <!-- Lockout overlay: appears when student marks complete to stop them playing more activities -->
       <div id="unityLockoutOverlay" style="display:none;position:absolute;inset:0;background:rgba(27,58,92,0.92);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:20;">
@@ -4743,9 +4753,16 @@ window.addEventListener('message', (event) => {
 });
 
 // Flip the Mark Complete button from disabled/gray to enabled/primary
-// and draw the student's attention to it. Called from the postMessage
-// listener when Unity signals activity_complete.
+// and draw the student's attention to it. Also drop a celebratory
+// overlay over the Unity canvas to hide Unity's in-game Continue button
+// (which would otherwise grab pointer lock and confuse the student).
+// Called from the postMessage listener when Unity signals activity_complete.
 function enableMarkCompleteButton() {
+  // Cover the Unity canvas so the student can't see or click Unity's
+  // built-in "Continue" button. The only path forward is Mark Complete.
+  const postGame = document.getElementById('unityPostGameOverlay');
+  if (postGame) postGame.style.display = 'flex';
+
   const btn = document.getElementById('unityCompleteBtn');
   const hint = document.getElementById('unityMarkCompleteHint');
   if (!btn) return;
