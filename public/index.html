@@ -4685,25 +4685,79 @@ function renderUnityInArtwork(artworkArea) {
   }, 8000);
 }
 
-// ═══ LISTEN FOR ACTIVITY COMPLETE FROM UNITY ═══
-// Unity's ACE_PostMessageToParent sends a message when the locked
-// activity completes. This handler auto-triggers Mark Complete so
-// the student doesn't have to click it manually, AND it counts as
-// "real" completion that bypasses the minimum-time anti-cheat.
+// ═══ LISTEN FOR UNITY EVENTS ═══
+// The Unity wrapper forwards these events via postMessage:
+//   unity_ready      — Unity loaded
+//   activity_begin   — student started the activity
+//   unity_pickup     — student picked up a tile (one per click)
+//   unity_progress   — correct drop (Progress.AddCoins fired)
+//   activity_complete — Activity_Types.LessonPassed fired
+//
+// We buffer pickups/progress between activity_begin and activity_complete
+// so we can compute real learning analytics (accuracy, duration, wrong
+// attempts, mastery confidence) and send them to D1 when the student
+// clicks Mark Complete.
+let unityEventBuffer = {
+  begin_at: null,
+  end_at: null,
+  pickups: [],       // [{ name, path, ts }]
+  correct_drops: 0,  // count of Progress.AddCoins events
+};
+
+function resetUnityEventBuffer() {
+  unityEventBuffer = { begin_at: null, end_at: null, pickups: [], correct_drops: 0 };
+}
+
 window.addEventListener('message', (event) => {
   if (!event.data || event.data.source !== 'ace_unity') return;
-  console.log('[ACE] Received from Unity:', event.data);
-  if (event.data.type === 'activity_complete') {
-    console.log('[ACE] Activity complete from Unity:', event.data.data);
-    // Set the "real completion" flag so the anti-cheat check passes
+  const d = event.data;
+  // Quiet log — skip unity_ready heartbeat noise
+  if (d.type !== 'unity_ready') {
+    console.log('[ACE] Received from Unity:', d.type, d.data);
+  }
+
+  if (d.type === 'activity_begin') {
+    resetUnityEventBuffer();
+    unityEventBuffer.begin_at = d.timestamp || Date.now();
+  } else if (d.type === 'unity_pickup') {
+    unityEventBuffer.pickups.push({
+      name: d.data && d.data.name,
+      path: d.data && d.data.path,
+      ts: d.timestamp || Date.now(),
+    });
+  } else if (d.type === 'unity_progress') {
+    unityEventBuffer.correct_drops++;
+  } else if (d.type === 'activity_complete') {
+    unityEventBuffer.end_at = d.timestamp || Date.now();
+    // Flag that the student genuinely finished the game. This lets
+    // onUnityActivityComplete() bypass the "accept challenge + 30s"
+    // anti-cheat guard, but the student still has to click Mark Complete
+    // themselves — we do NOT auto-invoke the handler here.
     unityGameCompletedEvent = true;
-    // Only auto-complete if the current challenge is the Unity embed
-    const ch = challenges[currentChallenge];
-    if (ch && ch.interactiveType === 'unityEmbed') {
-      onUnityActivityComplete();
-    }
+    enableMarkCompleteButton();
   }
 });
+
+// Flip the Mark Complete button from disabled/gray to enabled/primary
+// and draw the student's attention to it. Called from the postMessage
+// listener when Unity signals activity_complete.
+function enableMarkCompleteButton() {
+  const btn = document.getElementById('unityCompleteBtn');
+  const hint = document.getElementById('unityMarkCompleteHint');
+  if (!btn) return;
+  btn.disabled = false;
+  btn.style.background = 'var(--gold)';
+  btn.style.color = '#fff';
+  btn.style.cursor = 'pointer';
+  btn.textContent = '✓ Mark Complete';
+  btn.style.boxShadow = '0 0 0 4px rgba(212,168,67,0.25)';
+  btn.style.animation = 'pulse 1.4s ease-in-out infinite';
+  if (hint) {
+    hint.textContent = '🎉 Activity finished! Click Mark Complete to continue.';
+    hint.style.color = 'var(--gold)';
+    hint.style.fontWeight = '600';
+  }
+}
 
 // Legacy hook — if loadChallenge still calls this for the challenge area
 function renderUnityEmbed(ch, idx) {
@@ -4714,22 +4768,9 @@ function renderUnityEmbed(ch, idx) {
 
 // Unity build loading removed — using iframe to py.questsim.com instead
 
-// Listen for postMessage events from the embedded Unity game.
-// When the new pythagoras-unity build with ACE_UrlParamLock is
-// deployed, it will send { source:'pythagoras-unity',
-// type:'ace_activity_complete', activity:'Types' } when the student
-// finishes Triangle Types. We use that as an automatic trigger for
-// the "Mark Complete" flow so students don't have to click the button.
-window.addEventListener('message', (event) => {
-  const data = event.data;
-  if (!data || data.source !== 'pythagoras-unity') return;
-  console.log('[ACE] Unity postMessage:', data);
-
-  if (data.type === 'ace_activity_complete') {
-    // Auto-trigger the completion flow — same as clicking Mark Complete
-    onUnityActivityComplete();
-  }
-});
+// NOTE: Unity completion is now handled by the 'ace_unity' listener
+// above, which enables the Mark Complete button. Students must click
+// the button themselves — we no longer auto-invoke the handler.
 
 function onUnityActivityComplete() {
   // Anti-cheat guard: require that the student accepted the challenge
@@ -4770,12 +4811,68 @@ function onUnityActivityComplete() {
     if (quoted) playPythagorasVoice(quoted);
   }, 500);
 
-  // Also record this as a progress event for students
+  // Record real learning analytics from the Unity event buffer.
+  // The buffer was populated by the postMessage listener between
+  // activity_begin and activity_complete. We use it to compute
+  // accuracy, duration, wrong-attempt count, and a mastery confidence.
   if (isAuthenticated && currentUser && currentUser.role === 'student') {
-    saveAttemptToD1(
-      ch, currentChallenge, true, '__interactive_complete__',
-      { attempts: 1, hintsUsed: 0, timeStarted: Date.now() - 60000 }
-    );
+    const buf = unityEventBuffer;
+    const totalPickups = buf.pickups.length;
+    const correctDrops = buf.correct_drops;
+    const wrongAttempts = Math.max(0, totalPickups - correctDrops);
+    const durationMs = (buf.end_at && buf.begin_at)
+      ? (buf.end_at - buf.begin_at)
+      : 60000;  // fallback if somehow we didn't see begin/end
+    const durationSec = Math.max(1, Math.round(durationMs / 1000));
+    const accuracy = totalPickups > 0 ? (correctDrops / totalPickups) : 1;
+    const uniqueTiles = Array.from(new Set(buf.pickups.map(p => p.name))).filter(Boolean);
+
+    // Split tile pickups into "property" tiles vs "triangle shape" tiles
+    // by matching on the path prefix the wrapper forwards.
+    const propertyTiles = buf.pickups.filter(p => (p.path || '').indexOf('Grab_Tiles_ArrayOf') >= 0).length;
+    const trianglePieces = buf.pickups.filter(p => (p.path || '').indexOf('Grab_Triangles') >= 0).length;
+
+    const userAnswerSummary = JSON.stringify({
+      total_pickups: totalPickups,
+      correct_drops: correctDrops,
+      wrong_attempts: wrongAttempts,
+      property_tile_pickups: propertyTiles,
+      triangle_piece_pickups: trianglePieces,
+      unique_tiles: uniqueTiles,
+      duration_ms: durationMs,
+      accuracy: Math.round(accuracy * 100) / 100,
+    });
+
+    // Mastery confidence is clamped to [0, 1] and tiered:
+    //   >= 0.9 → mastery, >= 0.7 → extension, else foundation
+    const confidence = Math.round(accuracy * 100) / 100;
+    const masteryLevel = accuracy >= 0.9 ? 'mastery' : (accuracy >= 0.7 ? 'extension' : 'foundation');
+    const masteryState = {
+      triangle_types: {
+        level: masteryLevel,
+        confidence: confidence,
+        last_activity: 'samos_types',
+        updated_at: new Date().toISOString(),
+      }
+    };
+
+    console.log('[ACE] Saving Unity attempt to D1:', {
+      duration_sec: durationSec,
+      total_pickups: totalPickups,
+      correct_drops: correctDrops,
+      accuracy: confidence,
+      mastery: masteryLevel,
+    });
+
+    saveUnityAttemptToD1({
+      ch,
+      challengeIndex: currentChallenge,
+      userAnswer: userAnswerSummary,
+      attemptNumber: totalPickups || 1,
+      timeSpentSec: durationSec,
+      xpAwarded: ch.xp || 0,
+      masteryState,
+    });
   }
 }
 
@@ -4821,6 +4918,44 @@ async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
     });
   } catch (e) {
     console.warn('[Progress] Failed to save attempt:', e.message);
+  }
+}
+
+// Rich attempt-save for Unity interactive activities. Unlike saveAttemptToD1,
+// this carries a JSON user_answer summary, a real wall-clock time_spent,
+// and a mastery_state update — all derived from the event buffer built up
+// by the postMessage listener between activity_begin and activity_complete.
+async function saveUnityAttemptToD1(opts) {
+  if (!isAuthenticated || !currentUser || currentUser.role !== 'student') return;
+  const sessionId = await ensureGameSession();
+  if (!sessionId) return;
+
+  const ch = opts.ch;
+  // For Unity activities, the location is authoritative on the challenge def,
+  // not currentChallenge — so this always attributes to the right location
+  // even if currentChallenge index disagreed for any reason.
+  const locMatch = (ch.location || '').toLowerCase().match(/samos|athens|rhodes|alexandria/);
+  const location = locMatch ? locMatch[0] : 'samos';
+  const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || opts.challengeIndex+1}`;
+
+  try {
+    await API.post('/api/student/progress', {
+      session_id: sessionId,
+      challenge_id: challengeId,
+      location,
+      tier: ch.tier || 'foundation',
+      user_answer: opts.userAnswer,
+      is_correct: true,
+      attempt_number: opts.attemptNumber,
+      hints_used: 0,
+      time_spent_seconds: opts.timeSpentSec,
+      was_scaffold: false,
+      was_fast_track: false,
+      xp_awarded: opts.xpAwarded,
+      mastery_state: opts.masteryState,
+    });
+  } catch (e) {
+    console.warn('[Progress] Failed to save Unity attempt:', e.message);
   }
 }
 

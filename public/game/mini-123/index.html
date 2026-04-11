@@ -75,24 +75,39 @@
   // The Unity build's jslib expects window.unityCallsJsFns to exist.
   // When Unity calls UnityToJs_message("Do", "Activity.Begin(Types)"),
   // the jslib forwards it to window.unityCallsJsFns.message(...)
+  //
+  // Events we forward to the ACE parent for learning analytics:
+  //   unity_ready        — Unity finished loading
+  //   activity_begin     — Activity_Types.Begin() fired
+  //   activity_complete  — Activity_Types.LessonPassed() fired (from ACE_PostMessageToParent)
+  //   unity_pickup       — Student picked up a tile (unityGotClick)
+  //   unity_progress     — Progress.AddCoins fired (correct drop)
+  //
+  // Cursor.CanClick and other UI-state events are intentionally NOT forwarded.
   window.unityCallsJsFns = window.unityCallsJsFns || {
     AwakeTheKraken: function() {
       console.log("[Unity->JS] AwakeTheKraken (Unity is ready)");
     },
     unityGotClick: function(name, pathedName) {
       console.log("[Unity->JS] unityGotClick:", name, pathedName);
+      sendToParent("unity_pickup", { name: name, path: pathedName });
     },
     message: function(msgType, prms) {
       console.log("[Unity->JS] message:", msgType, prms);
       // Parse Unity event format: "Activity.Begin(Types)" or similar
       var match = (prms || "").match(/^([^(]+)\((.*)\)$/);
-      if (match) {
-        var eventName = match[1].trim();
-        var eventArgs = match[2].trim();
-        // Forward specific events as postMessages to parent
-        if (eventName === "Activity.Begin") {
-          sendToParent("activity_begin", eventArgs);
-        }
+      if (!match) return;
+      var eventName = match[1].trim();
+      var eventArgs = match[2].trim();
+      if (eventName === "Activity.Begin") {
+        sendToParent("activity_begin", eventArgs);
+      } else if (eventName === "Progress.AddCoins") {
+        // Args look like "Types,20" — split on comma
+        var parts = eventArgs.split(",").map(function(s) { return s.trim(); });
+        sendToParent("unity_progress", {
+          activity: parts[0],
+          amount: parseInt(parts[1], 10) || 0
+        });
       }
     }
   };
