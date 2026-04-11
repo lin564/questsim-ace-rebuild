@@ -3179,16 +3179,19 @@ function showLoginError(msg) {
 }
 
 async function getGameUrl() {
-  // Use pymini1 with ?only=Types to lock the embedded game to just
-  // the Triangle Types activity. The pymini1 build at py-r2/mini-123/
-  // has the custom URL-lock code (pythagoras-unity branch
-  // claude/ace-url-param-lock).
+  // Load the Unity game from our own Cloudflare Pages site at
+  // /game/mini-123/. This HTML wrapper loads the Unity WebGL files
+  // directly from py-r2.questsim.com/mini-123/BUILD.* and bypasses
+  // pymini1's auth wall entirely (which blocks iframe embeds because
+  // of third-party cookie restrictions).
   //
-  // IMPORTANT: The iframe.name is also set to 'only=Types' in
-  // renderUnityInArtwork() BEFORE this src is assigned. Unity reads
-  // window.name as a fallback when the auth middleware strips the
-  // query string on login redirect (which it does on pymini1).
-  return QUESTSIM_MINI_URL + '/?only=Types';
+  // Same-origin with the ACE rebuild means:
+  // - No auth passcode prompt
+  // - No third-party cookie issues
+  // - No CORS (since Unity fetches files itself, and postMessage is
+  //   same-origin)
+  // - Query param ?only=Types is never stripped
+  return '/game/mini-123/?only=Types';
 }
 
 function dismissLogin() {
