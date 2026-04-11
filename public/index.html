@@ -4432,6 +4432,12 @@ function enterLocation(idx) {
   // the intro voice bleeds over into the activity, which is jarring.
   stopPythagorasVoice();
 
+  // Reset adaptive state so aceChooseRoute() starts from a clean slate.
+  // Otherwise a fast-track/scaffold flag from a previous challenge would
+  // leak into this one before the route decision runs.
+  scaffoldActive = false;
+  fastTrackActive = false;
+
   currentChallenge = idx;
   questDialogueStep = 0;
   const scene = questScenes[idx];
@@ -4548,6 +4554,68 @@ let masteryState = {
 let currentTier = 'extension'; // foundation | extension | mastery
 let scaffoldActive = false; // true when student is in a side-quest scaffold
 let fastTrackActive = false;
+
+// ═══ ACE ROUTING (scaffold / fast-track / normal) ═══
+// Maps a challenge index to the concept key used in student_profiles.mastery_state.
+// When a student opens a challenge, aceChooseRoute() looks up their confidence
+// for the relevant concept and promotes them into fast-track (>=0.85) or
+// drops them into scaffold (<0.5) automatically. Normal path otherwise.
+const CHALLENGE_CONCEPT_KEY = {
+  0: 'triangle_types',         // Samos — triangle classification
+  1: 'finding_leg',             // Athens — ladder / find missing leg
+  2: 'finding_hypotenuse',      // Rhodes — navigation / find hypotenuse
+  3: 'pythagorean_triples',     // Alexandria — verify a claim
+};
+const ACE_FASTTRACK_THRESHOLD = 0.85;
+const ACE_SCAFFOLD_THRESHOLD  = 0.50;
+
+// Called at the start of loadChallenge(). Reads window.currentUser.mastery_state
+// (populated after auth by loadRealProfileIntoCurrentUser) and sets the
+// scaffoldActive / fastTrackActive flags BEFORE the challenge renders.
+// Won't override flags that the student already earned mid-session.
+function aceChooseRoute(idx) {
+  // If the student has already been put in scaffold/fast-track mode during
+  // the current session (e.g. via the existing in-session triggers), respect
+  // that and don't re-route.
+  if (scaffoldActive || fastTrackActive) return;
+
+  const conceptKey = CHALLENGE_CONCEPT_KEY[idx];
+  if (!conceptKey) return;
+
+  const mastery = (window.currentUser && window.currentUser.mastery_state) || null;
+  // mastery_state can arrive as either a parsed object (from the merge in
+  // loadRealProfileIntoCurrentUser) or a JSON string (from a raw DB row).
+  let state = mastery;
+  if (typeof state === 'string') {
+    try { state = JSON.parse(state); } catch { state = null; }
+  }
+  if (!state || typeof state !== 'object') return;
+
+  const entry = state[conceptKey];
+  if (!entry || typeof entry !== 'object') return;
+  const confidence = (typeof entry.confidence === 'number') ? entry.confidence : null;
+  if (confidence === null) return;
+
+  // Fast-track requires a matching variant for this idx.
+  if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx]) {
+    fastTrackActive = true;
+    console.log('[ACE] Fast-track route chosen for idx', idx,
+      '— concept:', conceptKey, '| confidence:', confidence);
+    return;
+  }
+
+  // Scaffold requires a matching scaffold challenge for this idx.
+  if (confidence < ACE_SCAFFOLD_THRESHOLD && scaffoldChallenges[idx]) {
+    scaffoldActive = true;
+    console.log('[ACE] Scaffold route chosen for idx', idx,
+      '— concept:', conceptKey, '| confidence:', confidence);
+    return;
+  }
+
+  // Otherwise: normal route.
+  console.log('[ACE] Normal route for idx', idx,
+    '— concept:', conceptKey, '| confidence:', confidence);
+}
 
 // Scaffold challenges — appear when student fails main challenge twice
 const scaffoldChallenges = {
@@ -4705,14 +4773,23 @@ function loadChallenge(idx) {
     navigate('screen-reflection');
     return;
   }
-  
+
   // Initialize attempt tracker
   if (!attemptTracker[idx]) {
     attemptTracker[idx] = { attempts: 0, hintsUsed: 0, timeStarted: Date.now(), firstAttemptTime: null };
   }
 
-  const ch = scaffoldActive ? scaffoldChallenges[idx] : 
-             fastTrackActive ? Object.assign({}, challenges[idx], fastTrackVariants[idx]) : 
+  // ═══ ACE ROUTING DECISION ═══
+  // Consult the student's mastery_state (populated from D1 via
+  // loadRealProfileIntoCurrentUser) to decide whether to open the challenge
+  // in scaffold mode, fast-track mode, or the normal variant. This is a
+  // PRE-CHALLENGE decision based on historical confidence — the existing
+  // in-session triggers (attempts === 2 → scaffold, fast-solve → fast-track)
+  // still fire as fallbacks for mid-session struggles/wins.
+  aceChooseRoute(idx);
+
+  const ch = scaffoldActive ? scaffoldChallenges[idx] :
+             fastTrackActive ? Object.assign({}, challenges[idx], fastTrackVariants[idx]) :
              challenges[idx];
 
   document.getElementById('chProgress').textContent = scaffoldActive ? 
