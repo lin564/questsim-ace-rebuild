@@ -73,11 +73,15 @@ export const onRequestPost: PagesFunction<Env, any, DataContext> = async (contex
     `).bind(xp_awarded, session_id, user.id).run();
   }
 
-  // Update student profile
+  // Update student profile. Level is an integer computed as floor(xp/100)+1
+  // — CAST forces integer division so 20 XP yields level 1 (not 1.2),
+  // 100 XP yields level 2, 250 XP yields level 3, etc.
   if (is_correct && xp_awarded > 0) {
     await db.prepare(`
       UPDATE student_profiles
-      SET xp = xp + ?, level = MAX(1, (xp + ?) / 100 + 1), updated_at = datetime('now')
+      SET xp = xp + ?,
+          level = MAX(1, CAST((xp + ?) / 100 AS INTEGER) + 1),
+          updated_at = datetime('now')
       WHERE user_id = ?
     `).bind(xp_awarded, xp_awarded, user.id).run();
   }

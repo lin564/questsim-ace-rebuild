@@ -6599,7 +6599,9 @@ window.QS = (() => {
     // Persistent Quest HUD on screen-simulation: sync LEVEL / XP total / XP bar
     // Previously hardcoded in HTML as "⭐ LEVEL 7" / "830 XP", so real users
     // saw Maya's seed values at the top of the map screen even after auth.
-    set('simLevel', '⭐ LEVEL ' + (profile.level || 1));
+    // Math.floor() defends against any stale decimal levels written before
+    // progress.ts was fixed to use integer division.
+    set('simLevel', '⭐ LEVEL ' + Math.max(1, Math.floor(profile.level || 1)));
     set('simXPTotal', (profile.xp || 0) + ' XP');
     const xpBar = document.getElementById('simXPBar');
     if (xpBar) {
