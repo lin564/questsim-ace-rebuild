@@ -1849,6 +1849,17 @@ body {
     </div>
   </div>
 
+  <!-- Mastery by Concept: shows per-concept aggregation from student_profiles.mastery_state
+       JSON. Populated by renderConceptBreakdown() using data from /api/teacher/roster's
+       stats.concept_breakdown field. -->
+  <div class="card mb-md" id="td-concept-card" style="display:none;">
+    <div class="card-header">📊 Mastery by Concept</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">
+      Each concept tracked in student_profiles.mastery_state — average confidence and tier distribution across the class.
+    </div>
+    <div id="td-concept-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
   <div class="grid-2 mb-md">
     <div class="card">
       <div class="card-header">⚠️ Attention Needed</div>
@@ -3699,9 +3710,58 @@ async function loadTeacherDashboard() {
     if (window.QS && typeof window.QS.renderTeacherDashboard === 'function') {
       window.QS.renderTeacherDashboard();
     }
+
+    // Populate the new "Mastery by Concept" card from the roster stats.
+    renderConceptBreakdown(rosterData.stats && rosterData.stats.concept_breakdown);
   } catch (e) {
     console.warn('[Teacher] Failed to load dashboard:', e.message);
   }
+}
+
+// Render the per-concept mastery card. Each row shows the concept name,
+// student count touching it, average confidence bar, and tier distribution.
+// Data comes from /api/teacher/roster stats.concept_breakdown — see the
+// aggregation in functions/api/teacher/roster.ts.
+function renderConceptBreakdown(breakdown) {
+  const card = document.getElementById('td-concept-card');
+  const container = document.getElementById('td-concept-rows');
+  if (!card || !container) return;
+  if (!Array.isArray(breakdown) || breakdown.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+
+  // Turn snake_case concept keys into Title Case display labels.
+  const pretty = (name) => String(name || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  container.innerHTML = breakdown.map((c) => {
+    const pct = Math.round((c.avg_confidence || 0) * 100);
+    const barColor = pct >= 80 ? 'var(--purple)' : pct >= 60 ? 'var(--gold)' : pct >= 40 ? 'var(--teal)' : 'var(--red)';
+    const levels = c.levels || { foundation: 0, extension: 0, mastery: 0 };
+    const totalAtTiers = levels.foundation + levels.extension + levels.mastery;
+    return `
+      <div style="display:grid;grid-template-columns:180px 1fr auto;gap:16px;align-items:center;padding:10px 12px;background:var(--bg);border-radius:8px;">
+        <div>
+          <div style="font-size:0.92rem;font-weight:600;color:var(--text);">${pretty(c.name)}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);">${c.student_count} student${c.student_count === 1 ? '' : 's'} touched</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;height:8px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${barColor};transition:width 0.5s ease;"></div>
+          </div>
+          <div style="font-size:0.85rem;font-weight:700;color:${barColor};min-width:42px;text-align:right;">${pct}%</div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;white-space:nowrap;">
+          <span title="Foundation"><span style="color:var(--teal);">F</span> ${levels.foundation}</span>
+          <span title="Extension"><span style="color:var(--gold);">E</span> ${levels.extension}</span>
+          <span title="Mastery"><span style="color:var(--purple);">M</span> ${levels.mastery}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function formatLastActive(dateStr) {

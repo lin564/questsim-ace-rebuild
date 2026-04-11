@@ -161,11 +161,26 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
     return 0;
   }
 
+  // Parse the mastery_state JSON once per student so we can return both
+  // the computed aggregate AND the per-concept breakdown that the teacher
+  // dashboard can drill into. Shape of mastery_state:
+  //   { "concept_name": { level: "mastery"|"extension"|"foundation",
+  //                       confidence: 0-1, last_activity: "...", updated_at: "..." },
+  //     ... }
+  function parseMasteryState(masteryJson: string | null): Record<string, any> {
+    if (!masteryJson) return {};
+    try {
+      const obj = JSON.parse(masteryJson);
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch { return {}; }
+  }
+
   // Build detailed student list
   const enrichedStudents = students.map(s => {
     const session = sessionsMap.get(s.student_id);
     const attempt = attemptsMap.get(s.student_id);
     const mastery = computeMastery(s.mastery_state);
+    const masteryByConcept = parseMasteryState(s.mastery_state);
     const totalAttempts = attempt?.total_attempts ?? 0;
     const correctAttempts = attempt?.correct_attempts ?? 0;
     const confidence = totalAttempts > 0
@@ -180,12 +195,54 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
       level: s.level,
       tier: s.tier,
       mastery,
+      mastery_by_concept: masteryByConcept,
       challenges_completed: correctAttempts,
       sessions_completed: session?.total_sessions ?? 0,
       last_active: session?.last_active ?? null,
       confidence,
     };
   });
+
+  // Aggregate per-concept stats across the whole class. For each unique
+  // concept seen in any student's mastery_state, compute the class-wide
+  // average confidence and the distribution across tier levels.
+  const conceptAgg: Record<string, {
+    name: string;
+    student_count: number;
+    avg_confidence: number;
+    levels: { foundation: number; extension: number; mastery: number };
+    // Running sum used only during aggregation; dropped before response.
+    _sum: number;
+  }> = {};
+  for (const s of enrichedStudents) {
+    for (const [concept, data] of Object.entries(s.mastery_by_concept)) {
+      if (!data || typeof data !== 'object') continue;
+      const c = data as { level?: string; confidence?: number };
+      if (!conceptAgg[concept]) {
+        conceptAgg[concept] = {
+          name: concept,
+          student_count: 0,
+          avg_confidence: 0,
+          levels: { foundation: 0, extension: 0, mastery: 0 },
+          _sum: 0,
+        };
+      }
+      conceptAgg[concept].student_count++;
+      conceptAgg[concept]._sum += (typeof c.confidence === 'number') ? c.confidence : 0;
+      const lvl = (c.level || '').toLowerCase();
+      if (lvl === 'foundation' || lvl === 'extension' || lvl === 'mastery') {
+        conceptAgg[concept].levels[lvl]++;
+      }
+    }
+  }
+  const conceptBreakdown = Object.values(conceptAgg).map(c => ({
+    name: c.name,
+    student_count: c.student_count,
+    avg_confidence: c.student_count > 0
+      ? Math.round((c._sum / c.student_count) * 100) / 100
+      : 0,
+    levels: c.levels,
+  })).sort((a, b) => b.student_count - a.student_count);
 
   // Aggregate stats
   const totalStudents = enrichedStudents.length;
@@ -211,6 +268,7 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
       active_today: activeToday,
       avg_mastery: avgMastery,
       tiers,
+      concept_breakdown: conceptBreakdown,
     },
   });
 };
