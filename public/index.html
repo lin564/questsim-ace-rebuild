@@ -4758,10 +4758,45 @@ window.addEventListener('message', (event) => {
 // (which would otherwise grab pointer lock and confuse the student).
 // Called from the postMessage listener when Unity signals activity_complete.
 function enableMarkCompleteButton() {
+  console.log('[ACE] enableMarkCompleteButton() fired');
+
   // Cover the Unity canvas so the student can't see or click Unity's
   // built-in "Continue" button. The only path forward is Mark Complete.
-  const postGame = document.getElementById('unityPostGameOverlay');
-  if (postGame) postGame.style.display = 'flex';
+  // If the overlay element isn't in the DOM (e.g. cached older HTML),
+  // build it on the fly inside the Unity container.
+  let postGame = document.getElementById('unityPostGameOverlay');
+  const container = document.getElementById('unityContainer');
+  if (!postGame && container) {
+    console.log('[ACE] Creating unityPostGameOverlay dynamically');
+    postGame = document.createElement('div');
+    postGame.id = 'unityPostGameOverlay';
+    postGame.innerHTML = `
+      <div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>
+      <div style="font-family:var(--font-display);font-size:1.5rem;color:#D4A843;font-weight:600;margin-bottom:10px;">Activity Finished!</div>
+      <div style="font-size:0.95rem;color:rgba(255,255,255,0.88);max-width:480px;line-height:1.55;margin-bottom:22px;">You've correctly classified every triangle on Pythagoras's table. Click the glowing <strong>Mark Complete</strong> button below to continue your quest.</div>
+      <div style="font-size:2rem;animation:pulse 1.4s ease-in-out infinite;">⬇</div>
+    `;
+    container.appendChild(postGame);
+  }
+  if (postGame) {
+    // Force-apply every style we need, so cached stale CSS/markup can't hide us.
+    postGame.style.cssText = [
+      'display:flex',
+      'position:absolute',
+      'inset:0',
+      'top:0','right:0','bottom:0','left:0',
+      'width:100%','height:100%',
+      'background:linear-gradient(160deg,rgba(15,38,64,0.97) 0%,rgba(27,58,92,0.97) 50%,rgba(42,127,142,0.97) 100%)',
+      'color:#fff',
+      'align-items:center','justify-content:center','flex-direction:column',
+      'text-align:center','padding:32px',
+      'z-index:9999',
+      'pointer-events:auto',
+    ].join(';');
+    console.log('[ACE] unityPostGameOverlay shown');
+  } else {
+    console.warn('[ACE] No unityContainer found — overlay not rendered');
+  }
 
   const btn = document.getElementById('unityCompleteBtn');
   const hint = document.getElementById('unityMarkCompleteHint');
