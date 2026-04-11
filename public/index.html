@@ -1056,9 +1056,9 @@ body {
 <div class="screen" id="screen-simulation">
   <!-- Persistent Quest HUD -->
   <div style="background:var(--navy-deep);border-radius:var(--radius);padding:10px 20px;margin-bottom:0;display:flex;align-items:center;gap:16px;color:white;">
-    <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.05em;">⭐ LEVEL 7</div>
-    <div style="flex:1;"><div class="progress-bar" style="height:8px;margin:0;background:rgba(255,255,255,0.1);"><div class="fill fill-gold" style="width:83%;transition:width 0.8s ease;" id="simXPBar"></div></div></div>
-    <div style="font-family:var(--font-display);font-weight:700;font-size:0.9rem;" id="simXPTotal">830 XP</div>
+    <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.05em;" id="simLevel">⭐ LEVEL 1</div>
+    <div style="flex:1;"><div class="progress-bar" style="height:8px;margin:0;background:rgba(255,255,255,0.1);"><div class="fill fill-gold" style="width:0%;transition:width 0.8s ease;" id="simXPBar"></div></div></div>
+    <div style="font-family:var(--font-display);font-weight:700;font-size:0.9rem;" id="simXPTotal">0 XP</div>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.15);"></div>
     <div style="font-size:0.72rem;opacity:0.6;" id="chTimer">⏱ 0:00</div>
     <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:0.68rem;padding:4px 10px;" onclick="navigate('screen-student-dashboard')">Exit Quest</button>
@@ -6595,6 +6595,18 @@ window.QS = (() => {
     };
     set('dashXP',     profile.xp);
     set('userName',   profile.name);
+
+    // Persistent Quest HUD on screen-simulation: sync LEVEL / XP total / XP bar
+    // Previously hardcoded in HTML as "⭐ LEVEL 7" / "830 XP", so real users
+    // saw Maya's seed values at the top of the map screen even after auth.
+    set('simLevel', '⭐ LEVEL ' + (profile.level || 1));
+    set('simXPTotal', (profile.xp || 0) + ' XP');
+    const xpBar = document.getElementById('simXPBar');
+    if (xpBar) {
+      // 100 XP per level; progress bar shows position within current level.
+      const xpInLevel = (profile.xp || 0) % 100;
+      xpBar.style.width = xpInLevel + '%';
+    }
 
     // Don't overwrite avatar if we have a real avatar image
     const avatarEl = document.getElementById('userAvatar');
