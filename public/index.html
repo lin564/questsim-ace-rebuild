@@ -4246,6 +4246,10 @@ function updateMapState() {
 }
 
 function enterLocation(idx) {
+  // Stop the map's Pythagoras narration if it's still playing — otherwise
+  // the intro voice bleeds over into the activity, which is jarring.
+  stopPythagorasVoice();
+
   currentChallenge = idx;
   questDialogueStep = 0;
   const scene = questScenes[idx];
