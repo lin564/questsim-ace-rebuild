@@ -3278,6 +3278,16 @@ async function loadRealProfileIntoCurrentUser() {
       tier: p.tier ?? 'foundation',
       mastery_state: p.mastery_state ?? null,
     });
+    // Log the real handoff so the console clearly shows the transition from
+    // the QS seed-cache log to the authenticated user's actual stats.
+    const u = window.currentUser;
+    console.log(
+      '[Auth] Real profile loaded for', u.first_name, u.last_name,
+      '(' + u.role + ') — XP:', u.xp,
+      '| Level:', Math.floor(u.level),
+      '| Streak:', u.streak,
+      '| Tier:', u.tier,
+    );
     // Re-render the QS dashboard if it's already been mounted, so the stats
     // refresh from seed-mock → real values without a page reload.
     if (window.QS && typeof window.QS.renderDashboard === 'function') {
@@ -6319,16 +6329,13 @@ window.QS = (() => {
     if (!load('sessions'))   save('sessions',   []);
     if (!load('roster'))     save('roster',     SEED_ROSTER);
     if (!load('thresholds')) save('thresholds', SEED_THRESHOLDS);
-    // Log the real authenticated user if available, otherwise the seed mock.
-    // Prevents the confusing "[QS] Init — student: Maya Chen" line when an
-    // admin/teacher is actually logged in.
+    // QS.init() runs before checkExistingSession() resolves, so
+    // window.currentUser may still be null here. Log the localStorage
+    // cache with a clear "seed cache" label so it isn't mistaken for the
+    // authenticated user — the real user is logged separately by
+    // loadRealProfileIntoCurrentUser() once /api/auth/session returns.
     const p = load('profile');
-    const u = (typeof window !== 'undefined') ? window.currentUser : null;
-    if (u) {
-      console.log('[QS] Init — authenticated as', u.first_name, u.last_name, '(' + u.role + ') | challenges:', load('challenges').length);
-    } else {
-      console.log('[QS] Init — demo student:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length);
-    }
+    console.log('[QS] Init — seed cache:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length, '(real user resolves after auth)');
   }
 
   // ── SESSION ───────────────────────────────────────────────────────────────
