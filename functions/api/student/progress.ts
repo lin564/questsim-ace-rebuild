@@ -40,6 +40,14 @@ export const onRequestPost: PagesFunction<Env, any, DataContext> = async (contex
     xp_awarded = 0,
   } = body;
 
+  // Ensure a student_profiles row exists for this user before any UPDATE
+  // statements below. Admins/teachers playing through in test mode won't
+  // have had one seeded, and D1 UPDATEs against a missing row silently
+  // affect zero rows, so mastery_state would never land.
+  await db.prepare(
+    'INSERT OR IGNORE INTO student_profiles (user_id) VALUES (?)'
+  ).bind(user.id).run();
+
   // Insert challenge attempt
   await db.prepare(`
     INSERT INTO challenge_attempts
