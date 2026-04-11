@@ -3129,6 +3129,7 @@ body {
 
 <script>
 // ═══ LOGIN ═══
+const QUESTSIM_MINI_URL = 'https://pymini1.questsim.com';
 const QUESTSIM_DEMO_URL = 'https://py-demo.questsim.com';
 let isAuthenticated = false;
 let currentUser = null;
@@ -3178,14 +3179,16 @@ function showLoginError(msg) {
 }
 
 async function getGameUrl() {
-  // Use the demo URL with ?only=Types to lock the embedded game to
-  // just the Triangle Types activity (see pythagoras-unity branch
-  // claude/ace-url-param-lock). Once that build is deployed to R2,
-  // the iframe will auto-enter Types, hide Seek and City, and post
-  // an 'ace_activity_complete' message when the student finishes.
-  // Until the new build is deployed, the param is simply ignored
-  // and the student sees the normal 3-activity mini game.
-  return QUESTSIM_DEMO_URL + '/?only=Types';
+  // Use pymini1 with ?only=Types to lock the embedded game to just
+  // the Triangle Types activity. The pymini1 build at py-r2/mini-123/
+  // has the custom URL-lock code (pythagoras-unity branch
+  // claude/ace-url-param-lock).
+  //
+  // IMPORTANT: The iframe.name is also set to 'only=Types' in
+  // renderUnityInArtwork() BEFORE this src is assigned. Unity reads
+  // window.name as a fallback when the auth middleware strips the
+  // query string on login redirect (which it does on pymini1).
+  return QUESTSIM_MINI_URL + '/?only=Types';
 }
 
 function dismissLogin() {
@@ -4607,8 +4610,14 @@ function renderUnityInArtwork(artworkArea) {
 
   artworkArea.appendChild(wrapper);
 
-  // Set iframe src based on auth (async — fetches game token if authenticated)
+  // Set the iframe name BEFORE setting src. This is read by Unity's
+  // ACE_GetUrlParam jslib function inside the iframe as window.name.
+  // Critical: window.name survives the auth redirect on pymini1, so
+  // the Unity game can detect the lock even after the user logs in.
   const iframe = document.getElementById('questsimIframe');
+  iframe.name = 'only=Types';
+
+  // Set iframe src based on auth (async — fetches game token if authenticated)
   getGameUrl().then(url => { iframe.src = url; });
   iframe.addEventListener('load', () => {
     const overlay = document.getElementById('unityLoadingOverlay');
@@ -4620,6 +4629,23 @@ function renderUnityInArtwork(artworkArea) {
     if (overlay) overlay.classList.add('hidden');
   }, 8000);
 }
+
+// ═══ LISTEN FOR ACTIVITY COMPLETE FROM UNITY ═══
+// Unity's ACE_PostMessageToParent sends a message when the locked
+// activity completes. This handler auto-triggers Mark Complete so
+// the student doesn't have to click it manually.
+window.addEventListener('message', (event) => {
+  if (!event.data || event.data.source !== 'ace_unity') return;
+  console.log('[ACE] Received from Unity:', event.data);
+  if (event.data.type === 'activity_complete') {
+    console.log('[ACE] Activity complete from Unity:', event.data.data);
+    // Only auto-complete if the current challenge is the Unity embed
+    const ch = challenges[currentChallenge];
+    if (ch && ch.interactiveType === 'unityEmbed') {
+      onUnityActivityComplete();
+    }
+  }
+});
 
 // Legacy hook — if loadChallenge still calls this for the challenge area
 function renderUnityEmbed(ch, idx) {
