@@ -3212,6 +3212,12 @@ async function checkExistingSession() {
       currentRole = data.user.role; // 'admin', 'teacher', or 'student'
       dismissLogin();
 
+      // Fetch the real profile (xp/level/streak/mastery) and merge onto
+      // currentUser. This is what lets the QS demo shim show real stats
+      // in screen-simulation instead of Maya's seeded mock values — see
+      // QS.renderDashboard() for the read side.
+      loadRealProfileIntoCurrentUser();
+
       // Update UI with real user info
       document.getElementById('userName').textContent = data.user.first_name + ' ' + data.user.last_name.charAt(0) + '.';
       document.getElementById('userAvatar').textContent = data.user.first_name.charAt(0) + data.user.last_name.charAt(0);
@@ -3241,6 +3247,33 @@ async function checkExistingSession() {
     }
   } catch(e) {
     console.log('Auth API not available, showing login screen');
+  }
+}
+
+// Fetch the authenticated user's real profile (xp/level/streak/tier/mastery)
+// and merge it onto window.currentUser so the QS demo shim can display real
+// values instead of Maya's seeded localStorage mock. Safe for all roles —
+// the backend /api/student/profile endpoint only requires auth and returns
+// default zeros if no profile row exists yet.
+async function loadRealProfileIntoCurrentUser() {
+  if (!window.currentUser) return;
+  try {
+    const data = await API.get('/api/student/profile');
+    const p = data.profile || {};
+    Object.assign(window.currentUser, {
+      xp: p.xp ?? 0,
+      level: p.level ?? 1,
+      streak: p.streak ?? 0,
+      tier: p.tier ?? 'foundation',
+      mastery_state: p.mastery_state ?? null,
+    });
+    // Re-render the QS dashboard if it's already been mounted, so the stats
+    // refresh from seed-mock → real values without a page reload.
+    if (window.QS && typeof window.QS.renderDashboard === 'function') {
+      window.QS.renderDashboard();
+    }
+  } catch (e) {
+    console.warn('[Auth] Failed to load real profile:', e.message);
   }
 }
 
@@ -6262,8 +6295,16 @@ window.QS = (() => {
     if (!load('sessions'))   save('sessions',   []);
     if (!load('roster'))     save('roster',     SEED_ROSTER);
     if (!load('thresholds')) save('thresholds', SEED_THRESHOLDS);
+    // Log the real authenticated user if available, otherwise the seed mock.
+    // Prevents the confusing "[QS] Init — student: Maya Chen" line when an
+    // admin/teacher is actually logged in.
     const p = load('profile');
-    console.log('[QS] Init — student:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length);
+    const u = (typeof window !== 'undefined') ? window.currentUser : null;
+    if (u) {
+      console.log('[QS] Init — authenticated as', u.first_name, u.last_name, '(' + u.role + ') | challenges:', load('challenges').length);
+    } else {
+      console.log('[QS] Init — demo student:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length);
+    }
   }
 
   // ── SESSION ───────────────────────────────────────────────────────────────
@@ -6461,14 +6502,31 @@ window.QS = (() => {
   // ── DASHBOARD ─────────────────────────────────────────────────────────────
 
   function renderDashboard() {
-    // Prefer the real authenticated user over the SEED profile
+    // Prefer the real authenticated user over the SEED profile.
+    // Name/avatar always override if a real user is logged in. XP/level/
+    // streak/challenges_completed also override IF loadRealProfileIntoCurrentUser()
+    // has populated them — this prevents the Maya/Linda split-brain where the
+    // top nav showed the real user but the stats card showed Maya's seeded XP.
     let profile = load('profile') || SEED_PROFILE;
     if (typeof window !== 'undefined' && window.currentUser) {
+      const u = window.currentUser;
       profile = {
         ...profile,
-        name: window.currentUser.first_name + ' ' + (window.currentUser.last_name || '').charAt(0) + '.',
-        avatar: (window.currentUser.first_name || '?').charAt(0) + (window.currentUser.last_name || '').charAt(0),
-        avatar_url: window.currentUser.avatar_url,
+        name: u.first_name + ' ' + (u.last_name || '').charAt(0) + '.',
+        avatar: (u.first_name || '?').charAt(0) + (u.last_name || '').charAt(0),
+        avatar_url: u.avatar_url,
+        // Only override stats when we've actually fetched real profile data.
+        // Otherwise leave the SEED values so the dashboard isn't empty.
+        ...(u.xp !== undefined ? {
+          xp: u.xp,
+          level: u.level,
+          streak: u.streak,
+          // Zero out challenge counts — the real challenges_completed comes
+          // from challenge_attempts, which isn't aggregated in the profile
+          // endpoint. Teacher dashboard handles that query separately.
+          challenges_completed: 0,
+          challenges_this_week: 0,
+        } : {}),
       };
     }
     const set = (id, val) => {
