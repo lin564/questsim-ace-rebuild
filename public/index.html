@@ -4973,10 +4973,11 @@ let unityEventBuffer = {
   end_at: null,
   pickups: [],       // [{ name, path, ts }]
   correct_drops: 0,  // count of Progress.AddCoins events
+  answers: [],       // [{ tile, target, correct, ts }] — per-drop answer from Activity.Answer
 };
 
 function resetUnityEventBuffer() {
-  unityEventBuffer = { begin_at: null, end_at: null, pickups: [], correct_drops: 0 };
+  unityEventBuffer = { begin_at: null, end_at: null, pickups: [], correct_drops: 0, answers: [] };
 }
 
 window.addEventListener('message', (event) => {
@@ -4998,6 +4999,16 @@ window.addEventListener('message', (event) => {
     });
   } else if (d.type === 'unity_progress') {
     unityEventBuffer.correct_drops++;
+  } else if (d.type === 'unity_answer') {
+    // Per-drop answer from TileMatchArea.OnTriggerEnter via Activity.Answer.
+    // Captures: which tile was dropped, on which target, and whether it was correct.
+    // Used to compute per-concept mastery (equilateral/right/isosceles/scalene).
+    unityEventBuffer.answers.push({
+      tile: d.data && d.data.tile,
+      target: d.data && d.data.target,
+      correct: d.data && d.data.correct,
+      ts: d.timestamp || Date.now(),
+    });
   } else if (d.type === 'activity_complete') {
     unityEventBuffer.end_at = d.timestamp || Date.now();
     // Flag that the student genuinely finished the game. This lets
@@ -5141,6 +5152,13 @@ function onUnityActivityComplete() {
     const propertyTiles = buf.pickups.filter(p => (p.path || '').indexOf('Grab_Tiles_ArrayOf') >= 0).length;
     const trianglePieces = buf.pickups.filter(p => (p.path || '').indexOf('Grab_Triangles') >= 0).length;
 
+    // Include per-drop answer events when available (new Unity build)
+    const answerLog = buf.answers.map(a => ({
+      tile: a.tile,
+      target: a.target,
+      correct: a.correct,
+    }));
+
     const userAnswerSummary = JSON.stringify({
       total_pickups: totalPickups,
       correct_drops: correctDrops,
@@ -5150,27 +5168,82 @@ function onUnityActivityComplete() {
       unique_tiles: uniqueTiles,
       duration_ms: durationMs,
       accuracy: Math.round(accuracy * 100) / 100,
+      answer_log: answerLog.length > 0 ? answerLog : undefined,
     });
 
-    // Mastery confidence is clamped to [0, 1] and tiered:
-    //   >= 0.9 → mastery, >= 0.7 → extension, else foundation
-    const confidence = Math.round(accuracy * 100) / 100;
-    const masteryLevel = accuracy >= 0.9 ? 'mastery' : (accuracy >= 0.7 ? 'extension' : 'foundation');
-    const masteryState = {
-      triangle_types: {
-        level: masteryLevel,
-        confidence: confidence,
-        last_activity: 'samos_types',
-        updated_at: new Date().toISOString(),
-      }
+    // ═══ PER-CONCEPT MASTERY ═══
+    // If the new Unity build emits Activity.Answer events (per-drop with
+    // tile + target + correct), we can compute mastery per triangle type
+    // (equilateral, right, isosceles, scalene) instead of one aggregate.
+    // Falls back to aggregate accuracy when no answer events are available
+    // (i.e. older Unity build without the TileMatchArea change).
+    //
+    // Drop target name → concept key mapping. The TileMatchArea GameObjects
+    // in the Unity scene are named DropTarget_01 through DropTarget_04:
+    const TARGET_CONCEPT = {
+      'DropTarget_01': 'equilateral',
+      'DropTarget_02': 'right',
+      'DropTarget_03': 'isosceles',
+      'DropTarget_04': 'scalene',
     };
+
+    const now = new Date().toISOString();
+    let masteryState;
+
+    if (buf.answers.length > 0) {
+      // NEW PATH: per-concept mastery from Activity.Answer events
+      const perConcept = {};
+      for (const a of buf.answers) {
+        const concept = TARGET_CONCEPT[a.target] || a.target || 'unknown';
+        if (!perConcept[concept]) perConcept[concept] = { correct: 0, total: 0 };
+        perConcept[concept].total++;
+        if (a.correct) perConcept[concept].correct++;
+      }
+
+      masteryState = {};
+      const tierFor = (conf) => conf >= 0.9 ? 'mastery' : (conf >= 0.7 ? 'extension' : 'foundation');
+      for (const [concept, stats] of Object.entries(perConcept)) {
+        const conf = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) / 100 : 0;
+        masteryState[concept] = {
+          level: tierFor(conf),
+          confidence: conf,
+          correct: stats.correct,
+          total: stats.total,
+          last_activity: 'samos_types',
+          updated_at: now,
+        };
+      }
+      // Also include the aggregate triangle_types for backwards compatibility
+      const aggConf = Math.round(accuracy * 100) / 100;
+      masteryState.triangle_types = {
+        level: tierFor(aggConf),
+        confidence: aggConf,
+        last_activity: 'samos_types',
+        updated_at: now,
+      };
+
+      console.log('[ACE] Per-concept mastery from', buf.answers.length, 'answer events:', masteryState);
+    } else {
+      // FALLBACK: aggregate accuracy only (older Unity build without Activity.Answer)
+      const confidence = Math.round(accuracy * 100) / 100;
+      const masteryLevel = accuracy >= 0.9 ? 'mastery' : (accuracy >= 0.7 ? 'extension' : 'foundation');
+      masteryState = {
+        triangle_types: {
+          level: masteryLevel,
+          confidence: confidence,
+          last_activity: 'samos_types',
+          updated_at: now,
+        }
+      };
+      console.log('[ACE] Aggregate mastery (no per-drop answers):', masteryState);
+    }
 
     console.log('[ACE] Saving Unity attempt to D1:', {
       duration_sec: durationSec,
       total_pickups: totalPickups,
       correct_drops: correctDrops,
-      accuracy: confidence,
-      mastery: masteryLevel,
+      accuracy: Math.round(accuracy * 100) / 100,
+      answer_events: buf.answers.length,
     });
 
     saveUnityAttemptToD1({

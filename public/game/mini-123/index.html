@@ -82,6 +82,7 @@
   //   activity_complete  — Activity_Types.LessonPassed() fired (from ACE_PostMessageToParent)
   //   unity_pickup       — Student picked up a tile (unityGotClick)
   //   unity_progress     — Progress.AddCoins fired (correct drop)
+  //   unity_answer       — Activity.Answer fired (per-drop: tile, target, correct/wrong)
   //
   // Cursor.CanClick and other UI-state events are intentionally NOT forwarded.
   window.unityCallsJsFns = window.unityCallsJsFns || {
@@ -102,11 +103,18 @@
       if (eventName === "Activity.Begin") {
         sendToParent("activity_begin", eventArgs);
       } else if (eventName === "Progress.AddCoins") {
-        // Args look like "Types,20" — split on comma
         var parts = eventArgs.split(",").map(function(s) { return s.trim(); });
         sendToParent("unity_progress", {
           activity: parts[0],
           amount: parseInt(parts[1], 10) || 0
+        });
+      } else if (eventName === "Activity.Answer") {
+        // Per-drop answer event: "tile,dropTarget,correct|wrong"
+        var parts = eventArgs.split(",").map(function(s) { return s.trim(); });
+        sendToParent("unity_answer", {
+          tile: parts[0] || "",
+          target: parts[1] || "",
+          correct: (parts[2] || "") === "correct"
         });
       }
     }
