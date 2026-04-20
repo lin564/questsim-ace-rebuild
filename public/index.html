@@ -936,6 +936,33 @@ body {
   .sd-mastery-row { grid-template-columns: 100px 1fr auto; gap: 8px; }
 }
 
+/* ═══ LIVE-REFRESH INDICATOR (teacher dashboard) ═══ */
+.td-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(67,160,71,0.06);
+  border: 1px solid rgba(67,160,71,0.18);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.td-live:hover { background: rgba(67,160,71,0.12); color: var(--text); }
+.td-live.refreshing { background: rgba(212,168,67,0.1); border-color: rgba(212,168,67,0.3); }
+.td-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #43A047;
+  animation: tdLivePulse 1.8s ease-in-out infinite;
+}
+.td-live.refreshing .td-live-dot { background: #D4A843; animation-duration: 0.6s; }
+@keyframes tdLivePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(67,160,71,0.4); }
+  50%      { opacity: 0.7; box-shadow: 0 0 0 5px rgba(67,160,71,0); }
+}
+
 /* ═══ LOGIN SCREEN ═══ */
 .login-screen {
   position:fixed; inset:0; z-index:9999;
@@ -1982,8 +2009,18 @@ body {
 
 <!-- SCREEN 6: TEACHER DASHBOARD -->
 <div class="screen" id="screen-teacher-dashboard">
-  <div class="page-title">Class Dashboard</div>
-  <div class="page-subtitle" id="td-subtitle">Period 3 — Geometry · 28 students</div>
+  <div class="flex-between" style="align-items:flex-end;margin-bottom:4px;">
+    <div>
+      <div class="page-title">Class Dashboard</div>
+      <div class="page-subtitle" id="td-subtitle">Period 3 — Geometry · 28 students</div>
+    </div>
+    <!-- Live refresh indicator. Clickable to force an immediate refresh.
+         Hidden until the first successful roster load. -->
+    <div id="td-live-indicator" class="td-live" style="display:none;cursor:pointer;" onclick="forceTeacherDashboardRefresh()" title="Click to refresh now">
+      <span class="td-live-dot"></span>
+      <span>Live · updated <span id="td-live-ago">just now</span></span>
+    </div>
+  </div>
 
   <div class="grid-4 mb-md">
     <div class="stat-card">
@@ -3709,10 +3746,69 @@ function navigate(screenId) {
     }
     // Load real data when navigating to data-driven screens
     if (screenId === 'screen-user-management') loadUsers();
-    if (screenId === 'screen-teacher-dashboard') loadTeacherDashboard();
+    if (screenId === 'screen-teacher-dashboard') {
+      loadTeacherDashboard();
+      startTeacherDashboardAutoRefresh();
+    } else {
+      // Navigating AWAY from the dashboard — stop the poll
+      stopTeacherDashboardAutoRefresh();
+    }
     if (screenId === 'screen-student-dashboard') loadStudentDashboard();
     if (screenId === 'screen-gradebook') loadGradebookData();
   }
+}
+
+// ═══ TEACHER DASHBOARD AUTO-REFRESH ═══
+// Polls /api/teacher/roster every 30s while the teacher is on the dashboard.
+// The live indicator next to the page title shows "updated Xs ago" and is
+// clickable to force an immediate refresh. Interval is cleared when the
+// teacher navigates away, and restarted when they come back.
+
+const TD_REFRESH_INTERVAL_MS = 30000;
+let tdRefreshTimerId = null;     // setInterval id for the 30s poll
+let tdAgoTimerId = null;          // setInterval id for the "Xs ago" label
+let tdLastRefreshAt = null;       // wall-clock ms of the most recent successful refresh
+
+function startTeacherDashboardAutoRefresh() {
+  stopTeacherDashboardAutoRefresh(); // guard against double-start
+  tdLastRefreshAt = Date.now();
+  updateTeacherLiveLabel();
+  // "Xs ago" ticker runs every second for a smooth countup
+  tdAgoTimerId = setInterval(updateTeacherLiveLabel, 1000);
+  // Actual data refresh runs every 30s
+  tdRefreshTimerId = setInterval(() => {
+    forceTeacherDashboardRefresh(true /* fromTimer */);
+  }, TD_REFRESH_INTERVAL_MS);
+}
+
+function stopTeacherDashboardAutoRefresh() {
+  if (tdRefreshTimerId) { clearInterval(tdRefreshTimerId); tdRefreshTimerId = null; }
+  if (tdAgoTimerId) { clearInterval(tdAgoTimerId); tdAgoTimerId = null; }
+}
+
+async function forceTeacherDashboardRefresh(fromTimer) {
+  const indicator = document.getElementById('td-live-indicator');
+  if (indicator) indicator.classList.add('refreshing');
+  try {
+    await loadTeacherDashboard();
+    tdLastRefreshAt = Date.now();
+    updateTeacherLiveLabel();
+  } finally {
+    if (indicator) indicator.classList.remove('refreshing');
+  }
+}
+
+function updateTeacherLiveLabel() {
+  const indicator = document.getElementById('td-live-indicator');
+  const agoEl = document.getElementById('td-live-ago');
+  if (!indicator || !agoEl) return;
+  indicator.style.display = '';
+  if (!tdLastRefreshAt) { agoEl.textContent = 'just now'; return; }
+  const secs = Math.floor((Date.now() - tdLastRefreshAt) / 1000);
+  if (secs < 3)   agoEl.textContent = 'just now';
+  else if (secs < 60)  agoEl.textContent = secs + 's ago';
+  else if (secs < 3600) agoEl.textContent = Math.floor(secs / 60) + 'm ago';
+  else agoEl.textContent = Math.floor(secs / 3600) + 'h ago';
 }
 
 // ═══ STUDENT DASHBOARD ═══
