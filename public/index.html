@@ -2022,6 +2022,18 @@ body {
     <div id="td-concept-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
   </div>
 
+  <!-- Alerts by Module: grouped by game module (Samos / Athens / Rhodes / Alexandria),
+       populated from /api/teacher/roster stats.alerts_by_module. Only renders when
+       there's at least one module with alerts. Each alert is clickable — clicking
+       opens the student detail drawer for the first affected student. -->
+  <div class="card mb-md" id="td-alerts-card" style="display:none;">
+    <div class="card-header">🎯 Alerts by Module</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">
+      Actionable signals aggregated from challenge attempts in each game module. No time cutoff — reflects all attempts so far.
+    </div>
+    <div id="td-alerts-rows" style="display:flex;flex-direction:column;gap:16px;"></div>
+  </div>
+
   <div class="grid-2 mb-md">
     <div class="card">
       <div class="card-header">⚠️ Attention Needed</div>
@@ -3954,9 +3966,73 @@ async function loadTeacherDashboard() {
 
     // Populate the new "Mastery by Concept" card from the roster stats.
     renderConceptBreakdown(rosterData.stats && rosterData.stats.concept_breakdown);
+
+    // Populate the new "Alerts by Module" card from stats.alerts_by_module.
+    renderAlertsByModule(rosterData.stats && rosterData.stats.alerts_by_module);
   } catch (e) {
     console.warn('[Teacher] Failed to load dashboard:', e.message);
   }
+}
+
+// Render the per-module alerts card. For each module (Samos/Athens/Rhodes/
+// Alexandria) with at least one alert, show a module header plus an
+// alert card per alert type (struggling, stuck, ready, confusion).
+// Each alert is clickable — opens the student-detail drawer for the
+// first affected student. Data comes from /api/teacher/roster
+// stats.alerts_by_module — see the aggregation in teacher/roster.ts.
+function renderAlertsByModule(modules) {
+  const card = document.getElementById('td-alerts-card');
+  const container = document.getElementById('td-alerts-rows');
+  if (!card || !container) return;
+  if (!Array.isArray(modules) || modules.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+
+  const icon = (type) => ({
+    struggling: '🔴',
+    stuck:      '🟡',
+    ready:      '🟣',
+    confusion:  '🔄',
+  })[type] || '⚪';
+
+  const bgFor = (severity) => ({
+    high: 'rgba(224,83,104,0.08)',
+    med:  'rgba(212,168,67,0.08)',
+    low:  'rgba(126,87,194,0.08)',
+  })[severity] || 'var(--bg)';
+
+  const borderFor = (severity) => ({
+    high: 'rgba(224,83,104,0.4)',
+    med:  'rgba(212,168,67,0.4)',
+    low:  'rgba(126,87,194,0.3)',
+  })[severity] || 'var(--border)';
+
+  container.innerHTML = modules.map(m => {
+    const alertsHtml = (m.alerts || []).map(a => {
+      const firstSid = (a.student_ids && a.student_ids[0]) || null;
+      const clickAttr = firstSid ? ` onclick="openStudentDetail(${firstSid})" style="cursor:pointer;"` : '';
+      return `
+        <div class="alert-card"${clickAttr} style="background:${bgFor(a.severity)};border-left:3px solid ${borderFor(a.severity)};display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:6px;margin-bottom:6px;">
+          <div style="font-size:1.1rem;line-height:1.3;">${icon(a.type)}</div>
+          <div style="flex:1;">
+            <div style="font-size:0.85rem;color:var(--text);line-height:1.4;">${a.message}</div>
+            ${firstSid ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Click to inspect →</div>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);">
+          🏛️ ${m.label}
+          <span style="float:right;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;font-size:0.72rem;">${m.concept.replace(/_/g,' ')}</span>
+        </div>
+        ${alertsHtml}
+      </div>
+    `;
+  }).join('');
 }
 
 // Render the per-concept mastery card. Each row shows the concept name,
