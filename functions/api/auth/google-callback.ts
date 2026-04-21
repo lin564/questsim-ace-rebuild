@@ -22,6 +22,11 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
     return new Response('Invalid OAuth state', { status: 400 });
   }
 
+  // Derive the redirect URI from the request's own origin (same as google.ts)
+  // so preview deployments match the redirect_uri that started the flow.
+  const reqUrl = new URL(context.request.url);
+  const redirectUri = `${reqUrl.origin}/api/auth/google-callback`;
+
   // Exchange code for tokens
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -30,7 +35,7 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
       code,
       client_id: context.env.GOOGLE_CLIENT_ID,
       client_secret: context.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: context.env.GOOGLE_REDIRECT_URI,
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     }),
   });
@@ -111,7 +116,7 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
   return new Response(null, {
     status: 302,
     headers: {
-      Location: `${context.env.APP_URL}/#${screen}`,
+      Location: `${reqUrl.origin}/#${screen}`,
       'Set-Cookie': `qs_session=${sessionId}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`,
     },
   });

@@ -2,10 +2,17 @@
 import type { Env, DataContext } from '../../types';
 
 export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context) => {
+  // Derive the redirect URI from the incoming request's origin so preview
+  // deployments (branch builds on Cloudflare Pages) work automatically
+  // without needing a per-branch GOOGLE_REDIRECT_URI in wrangler.toml.
+  // Falls back to the env var if the request URL can't be parsed.
+  const reqUrl = new URL(context.request.url);
+  const redirectUri = `${reqUrl.origin}/api/auth/google-callback`;
+
   const state = crypto.randomUUID();
   const params = new URLSearchParams({
     client_id: context.env.GOOGLE_CLIENT_ID,
-    redirect_uri: context.env.GOOGLE_REDIRECT_URI,
+    redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
     state,
