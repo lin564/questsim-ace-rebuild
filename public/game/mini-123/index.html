@@ -28,6 +28,42 @@
   #error-panel h2 { color: #E05368; font-size: 1.3rem; margin-bottom: 12px; }
   #error-panel p { color: rgba(255,255,255,0.8); font-size: 0.9rem; max-width: 480px; line-height: 1.6; }
   #error-panel pre { margin-top: 16px; font-size: 0.72rem; color: rgba(255,255,255,0.6); max-width: 100%; overflow-x: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; }
+
+  /* ═══ Belief-endorsement overlay (ACE adaptive pipeline) ═══ */
+  #ace-endorse {
+    position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+    display: none; flex-direction: column; gap: 10px; z-index: 30;
+    background: rgba(15,38,64,0.95); color: white; padding: 16px 20px;
+    border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: min(560px, 92vw); border: 1px solid rgba(212,168,67,0.4);
+    animation: ace-fade 220ms ease-out;
+  }
+  #ace-endorse.shown { display: flex; }
+  @keyframes ace-fade { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  #ace-endorse-title { font-size: 0.95rem; color: #D4A843; font-weight: 600; }
+  #ace-endorse-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ace-chip {
+    appearance: none; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06);
+    color: white; padding: 8px 14px; border-radius: 999px; font-size: 0.9rem; cursor: pointer;
+    transition: background 120ms, border-color 120ms;
+  }
+  .ace-chip:hover { background: rgba(212,168,67,0.18); border-color: rgba(212,168,67,0.6); }
+  .ace-chip:disabled { opacity: 0.5; cursor: progress; }
+  #ace-redirect {
+    position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+    display: none; z-index: 31;
+    background: rgba(27,58,92,0.97); color: white; padding: 14px 18px;
+    border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    max-width: min(560px, 92vw); font-size: 0.95rem; line-height: 1.45;
+    border-left: 4px solid #D4A843;
+    animation: ace-fade 220ms ease-out;
+  }
+  #ace-redirect.shown { display: block; }
+  #ace-redirect-dismiss {
+    margin-top: 10px; appearance: none; background: rgba(212,168,67,0.85); border: none;
+    color: #0f2640; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -43,6 +79,16 @@
     <h2>⚠️ Failed to Load Game</h2>
     <p id="error-message">Could not load the Pythagoras game assets. Please refresh to try again, or contact your teacher if the problem persists.</p>
     <pre id="error-details"></pre>
+  </div>
+
+  <!-- ACE adaptive pipeline UI: shown after each drop. -->
+  <div id="ace-endorse" role="dialog" aria-label="Why did you pick that bin?">
+    <div id="ace-endorse-title">Why did you pick that one?</div>
+    <div id="ace-endorse-chips"></div>
+  </div>
+  <div id="ace-redirect" role="status" aria-live="polite">
+    <div id="ace-redirect-text"></div>
+    <button id="ace-redirect-dismiss" type="button">Got it</button>
   </div>
 </div>
 
@@ -139,6 +185,178 @@
 
   // Expose for the jslib to call directly
   window.sendToParent = sendToParent;
+
+  // ═══════════════════════════════════════════════════════════════
+  // ACE adaptive pipeline (Pythagoras Rebuild)
+  //
+  // Hooks into the Unity event stream and runs the Maya gesture flow:
+  //   pickup  →  drop  →  POST /api/student/placement
+  //                      →  show endorsement chip-picker
+  //                      →  POST /api/student/endorse
+  //                      →  on misalignment, POST /api/voice/speak and play
+  //
+  // Reads session_id from the iframe URL (?session_id=...). If absent,
+  // the pipeline silently no-ops so the existing Unity-only flow keeps
+  // working unchanged for legacy hosts.
+  // ═══════════════════════════════════════════════════════════════
+  (function ace() {
+    var qs = new URLSearchParams(window.location.search);
+    var sessionId = parseInt(qs.get("session_id") || "", 10) || null;
+    var studentName = qs.get("student_name") || "";
+
+    if (!sessionId) {
+      console.log("[ACE] no session_id query param — adaptive pipeline disabled");
+      return;
+    }
+    console.log("[ACE] adaptive pipeline armed for session", sessionId);
+
+    var pickupAt = 0;
+    var lastTile = "";
+
+    var endorseEl = document.getElementById("ace-endorse");
+    var chipsEl   = document.getElementById("ace-endorse-chips");
+    var redirectEl     = document.getElementById("ace-redirect");
+    var redirectTextEl = document.getElementById("ace-redirect-text");
+    var redirectBtnEl  = document.getElementById("ace-redirect-dismiss");
+    var audioEl = new Audio();
+
+    redirectBtnEl.addEventListener("click", function() {
+      redirectEl.classList.remove("shown");
+      audioEl.pause();
+    });
+
+    // Derive the actual category from a tile id like "isosceles_03"
+    // or "Tile_Right_2" — first alpha segment that matches a known cat.
+    var KNOWN = ["equilateral", "isosceles", "scalene", "right"];
+    function inferCategory(tile) {
+      var lower = (tile || "").toLowerCase();
+      for (var i = 0; i < KNOWN.length; i++) {
+        if (lower.indexOf(KNOWN[i]) !== -1) return KNOWN[i];
+      }
+      return null;
+    }
+
+    function api(path, body) {
+      return fetch(path, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {}),
+      }).then(function(r) {
+        if (!r.ok) throw new Error(path + " → " + r.status);
+        return r.json();
+      });
+    }
+
+    function showEndorse(rules, onPick) {
+      chipsEl.innerHTML = "";
+      rules.forEach(function(r) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ace-chip";
+        btn.textContent = r.rule;
+        btn.addEventListener("click", function() {
+          // disable all chips while we wait on the server
+          chipsEl.querySelectorAll(".ace-chip").forEach(function(b) { b.disabled = true; });
+          onPick(r.rule);
+        });
+        chipsEl.appendChild(btn);
+      });
+      endorseEl.classList.add("shown");
+    }
+
+    function hideEndorse() { endorseEl.classList.remove("shown"); }
+
+    function speakLine(text) {
+      // Hit the existing voice proxy. If it 500s (no ElevenLabs key),
+      // we still show the text — audio is the bonus, not the contract.
+      fetch("/api/voice/speak", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text }),
+      }).then(function(r) {
+        if (!r.ok) return null;
+        return r.blob();
+      }).then(function(blob) {
+        if (!blob) return;
+        audioEl.src = URL.createObjectURL(blob);
+        audioEl.play().catch(function() { /* autoplay policy — ignore */ });
+      }).catch(function() { /* offline ok */ });
+    }
+
+    function showRedirect(line) {
+      redirectTextEl.textContent = line;
+      redirectEl.classList.add("shown");
+      speakLine(line);
+    }
+
+    // Wrap the existing unity-event handlers so we observe gestures
+    // without disturbing the original postMessage forwarding.
+    var origHandlers = window.unityCallsJsFns;
+    var wrapped = Object.assign({}, origHandlers, {
+      unityGotClick: function(name, pathedName) {
+        pickupAt = Date.now();
+        lastTile = name || pathedName || "";
+        sendToParent("ANGLE_FOCUS", {  // proxy event; richer when Unity emits per-angle
+          tile: lastTile, ts: pickupAt,
+        });
+        if (origHandlers.unityGotClick) origHandlers.unityGotClick(name, pathedName);
+      },
+      message: function(msgType, prms) {
+        if (origHandlers.message) origHandlers.message(msgType, prms);
+
+        var match = (prms || "").match(/^([^(]+)\((.*)\)$/);
+        if (!match) return;
+        if (match[1].trim() !== "Activity.Answer") return;
+
+        var parts = match[2].split(",").map(function(s) { return s.trim(); });
+        var tile     = parts[0] || lastTile;
+        var target   = parts[1] || "";
+        // 4th arg, if Unity emits it later, is the truth category.
+        var truth    = parts[3] ? parts[3].toLowerCase() : null;
+        var actual   = truth || inferCategory(tile);
+        var placedAs = (target || "").toLowerCase();
+
+        if (!actual || !placedAs) {
+          console.warn("[ACE] could not derive actual/placed_as", { tile: tile, target: target });
+          return;
+        }
+
+        var latency = pickupAt ? (Date.now() - pickupAt) : null;
+
+        api("/api/student/placement", {
+          session_id: sessionId,
+          tile: tile,
+          actual_category: actual,
+          placed_as: placedAs,
+          latency_ms: latency,
+          dwell_ms: latency,  // pickup→drop is our best dwell proxy until Unity emits per-angle
+          tier: "foundation",
+          location: "mini-123",
+        }).then(function(res) {
+          if (!res.allowed_rules || res.allowed_rules.length === 0) return;
+          showEndorse(res.allowed_rules, function(rule) {
+            api("/api/student/endorse", {
+              placement_event_id: res.placement_event_id,
+              endorsed_rule: rule,
+            }).then(function(end) {
+              hideEndorse();
+              if (end.alignment_status === "misaligned" && end.redirect_line) {
+                showRedirect(end.redirect_line);
+              }
+            }).catch(function(e) {
+              console.error("[ACE] endorse failed", e);
+              hideEndorse();
+            });
+          });
+        }).catch(function(e) {
+          console.error("[ACE] placement failed", e);
+        });
+      },
+    });
+    window.unityCallsJsFns = wrapped;
+  })();
 
   // ═══ Load the Unity loader script ═══
   var canvas = document.getElementById("unity-canvas");
