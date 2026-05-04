@@ -1046,7 +1046,7 @@ body {
             <span style="font-size:0.55rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:2px 6px;border-radius:4px;font-weight:600;">AI GUIDE</span>
           </div>
           <div id="mapNPCDialogue" style="font-size:0.95rem;color:var(--text);line-height:1.6;font-style:italic;">"Welcome back, Maya. We've recovered two fragments from our journey through the villages — the foundations of my proof. Now the real adventure begins. See that golden marker over Athens? Workers are building a new temple on the Acropolis, and they need someone who understands right triangles. <strong>Click on Athens to travel there.</strong>"</div>
-          <div style="margin-top:8px;font-size:0.6rem;color:var(--text-muted);">🔗 Powered by <a href="#" style="color:var(--teal);text-decoration:none;">Historical Figure Chatbot API</a> — historical-figure-voice.workers.dev</div>
+          <div style="margin-top:8px;font-size:0.6rem;color:var(--text-muted);">🔗 Powered by <a href="#" style="color:var(--teal);text-decoration:none;">chatbot-edu-api</a> — server-side keys, per-student rate limits</div>
         </div>
       </div>
     </div>
@@ -3195,17 +3195,78 @@ const questScenes = [
 
 let questDialogueStep = 0;
 
-// Voice placeholder — connects to your historical-figure-voice Cloudflare Worker
+// chatbot-edu-api: secure server-side worker holding the Anthropic + ElevenLabs
+// keys. The browser never sees them. Every call must include a (studentId, classId)
+// pair that resolves in the historical-chatbot-classroom D1 — see README for setup.
+const CHATBOT_API = 'https://chatbot-edu-api.ultisim.workers.dev';
+
+function getChatbotAuth() {
+  const studentId = localStorage.getItem('qs_studentId');
+  const classId = localStorage.getItem('qs_classId');
+  if (!studentId || !classId) {
+    console.warn('Chatbot disabled: no student session. Join a class first.');
+    return null;
+  }
+  return { studentId, classId };
+}
+
+// Generates speech for the figure's current dialogue. Strips HTML and quotes.
+async function playFigureVoice(figure, sourceText) {
+  const btn = event?.target;
+  const auth = getChatbotAuth();
+  if (!auth) {
+    if (btn) { btn.textContent = '🔇'; setTimeout(() => btn.textContent = '🔊', 1500); }
+    return;
+  }
+  const text = String(sourceText ?? '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/^["“”\s]+|["“”\s]+$/g, '')
+    .trim();
+  if (!text) return;
+
+  if (btn) { btn.textContent = '⏳'; btn.style.background = 'var(--gold)'; }
+  try {
+    const resp = await fetch(`${CHATBOT_API}/voice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...auth, figure, text }),
+    });
+    if (!resp.ok) throw new Error(`Voice ${resp.status}`);
+    const audio = new Audio(URL.createObjectURL(await resp.blob()));
+    if (btn) btn.textContent = '🔈';
+    audio.onended = () => { if (btn) { btn.textContent = '🔊'; btn.style.background = 'var(--teal)'; } };
+    await audio.play();
+  } catch (err) {
+    console.error('Voice failed:', err);
+    if (btn) {
+      btn.textContent = '⚠️';
+      setTimeout(() => { btn.textContent = '🔊'; btn.style.background = 'var(--teal)'; }, 2000);
+    }
+  }
+}
+
 function playPythagorasVoice() {
-  const btn = event.target;
-  btn.textContent = '🔈';
-  btn.style.background = 'var(--gold)';
-  setTimeout(() => {
-    btn.textContent = '🔊';
-    btn.style.background = 'var(--teal)';
-  }, 2000);
-  // TODO: Connect to historical-figure-voice.YOUR_SUBDOMAIN.workers.dev
-  console.log('🔊 Voice API placeholder — connect to historical-figure-voice worker');
+  const dialogue = document.getElementById('locationNPCDialogue')?.innerHTML
+    || document.getElementById('mapNPCDialogue')?.innerHTML
+    || '';
+  return playFigureVoice('pythagoras', dialogue);
+}
+
+// Free-form chat: pass message text, an optional history of prior turns, and a figure id.
+// Returns the assistant text (under 120 words by default, model-enforced).
+async function askHistoricalFigure(figure, message, history = []) {
+  const auth = getChatbotAuth();
+  if (!auth) throw new Error('Not signed in to a class');
+  const messages = [...history, { role: 'user', content: message }];
+  const resp = await fetch(`${CHATBOT_API}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...auth, figure, messages }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.message || data.error || `Chat ${resp.status}`);
+  return data.text;
 }
 
 // ═══ MAP STATE MANAGEMENT ═══
