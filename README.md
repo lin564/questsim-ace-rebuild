@@ -2,7 +2,7 @@
 
 **An immersive, narrative-driven math learning adventure demonstrating the Adaptive Challenge Engine (ACE) architecture.**
 
-🔗 **Live Demo:** `https://lin564.github.io/questsim-ace-prototype/`
+🔗 **Live Demo:** https://questsim-ace-rebuild.pages.dev
 
 ## What This Is
 
@@ -41,16 +41,35 @@ This prototype demonstrates all five ACE objects in action:
 
 ## Technology
 
-Single-file HTML/CSS/JavaScript — no build tools, no dependencies, no framework. Designed to run in any modern browser.
+**Frontend:** vanilla HTML, CSS, and JavaScript in `public/`, no build step, no framework. Runs in any modern browser.
+
+**Backend:** Cloudflare Pages Functions in `functions/api/*` (TypeScript), backed by a Cloudflare D1 database (`schema.sql`). Auth is Google OAuth with JWT sessions.
+
+**Game embed:** the Unity WebGL quest at `https://pymini1.questsim.com`, communicated with via `postMessage` for activity completion and telemetry.
 
 ## Deployment
 
-This site is deployed via GitHub Pages. To deploy your own:
+This site runs on **Cloudflare Pages** with a **D1** database and Pages Functions (`functions/api/*`) handling auth, telemetry, and teacher/admin endpoints. The Unity WebGL game shell is hosted separately at `https://pymini1.questsim.com` and embedded via `postMessage`.
 
-1. Fork this repository
-2. Go to Settings → Pages
-3. Set Source to "Deploy from a branch" → `main` → `/ (root)`
-4. Your site will be live at `https://lin564.github.io/questsim-ace-prototype/`
+To deploy your own instance:
+
+1. **Fork this repository** and clone it locally.
+2. **Create a Cloudflare Pages project** pointed at your fork. Set the build output directory to `public` (no build command required).
+3. **Provision a D1 database**, then apply the schema:
+   ```bash
+   npx wrangler d1 create questsim-ace-<your-suffix>
+   npx wrangler d1 execute <db-name> --remote --file=./schema.sql
+   ```
+   Copy the returned `database_id` into `wrangler.toml`.
+4. **Set the three Pages secrets** (used by the auth flow and JWT signing):
+   ```bash
+   npx wrangler pages secret put GOOGLE_CLIENT_ID
+   npx wrangler pages secret put GOOGLE_CLIENT_SECRET
+   npx wrangler pages secret put JWT_SECRET
+   ```
+5. **Create Google OAuth credentials** in the Google Cloud console and add your Pages URL + `/api/auth/google-callback` as an authorized redirect URI.
+6. **Update `wrangler.toml`** so `APP_URL` and `GOOGLE_REDIRECT_URI` match your own Pages domain.
+7. Push to your default branch. Cloudflare Pages will build and deploy on each commit.
 
 ## About QuestSim
 
