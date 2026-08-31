@@ -4565,7 +4565,17 @@ let masteryState = {
 // is untouched and will be retired in Phase 9.
 window.ScaffoldingFramework = {
   version: 'v3.0-phase-1',
-  SupportKinds: {},   // Task 2 fills these
+  // Support Kinds are curriculum-agnostic. Each maps to one or more of the
+  // six paper functions (see spec Section 4). Wire-level identifier is the
+  // lowercase kebab-case string on the right.
+  SupportKinds: {
+    OFFLOAD:                  'offload',
+    PROMPT:                   'prompt',
+    SENTENCE_STEM:            'sentence-stem',
+    HINT:                     'hint',
+    WORKED_EXAMPLE_FRAGMENT:  'worked-example-fragment',
+    PROBLEMATIZING_NUDGE:     'problematizing-nudge'
+  },
   Functions: {},      // Task 4 fills these (F1..F6)
 
   // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
