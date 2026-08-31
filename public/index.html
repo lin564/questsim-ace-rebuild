@@ -4599,7 +4599,36 @@ window.ScaffoldingFramework = {
     };
   },
 
-  Functions: {},      // Task 4 fills these (F1..F6)
+  // Six-function API. Producers return a Scaffold or null. Modifiers take
+  // a Scaffold and return a (possibly-modified) Scaffold. Guardrails return
+  // { allow: bool, reason: string }. Spec Section 4.
+  // Phase 1+2: all functions are inert stubs. Real logic added Phase 3+.
+  Functions: {
+    // F1 Simplify (producer). Returns Offload or Worked-Example Fragment or null.
+    F1_simplify(context) {
+      return null;
+    },
+    // F2 Strategic help (producer). Returns Prompt, Hint, or Sentence Stem or null.
+    F2_strategicHelp(context) {
+      return null;
+    },
+    // F3 Offset frustration (modifier). Adjusts tone; returns scaffold unmodified in stub.
+    F3_offsetFrustration(scaffold, affect) {
+      return scaffold;
+    },
+    // F4 Problematize (producer). Returns Problematizing Nudge or null.
+    F4_problematize(context) {
+      return null;
+    },
+    // F5 Reflect (producer). Returns Reflection Prompt or null.
+    F5_reflect(context) {
+      return null;
+    },
+    // F6 Learning-by-doing (guardrail). Enforces Principle #1.
+    F6_learningByDoing(scaffold) {
+      return { allow: true, reason: 'phase-1-stub' };
+    }
+  },
 
   // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
   // Step 5 (Calibration Check). Also invoked proactively mid-solve.
