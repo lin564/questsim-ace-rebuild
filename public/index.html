@@ -4576,6 +4576,29 @@ window.ScaffoldingFramework = {
     WORKED_EXAMPLE_FRAGMENT:  'worked-example-fragment',
     PROBLEMATIZING_NUDGE:     'problematizing-nudge'
   },
+
+  // Scaffold instance shape. Every Scaffold produced by a Function has these
+  // fields. Spec Section 3.
+  //   supportKind:   one of SupportKinds values
+  //   functions:     array of function IDs served: ['F1'] | ['F2', 'F4'] etc.
+  //   payload:       { text: string, template?: string, vars?: object }
+  //   source:        'system' | 'teacher-authored' | 'teacher-live' | 'student-requested'
+  //   fadeStateRef:  { studentId, concept, supportKind } | null
+  //   producedAt:    ISO timestamp
+  createScaffold(spec) {
+    if (!spec || typeof spec !== 'object') {
+      throw new Error('createScaffold requires a spec object');
+    }
+    return {
+      supportKind:   spec.supportKind,
+      functions:     Array.isArray(spec.functions) ? spec.functions.slice() : [],
+      payload:       spec.payload || { text: '' },
+      source:        spec.source || 'system',
+      fadeStateRef:  spec.fadeStateRef || null,
+      producedAt:    new Date().toISOString()
+    };
+  },
+
   Functions: {},      // Task 4 fills these (F1..F6)
 
   // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
