@@ -17,7 +17,7 @@ This prototype demonstrates all five ACE objects in action:
 - **Mastery Map** — Concept-granular progress tracking with confidence scores
 - **Difficulty Pathway** — Three tiers (Foundation → Extension → Mastery) with automatic transitions
 - **Feedback Loop** — Adaptive branching based on student performance:
-  - 🌿 **Scaffold Path** — Students who struggle get narrative side-quests with easier numbers
+  - 🌿 **Scaffold Path** _(deprecated in ACE v3, retired in Phase 9)_. v2 mechanism that routed struggling students to narrative side-quests with easier numbers. v3 replaces this with in-place scaffolding that keeps students inside the authentic challenge. See the [ACE v3 spec](docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md).
   - ⚡ **Fast-Track Path** — Students who solve quickly get harder variants for bonus XP
   - 🎭 **Affective Feedback** — Response tone adapts to attempt count and hint usage
 
@@ -30,6 +30,17 @@ This prototype demonstrates all five ACE objects in action:
 5. **Pulse Check** — Mid-session engagement monitoring
 6. **Reflection** — Post-session metacognition and self-assessment
 7. **Capstone** — Build the Visual Proof with guided algebraic reasoning
+
+## ACE v3.0 Naming (in progress)
+
+The engine is migrating to the v3.0 spec. Terminology in flight:
+
+- **Scaffolding Framework** (Lens 4, new): the runtime policy layer for supports, fading, reflection, and productive-failure decisions
+- **`challengeSupports`** (was `scaffoldingSet` in v2 spec): the per-challenge pool of supports the framework can draw from
+- **Progressive Authoring** (was "Scaffolded Authoring"): the teacher-facing L1/L2/L3 authoring UX
+- **Scaffold Path** (v2 code): deprecated in v3, retirement in Phase 9
+
+Full spec: [docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md](docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md)
 
 ## Teacher Experience
 
