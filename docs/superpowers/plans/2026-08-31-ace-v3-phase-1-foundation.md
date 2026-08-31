@@ -365,7 +365,7 @@ At the start of the incorrect-feedback function (immediately after the function 
   }
 ```
 
-Adjust `currentChallenge` and `tracker` references to match the actual variables in scope at the insertion point. If the function does not have direct access to those variables, pass whatever context IS available and note this in the comment (`// TODO(phase-3): add attempts context when tracker becomes available here`), but only if you truly cannot reach the variable.
+Adjust `currentChallenge` and `tracker` references to match the actual variables in scope at the insertion point. If the function does not have direct access to those variables, pass whatever context IS available and note this in the comment (`// TODO(phase-3): add attempts context when tracker becomes available here`), but only if the variable is not reachable at all.
 
 - [ ] **Step 5.3: Manual smoke test — consult call fires**
 
