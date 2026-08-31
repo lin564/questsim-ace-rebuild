@@ -55,7 +55,7 @@ Expected: one match at line 4554.
 Insert the following block above line 4554 (adjust indentation to match surrounding code, which uses 2-space indent inside `<script>`):
 
 ```javascript
-// ═══ ACE v3.0 — SCAFFOLDING FRAMEWORK (LENS 4) ═══
+// ═══ ACE v3.0 SCAFFOLDING FRAMEWORK (LENS 4) ═══
 // Phase 1+2 skeleton. Consult pattern established; policy logic added in later phases.
 // Spec: docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md
 //
@@ -267,27 +267,27 @@ Change the line `Functions: {},` inside the ScaffoldingFramework object to:
   // { allow: bool, reason: string }. Spec Section 4.
   // Phase 1+2: all functions are inert stubs. Real logic added Phase 3+.
   Functions: {
-    // F1 Simplify — producer. Returns Offload or Worked-Example Fragment or null.
+    // F1 Simplify (producer). Returns Offload or Worked-Example Fragment or null.
     F1_simplify(context) {
       return null;
     },
-    // F2 Strategic help — producer. Returns Prompt, Hint, or Sentence Stem or null.
+    // F2 Strategic help (producer). Returns Prompt, Hint, or Sentence Stem or null.
     F2_strategicHelp(context) {
       return null;
     },
-    // F3 Offset frustration — modifier. Adjusts tone; returns scaffold unmodified in stub.
+    // F3 Offset frustration (modifier). Adjusts tone; returns scaffold unmodified in stub.
     F3_offsetFrustration(scaffold, affect) {
       return scaffold;
     },
-    // F4 Problematize — producer. Returns Problematizing Nudge or null.
+    // F4 Problematize (producer). Returns Problematizing Nudge or null.
     F4_problematize(context) {
       return null;
     },
-    // F5 Reflect — producer. Returns Reflection Prompt or null.
+    // F5 Reflect (producer). Returns Reflection Prompt or null.
     F5_reflect(context) {
       return null;
     },
-    // F6 Learning-by-doing — guardrail. Enforces Principle #1.
+    // F6 Learning-by-doing (guardrail). Enforces Principle #1.
     F6_learningByDoing(scaffold) {
       return { allow: true, reason: 'phase-1-stub' };
     }
@@ -349,7 +349,7 @@ Read lines 5440-5480 of `public/index.html` to confirm the entry point.
 At the start of the incorrect-feedback function (immediately after the function signature `{`), insert:
 
 ```javascript
-  // ═══ ACE v3.0 consult — Feedback Loop, Step 4 (Narrative Match) ═══
+  // ═══ ACE v3.0 consult: Feedback Loop, Step 4 (Narrative Match) ═══
   // Phase 1+2: framework returns [] here (no producers wired). Later phases
   // populate this with runtime scaffolds. UI is not affected in this phase.
   try {
@@ -365,7 +365,7 @@ At the start of the incorrect-feedback function (immediately after the function 
   }
 ```
 
-Adjust `currentChallenge` and `tracker` references to match the actual variables in scope at the insertion point. If the function does not have direct access to those variables, pass whatever context IS available and note this in the comment (`// TODO: add attempts context when tracker becomes available here` — but only if you truly cannot reach the variable).
+Adjust `currentChallenge` and `tracker` references to match the actual variables in scope at the insertion point. If the function does not have direct access to those variables, pass whatever context IS available and note this in the comment (`// TODO(phase-3): add attempts context when tracker becomes available here`), but only if you truly cannot reach the variable.
 
 - [ ] **Step 5.3: Manual smoke test — consult call fires**
 
@@ -418,7 +418,7 @@ Change line 20 from:
 
 To:
 ```
-  - 🌿 **Scaffold Path** _(deprecated in ACE v3, retired in Phase 9)_ — v2 mechanism that routed struggling students to narrative side-quests with easier numbers. v3 replaces this with in-place scaffolding that keeps students inside the authentic challenge. See the [ACE v3 spec](docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md).
+  - 🌿 **Scaffold Path** _(deprecated in ACE v3, retired in Phase 9)_. v2 mechanism that routed struggling students to narrative side-quests with easier numbers. v3 replaces this with in-place scaffolding that keeps students inside the authentic challenge. See the [ACE v3 spec](docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md).
 ```
 
 - [ ] **Step 6.3: Add a naming migration note**
@@ -430,10 +430,10 @@ Immediately after the numbered "Student Experience" list (after line 32 approxim
 
 The engine is migrating to the v3.0 spec. Terminology in flight:
 
-- **Scaffolding Framework** (Lens 4, new) — the runtime policy layer for supports, fading, reflection, and productive-failure decisions
-- **`challengeSupports`** (was `scaffoldingSet` in v2 spec) — the per-challenge pool of supports the framework can draw from
-- **Progressive Authoring** (was "Scaffolded Authoring") — the teacher-facing L1/L2/L3 authoring UX
-- **Scaffold Path** (v2 code) — deprecated in v3; retirement in Phase 9
+- **Scaffolding Framework** (Lens 4, new): the runtime policy layer for supports, fading, reflection, and productive-failure decisions
+- **`challengeSupports`** (was `scaffoldingSet` in v2 spec): the per-challenge pool of supports the framework can draw from
+- **Progressive Authoring** (was "Scaffolded Authoring"): the teacher-facing L1/L2/L3 authoring UX
+- **Scaffold Path** (v2 code): deprecated in v3, retirement in Phase 9
 
 Full spec: [docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md](docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md)
 ```
