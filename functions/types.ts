@@ -7,6 +7,10 @@ export interface Env {
   JWT_SECRET: string;
   APP_URL: string;
   GAME_ORIGIN: string;
+  // Anthropic API for LLM-generated feature-specific redirects.
+  // Set via: npx wrangler pages secret put ANTHROPIC_API_KEY
+  ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_MODEL?: string;  // optional override; default in code
 }
 
 export interface User {

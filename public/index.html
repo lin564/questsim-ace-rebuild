@@ -1860,6 +1860,19 @@ body {
     <div id="td-concept-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
   </div>
 
+  <!-- Shared Misconceptions: aggregates placement_events where placed_as ≠ actual,
+       grouped by (placed_as, actual) pair across the whole class. Populated by
+       renderMisconceptions() using /api/teacher/confusions. The class_aggregation
+       field surfaces the top endorsed_rule per pair, so a row reads:
+         "isosceles → equilateral · 4 students · top reason: looks symmetrical" -->
+  <div class="card mb-md" id="td-misconceptions-card" style="display:none;">
+    <div class="card-header">🧭 Shared Misconceptions</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">
+      Confusion pairs from gesture-level placements. The rule shown is what students endorsed when they placed wrongly — the misconception to address in the next lesson.
+    </div>
+    <div id="td-misconception-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
   <div class="grid-2 mb-md">
     <div class="card">
       <div class="card-header">⚠️ Attention Needed</div>
@@ -3202,7 +3215,20 @@ async function getGameUrl() {
   // - No CORS (since Unity fetches files itself, and postMessage is
   //   same-origin)
   // - Query param ?only=Types is never stripped
-  return '/game/mini-123/?only=Types';
+  //
+  // We also pass session_id and student_name so the wrapper's adaptive
+  // pipeline (POST /api/student/placement, /endorse) can attribute
+  // gestures to the right session and personalize Pythagoras's voice
+  // line. If session-start fails (e.g. anonymous preview), fall back
+  // to the legacy URL — the wrapper will silently skip the pipeline.
+  const params = new URLSearchParams({ only: 'Types' });
+  try {
+    const sid = await ensureGameSession();
+    if (sid) params.set('session_id', String(sid));
+  } catch (e) { /* non-fatal */ }
+  const firstName = window.currentUser && window.currentUser.first_name;
+  if (firstName) params.set('student_name', firstName);
+  return '/game/mini-123/?' + params.toString();
 }
 
 function dismissLogin() {
@@ -3764,9 +3790,60 @@ async function loadTeacherDashboard() {
 
     // Populate the new "Mastery by Concept" card from the roster stats.
     renderConceptBreakdown(rosterData.stats && rosterData.stats.concept_breakdown);
+
+    // Populate "Shared Misconceptions" from /api/teacher/confusions. This is
+    // a separate fetch because confusion pairs come from placement_events,
+    // not the student_profiles roster. Failure here is non-fatal — the rest
+    // of the dashboard still renders.
+    try {
+      const confData = await API.get('/api/teacher/confusions?class_id=' + classId);
+      renderMisconceptions(confData.class_aggregation);
+    } catch (e) {
+      console.warn('[Teacher] confusions fetch failed:', e.message);
+      renderMisconceptions(null);
+    }
   } catch (e) {
     console.warn('[Teacher] Failed to load dashboard:', e.message);
   }
+}
+
+// Render the Shared Misconceptions card. Each row shows a confusion pair
+// (placed_as → actual), the count of affected students, the total
+// occurrences across the class, and the top endorsed rule (the
+// misconception itself, e.g. "looks symmetrical"). Data shape comes
+// from class_aggregation in /api/teacher/confusions.
+function renderMisconceptions(rows) {
+  const card = document.getElementById('td-misconceptions-card');
+  const container = document.getElementById('td-misconception-rows');
+  if (!card || !container) return;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+  const cap = (s) => String(s || '').replace(/\b\w/g, (c) => c.toUpperCase());
+  // Show the top 6 — anything past that is a long tail and dilutes the headline.
+  container.innerHTML = rows.slice(0, 6).map((r) => {
+    const topRule = (r.top_endorsed_rules && r.top_endorsed_rules[0]) || null;
+    const ruleLabel = topRule
+      ? `top reason: <em style="color:var(--gold);font-style:normal;">"${topRule.rule}"</em>`
+      : `<span style="color:var(--text-muted);">no endorsement yet</span>`;
+    const studentLabel = `${r.affected_students} student${r.affected_students === 1 ? '' : 's'}`;
+    return `
+      <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--red);">
+        <div>
+          <div style="font-size:0.92rem;font-weight:600;color:var(--text);">
+            ${cap(r.placed_as)} <span style="color:var(--text-muted);font-weight:400;">→</span> ${cap(r.actual)}
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">${ruleLabel}</div>
+        </div>
+        <div style="text-align:right;font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">
+          <div style="font-size:0.92rem;font-weight:700;color:var(--red);">${studentLabel}</div>
+          <div>${r.total_occurrences} placement${r.total_occurrences === 1 ? '' : 's'}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // Render the per-concept mastery card. Each row shows the concept name,
