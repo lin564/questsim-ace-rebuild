@@ -5529,6 +5529,28 @@ function showCorrectFeedback(ch) {
 }
 
 function handleIncorrectAnswer(idx, ch, tracker) {
+  // ═══ ACE v3.0 consult: Feedback Loop, Step 4 (Narrative Match) ═══
+  // Phase 1+2: framework returns [] here (no producers wired). Later phases
+  // populate this with runtime scaffolds. UI is not affected in this phase.
+  // Scoping note: the plan's example referenced the module-level
+  // `currentChallenge` and an outer `tracker` local. Both are reachable
+  // here under different names: `idx` and `tracker` are this function's
+  // own parameters (submitAnswer() calls
+  // handleIncorrectAnswer(currentChallenge, ch, tracker)), so idx stands
+  // in for currentChallenge and tracker is used directly, no substitution
+  // to null was needed.
+  try {
+    const v3Scaffolds = window.ScaffoldingFramework.consult({
+      studentId: (window.currentUser && window.currentUser.id) || null,
+      challengeIdx: idx,
+      phase: 'narrative-match',
+      performanceEvent: { correct: false, attempts: (tracker && tracker.attempts) || 1 }
+    });
+    console.log('[ACE v3] consult() returned', v3Scaffolds.length, 'scaffolds');
+  } catch (err) {
+    console.error('[ACE v3] consult failed (non-fatal in Phase 1):', err);
+  }
+
   // Determine feedback voice based on attempt count and affective signals
   let feedbackHTML = '';
   
