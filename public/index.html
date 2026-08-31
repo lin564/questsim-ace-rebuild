@@ -4551,6 +4551,36 @@ let masteryState = {
   'proof_verification': { level: 'novice', confidence: 0.20 },
   'pythagorean_triples': { level: 'novice', confidence: 0.15 },
 };
+
+// ═══ ACE v3.0 — SCAFFOLDING FRAMEWORK (LENS 4) ═══
+// Phase 1+2 skeleton. Consult pattern established; policy logic added in later phases.
+// Spec: docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md
+//
+// This module owns runtime scaffolding decisions per the ACE v3 spec. It does
+// NOT own per-concept mastery scores (Mastery Map), affect (Learner Profile),
+// or the challengeSupports pool per challenge (Challenge). It consults those.
+//
+// In this phase all six-function stubs return null and consult() returns [].
+// Existing v2 behavior via scaffoldActive / fastTrackActive / aceChooseRoute()
+// is untouched and will be retired in Phase 9.
+window.ScaffoldingFramework = {
+  version: 'v3.0-phase-1',
+  SupportKinds: {},   // Task 2 fills these
+  Functions: {},      // Task 4 fills these (F1..F6)
+
+  // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
+  // Step 5 (Calibration Check). Also invoked proactively mid-solve.
+  // context: { studentId, challengeIdx, phase, performanceEvent?, affect?, mastery? }
+  // Returns: array of Scaffold instances (empty in this phase)
+  consult(context) {
+    if (!context || typeof context !== 'object') return [];
+    // No producers wired yet. Later phases add F1..F5 invocations and
+    // Intervention Policy here.
+    return [];
+  }
+};
+console.log('[ACE v3] ScaffoldingFramework loaded:', window.ScaffoldingFramework.version);
+
 let currentTier = 'extension'; // foundation | extension | mastery
 let scaffoldActive = false; // true when student is in a side-quest scaffold
 let fastTrackActive = false;
