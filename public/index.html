@@ -7075,8 +7075,9 @@ window.QS = (() => {
       };
     }
 
-    // 4. Override submitAnswer & showHint
-    window.submitAnswer = submitAnswer;
+    // 4. Override showHint. submitAnswer is intentionally NOT overridden here:
+    // window.submitAnswer stays bound to the top-level submitAnswer (line 5450),
+    // which is what reaches the ACE v3 consult() call in handleIncorrectAnswer.
     window.showHint     = showHint;
 
     // 5. Wrap navigate (sits on top of the routing patch's navigate wrapper)
