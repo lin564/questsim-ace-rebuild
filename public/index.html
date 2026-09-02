@@ -3381,6 +3381,23 @@ const challenges = [
     incorrectFeedback: `Look carefully at the side lengths on each tile. Count how many sides are equal: all three equal → Equilateral, exactly two equal → Isosceles, none equal → Scalene.`,
     pulseAfter: false,
     fragmentReward: "🧩 Fragment: The Classifier's Eye",
+    challengeSupports: [
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"This triangle looks like a ___ because its sides are ___."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"Before you decide, compare the three sides. Are any two the same length?"' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"Right triangles always have one 90-degree angle. Do you see one here?"' }
+      }
+    ]
   },
   {
     num: 2, total: 4,
@@ -3404,6 +3421,28 @@ const challenges = [
     incorrectFeedback: `The temple workers are waiting! Try labeling the sides first: the <em>ladder is the hypotenuse</em> (13 ft), and the <em>base is one leg</em> (5 ft). Now use a² + b² = c² to find how high the ladder reaches.`,
     pulseAfter: false,
     fragmentReward: "🧩 Fragment: The Builder's Application",
+    challengeSupports: [
+      {
+        supportKind: 'offload',
+        functions: ['F1'],
+        payload: { text: '"Let me handle the squaring for you. Focus on setting up the relationship first."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"The missing leg squared equals ___ squared minus ___ squared."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"Which side is the hypotenuse? That is the longest one, opposite the right angle."' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"To find a leg, rearrange: leg squared equals hypotenuse squared minus other leg squared."' }
+      }
+    ]
   },
   {
     num: 3, total: 4,
@@ -3427,6 +3466,23 @@ const challenges = [
     incorrectFeedback: `The ship is lost and needs your help! This isn't a geometry diagram — it's a navigation chart. But the math is the same. The ship's east and north paths form the <em>two legs</em> of a right triangle. The straight-line distance home is the <em>hypotenuse</em>. Try: 8² + 15² = c².`,
     pulseAfter: true,
     fragmentReward: "🧩 Fragment: The Navigator's Proof",
+    challengeSupports: [
+      {
+        supportKind: 'offload',
+        functions: ['F1'],
+        payload: { text: '"I will square the two legs for you. Sum them, then you take the square root."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"The hypotenuse squared equals ___ squared plus ___ squared."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"You are looking for the longest side. That side goes on the LEFT of the equation."' }
+      }
+    ]
   },
   {
     num: 4, total: 4,
@@ -3453,6 +3509,23 @@ const challenges = [
     tierAdvance: true,
     tierAdvanceText: "The proof is complete! All fragments assembled. You've sailed from Extension Waters to the legendary Mastery Shores — where you'll design proofs, teach others, and create your own challenges.",
     fragmentReward: "🧩 Fragment: The Evaluator's Proof",
+    challengeSupports: [
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"To verify: does a squared plus b squared equal c squared? Try it with the given numbers."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"If this is a Pythagorean triple, then ___ squared plus ___ squared should equal ___ squared."' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"The largest number in the set is always the hypotenuse. Square it and compare."' }
+      }
+    ]
   }
 ];
 
