@@ -6,9 +6,13 @@
     "dev": "npx wrangler pages dev public/ --d1 DB=03d3d8e4-fd55-4913-bb0d-6f0bcd7e6199",
     "deploy": "npx wrangler pages deploy public/",
     "db:migrate": "npx wrangler d1 execute questsim-ace-triangle-types --file=schema.sql --remote",
-    "db:migrate:local": "npx wrangler d1 execute questsim-ace-triangle-types --file=schema.sql --local"
+    "db:migrate:local": "npx wrangler d1 execute questsim-ace-triangle-types --file=schema.sql --local",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.0.0",
+    "vitest": "^1.6.0",
+    "jsdom": "^24.0.0"
   }
 }
