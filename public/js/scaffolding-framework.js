@@ -142,9 +142,19 @@ globalThis.ScaffoldingFramework = {
   // Returns: array of Scaffold instances (empty in this phase)
   consult(context) {
     if (!context || typeof context !== 'object') return [];
-    // No producers wired yet. Later phases add F1..F5 invocations and
-    // Intervention Policy here.
-    return [];
+    const scaffolds = [];
+    const fns = globalThis.ScaffoldingFramework.Functions;
+
+    // Phase 3 evaluation order (subset of spec Section 4):
+    // F2 Strategic help, then F1 Simplify. F4, F5, F3, F6, and Intervention
+    // Policy are wired in later phases and skipped here.
+    const f2Result = fns.F2_strategicHelp(context);
+    if (f2Result) scaffolds.push(f2Result);
+
+    const f1Result = fns.F1_simplify(context);
+    if (f1Result) scaffolds.push(f1Result);
+
+    return scaffolds;
   }
 };
 console.log('[ACE v3] ScaffoldingFramework loaded:', globalThis.ScaffoldingFramework.version);
