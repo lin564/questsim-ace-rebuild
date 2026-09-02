@@ -84,8 +84,39 @@ globalThis.ScaffoldingFramework = {
       });
     },
     // F2 Strategic help (producer). Returns Prompt, Hint, or Sentence Stem or null.
+    // Selection heuristic Phase 3:
+    //   - Fire when F2-tagged support is in pool AND performanceEvent exists
+    //   - Skip first attempt if student affect signals high readiness (protect productive struggle)
+    //   - Escalate Support Kind by attempt: 1 to Prompt, 2 to Sentence Stem, 3+ to Hint
+    //   - Fall back to any F2-tagged support if the preferred kind is not in the pool
     F2_strategicHelp(context) {
-      return null;
+      if (!context || typeof context !== 'object') return null;
+      const evt = context.performanceEvent;
+      if (!evt || typeof evt.attempts !== 'number') return null;
+
+      const readiness = context.affect && context.affect.engagementReadiness;
+      if (evt.attempts === 1 && readiness === 'maximum') return null;
+
+      const pool = Array.isArray(context.challengeSupports) ? context.challengeSupports : [];
+      const candidates = pool.filter(s =>
+        Array.isArray(s.functions) && s.functions.includes('F2')
+      );
+      if (candidates.length === 0) return null;
+
+      let preferred;
+      if (evt.attempts === 1) preferred = 'prompt';
+      else if (evt.attempts === 2) preferred = 'sentence-stem';
+      else preferred = 'hint';
+
+      const match = candidates.find(s => s.supportKind === preferred);
+      const chosen = match || candidates[0];
+
+      return globalThis.ScaffoldingFramework.createScaffold({
+        supportKind: chosen.supportKind,
+        functions: ['F2'],
+        payload: chosen.payload,
+        source: 'system'
+      });
     },
     // F3 Offset frustration (modifier). Adjusts tone; returns scaffold unmodified in stub.
     F3_offsetFrustration(scaffold, affect) {
