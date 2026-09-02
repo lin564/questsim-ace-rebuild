@@ -55,8 +55,33 @@ globalThis.ScaffoldingFramework = {
   // Phase 1+2: all functions are inert stubs. Real logic added Phase 3+.
   Functions: {
     // F1 Simplify (producer). Returns Offload or Worked-Example Fragment or null.
+    // Selection heuristic Phase 3: fire when attempts >= 2 AND time on task is
+    // above threshold (arithmetic is the likely blocker), AND the pool has an
+    // F1-tagged support. Prefer Offload over Worked-Example Fragment.
     F1_simplify(context) {
-      return null;
+      if (!context || typeof context !== 'object') return null;
+      const evt = context.performanceEvent;
+      if (!evt || typeof evt.attempts !== 'number') return null;
+      if (evt.attempts < 2) return null;
+      const TIME_THRESHOLD_MS = 30000;
+      if (typeof evt.timeMs === 'number' && evt.timeMs < TIME_THRESHOLD_MS) return null;
+
+      const pool = Array.isArray(context.challengeSupports) ? context.challengeSupports : [];
+      const candidates = pool.filter(s =>
+        Array.isArray(s.functions) && s.functions.includes('F1')
+      );
+      if (candidates.length === 0) return null;
+
+      // Prefer Offload over Worked-Example Fragment
+      const offload = candidates.find(s => s.supportKind === 'offload');
+      const chosen = offload || candidates[0];
+
+      return globalThis.ScaffoldingFramework.createScaffold({
+        supportKind: chosen.supportKind,
+        functions: ['F1'],
+        payload: chosen.payload,
+        source: 'system'
+      });
     },
     // F2 Strategic help (producer). Returns Prompt, Hint, or Sentence Stem or null.
     F2_strategicHelp(context) {
