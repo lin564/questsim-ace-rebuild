@@ -810,6 +810,46 @@ body {
   position:absolute; bottom:-60px; right:-60px; font-size:12rem; opacity:0.04;
   transform:rotate(-15deg); pointer-events:none;
 }
+
+/* ═══ ACE v3.0 SCAFFOLD CARDS (Feedback Loop, Support from Pythagoras) ═══ */
+.v3-scaffolds {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(42, 127, 142, 0.06);
+  border-radius: var(--radius);
+  border: 1px solid rgba(42, 127, 142, 0.15);
+}
+.v3-scaffolds-header {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.v3-scaffold-card {
+  padding: 12px 14px;
+  background: white;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  border-left: 3px solid var(--teal);
+}
+.v3-scaffold-card:last-child {
+  margin-bottom: 0;
+}
+.v3-scaffold-kind {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+.v3-scaffold-payload {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+  font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -5513,8 +5553,11 @@ function showCorrectFeedback(ch) {
 
 function handleIncorrectAnswer(idx, ch, tracker) {
   // ═══ ACE v3.0 consult: Feedback Loop, Step 4 (Narrative Match) ═══
-  // Phase 1+2: framework returns [] here (no producers wired). Later phases
-  // populate this with runtime scaffolds. UI is not affected in this phase.
+  // Phase 3: F1/F2 producers are wired and can return real scaffolds. This
+  // requires the per-challenge support pool (ch.challengeSupports) and the
+  // time-on-task in ms (since tracker.timeStarted) to reach consult(), or
+  // F1_simplify/F2_strategicHelp will always see an empty pool and return
+  // null. Rendered below, after the existing v2 narrative.
   // Scoping note: the plan's example referenced the module-level
   // `currentChallenge` and an outer `tracker` local. Both are reachable
   // here under different names: `idx` and `tracker` are this function's
@@ -5522,12 +5565,18 @@ function handleIncorrectAnswer(idx, ch, tracker) {
   // handleIncorrectAnswer(currentChallenge, ch, tracker)), so idx stands
   // in for currentChallenge and tracker is used directly, no substitution
   // to null was needed.
+  let v3Scaffolds = [];
   try {
-    const v3Scaffolds = window.ScaffoldingFramework.consult({
+    v3Scaffolds = window.ScaffoldingFramework.consult({
       studentId: (window.currentUser && window.currentUser.id) || null,
       challengeIdx: idx,
       phase: 'narrative-match',
-      performanceEvent: { correct: false, attempts: (tracker && tracker.attempts) || 1 }
+      challengeSupports: (ch && ch.challengeSupports) || [],
+      performanceEvent: {
+        correct: false,
+        attempts: (tracker && tracker.attempts) || 1,
+        timeMs: (tracker && typeof tracker.timeStarted === 'number') ? (Date.now() - tracker.timeStarted) : 0
+      }
     });
     console.log('[ACE v3] consult() returned', v3Scaffolds.length, 'scaffolds');
   } catch (err) {
@@ -5562,6 +5611,25 @@ function handleIncorrectAnswer(idx, ch, tracker) {
     }
   } else {
     feedbackHTML = ch.incorrectFeedback;
+  }
+
+  // Append v3 scaffolds (from consult() at Step 4 of Feedback Loop).
+  if (Array.isArray(v3Scaffolds) && v3Scaffolds.length > 0) {
+    let scaffoldsHTML = '<div class="v3-scaffolds">';
+    scaffoldsHTML += '<div class="v3-scaffolds-header">Support from Pythagoras</div>';
+    for (const scaffold of v3Scaffolds) {
+      const kindLabel = scaffold.supportKind
+        .split('-')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      const payloadText = (scaffold.payload && scaffold.payload.text) || '';
+      scaffoldsHTML += '<div class="v3-scaffold-card">';
+      scaffoldsHTML += '<span class="v3-scaffold-kind">' + kindLabel + '</span>';
+      scaffoldsHTML += '<div class="v3-scaffold-payload">' + payloadText + '</div>';
+      scaffoldsHTML += '</div>';
+    }
+    scaffoldsHTML += '</div>';
+    feedbackHTML += scaffoldsHTML;
   }
 
   document.getElementById('fbIncorrectText').innerHTML = feedbackHTML;
