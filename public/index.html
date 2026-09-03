@@ -751,9 +751,135 @@ body {
   .app-nav { padding: 0 16px; }
   .screen { padding: 16px; }
 }
+
+/* ═══ UNITY EMBED ═══ */
+.unity-embed-container {
+  position:relative; width:100%; height:100%;
+  background:#231F20; overflow:hidden;
+}
+.unity-embed-container canvas {
+  width:100%; height:100%; display:block;
+}
+.unity-loading-overlay {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; background:#231F20; z-index:10;
+  color:white; font-family:var(--font-body); transition:opacity 0.5s ease;
+}
+.unity-loading-overlay.hidden { opacity:0; pointer-events:none; }
+.unity-loading-bar { width:60%; height:6px; background:rgba(255,255,255,0.15); border-radius:3px; margin-top:16px; overflow:hidden; }
+.unity-loading-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); border-radius:3px; transition:width 0.3s ease; width:0%; }
+.unity-loading-text { font-size:0.85rem; color:rgba(255,255,255,0.7); margin-top:8px; }
+.unity-loading-title { font-family:var(--font-display); font-size:1.2rem; color:var(--gold); margin-bottom:4px; }
+@media (max-width: 768px) {
+  .unity-embed-container { aspect-ratio:4/3; max-height:60vh; }
+}
+
+/* ═══ LOGIN SCREEN ═══ */
+.login-screen {
+  position:fixed; inset:0; z-index:9999;
+  background:linear-gradient(160deg,#0f2640 0%,#1B3A5C 40%,#2A7F8E 100%);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-body); transition:opacity 0.5s ease;
+}
+.login-screen.hidden { opacity:0; pointer-events:none; }
+.login-card {
+  background:white; border-radius:20px; padding:48px 40px; max-width:440px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3); text-align:center; position:relative;
+}
+.login-card .login-logo { font-size:3rem; margin-bottom:8px; }
+.login-card .login-title {
+  font-family:var(--font-display); font-size:1.6rem; color:var(--navy); font-weight:700;
+  margin-bottom:4px;
+}
+.login-card .login-subtitle { font-size:0.9rem; color:var(--text-soft); margin-bottom:28px; line-height:1.5; }
+.login-card .login-btn {
+  width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:0.95rem;
+  font-weight:600; cursor:pointer; font-family:var(--font-body); transition:var(--transition);
+  display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px;
+}
+.login-btn-primary { background:var(--navy); color:white; }
+.login-btn-primary:hover { background:var(--navy-deep); transform:translateY(-1px); box-shadow:var(--shadow-md); }
+.login-btn-guest { background:var(--bg); color:var(--text-soft); border:1.5px solid var(--border) !important; }
+.login-btn-guest:hover { border-color:var(--teal) !important; color:var(--teal); }
+.login-divider {
+  display:flex; align-items:center; gap:12px; margin:18px 0; font-size:0.75rem; color:var(--text-muted);
+}
+.login-divider::before,.login-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+.login-note { font-size:0.72rem; color:var(--text-muted); margin-top:20px; line-height:1.5; }
+.login-bg-art {
+  position:absolute; bottom:-60px; right:-60px; font-size:12rem; opacity:0.04;
+  transform:rotate(-15deg); pointer-events:none;
+}
+
+/* ═══ ACE v3.0 SCAFFOLD CARDS (Feedback Loop, Support from Pythagoras) ═══ */
+.v3-scaffolds {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(42, 127, 142, 0.06);
+  border-radius: var(--radius);
+  border: 1px solid rgba(42, 127, 142, 0.15);
+}
+.v3-scaffolds-header {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.v3-scaffold-card {
+  padding: 12px 14px;
+  background: white;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  border-left: 3px solid var(--teal);
+}
+.v3-scaffold-card:last-child {
+  margin-bottom: 0;
+}
+.v3-scaffold-kind {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+.v3-scaffold-payload {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+  font-style: italic;
+}
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════ LOGIN SCREEN ═══════════════════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-bg-art">🏛️</div>
+    <div class="login-logo">🏛️</div>
+    <div class="login-title">QuestSim</div>
+    <div class="login-subtitle">The Lost Proof of Pythagoras<br>An Adaptive Challenge Engine Adventure</div>
+
+    <button class="login-btn login-btn-primary" onclick="loginWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Sign in with Google
+    </button>
+
+    <div id="loginError" style="display:none;font-size:0.78rem;color:var(--red);margin-top:8px;"></div>
+
+    <div class="login-divider">or</div>
+
+    <button class="login-btn login-btn-guest" onclick="loginAsGuest()">
+      Continue as Guest (Demo)
+    </button>
+
+    <div class="login-note">
+      Enter your <strong>class pass code</strong> for full access to the 3D world with progress saving. Guest mode uses the demo version with limited activities.
+    </div>
+  </div>
+</div>
 
 <!-- Architecture Link Banner -->
 <div style="background:linear-gradient(135deg,#1B3A5C,#2A7F8E);padding:8px 24px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
@@ -768,9 +894,11 @@ body {
     <!-- Dynamically populated -->
   </div>
   <div class="nav-user">
-    <span id="userName">Maya Chen</span>
-    <div class="avatar" id="userAvatar">MC</div>
+    <span id="userName">—</span>
+    <span id="userRoleBadge" class="badge" style="display:none;font-size:0.6rem;padding:2px 8px;margin-right:4px;"></span>
+    <div class="avatar" id="userAvatar">?</div>
     <button class="role-switch" onclick="switchRole()">Switch to <span id="switchLabel">Teacher</span></button>
+    <button class="role-switch" onclick="logout()" title="Sign out" style="margin-left:8px;">Logout</button>
   </div>
 </nav>
 
@@ -778,8 +906,29 @@ body {
 
 <!-- SCREEN 1: STUDENT DASHBOARD -->
 <div class="screen" id="screen-student-dashboard">
-  <div class="page-title">Welcome back, Maya! 🎉</div>
-  <div class="page-subtitle">Ready for today's quest? Your 5-day streak is going strong.</div>
+  <!-- Join Class Panel -->
+  <div class="card mb-md" style="background:linear-gradient(135deg,rgba(42,127,142,0.06),rgba(212,168,67,0.04));border:1px solid rgba(42,127,142,0.2);">
+    <div class="flex-between">
+      <div>
+        <div class="card-header" style="margin-bottom:4px;">🎓 Join a Class</div>
+        <div style="font-size:0.82rem;color:var(--text-soft);">Enter the class code your teacher gave you to join their class.</div>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="document.getElementById('joinClassPanel').style.display='block';">Join Class</button>
+    </div>
+    <div id="joinClassPanel" style="display:none;margin-top:12px;padding:14px;background:white;border-radius:8px;">
+      <div class="flex-row gap-sm">
+        <input type="text" id="joinClassCodeInput" placeholder="e.g. ABC123" maxlength="6"
+          style="padding:10px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:1rem;font-family:var(--font-body);text-transform:uppercase;letter-spacing:0.1em;flex:1;"
+          onkeydown="if(event.key==='Enter')joinClassByCode()">
+        <button class="btn btn-primary btn-sm" onclick="joinClassByCode()">Join</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('joinClassPanel').style.display='none';">Cancel</button>
+      </div>
+      <div id="joinClassError" style="display:none;color:var(--red);font-size:0.78rem;margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div class="page-title" id="studentWelcome">Welcome back! 🎉</div>
+  <div class="page-subtitle" id="studentSubtitle">Ready for today's quest?</div>
 
   <div class="card mb-md" style="background:linear-gradient(135deg,rgba(42,127,142,0.06),rgba(212,168,67,0.04));border:1px solid rgba(42,127,142,0.15);position:relative;overflow:hidden;">
     <div style="position:absolute;top:0;right:0;bottom:0;width:180px;background:linear-gradient(135deg,transparent 40%,rgba(212,168,67,0.06));display:flex;align-items:center;justify-content:center;font-size:4rem;opacity:0.3;">🏛️</div>
@@ -789,17 +938,16 @@ body {
       <div style="font-size:0.85rem;color:var(--text-soft);margin:6px 0 12px;max-width:520px;line-height:1.5;">Pythagoras's original proof has been scattered across the ancient Mediterranean. Travel to harbors, temples, and observatories — solve real problems to recover each fragment and rebuild the proof.</div>
       <div class="flex-row gap-sm mb-sm">
         <span class="badge badge-teal">⛵ Extension Waters</span>
-        <span style="font-size:0.82rem;color:var(--text-soft);">3 of 5 proof fragments found</span>
+        <span style="font-size:0.82rem;color:var(--text-soft);">0 of 4 proof fragments found</span>
       </div>
       <div class="flex-row gap-sm" style="margin-bottom:12px;">
         <div style="display:flex;gap:4px;">
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:white;">✓</span>
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:white;">✓</span>
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:white;">✓</span>
           <span style="width:24px;height:24px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.65rem;">🔍</span>
           <span style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);">?</span>
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);">?</span>
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--text-muted);">?</span>
         </div>
-        <span style="font-size:0.72rem;color:var(--text-muted);margin-left:4px;">Fragment 4: The Harbor of Rhodes</span>
+        <span style="font-size:0.72rem;color:var(--text-muted);margin-left:4px;">Fragment 1: The Classifier's Eye — Samos</span>
       </div>
       <button class="btn btn-primary btn-lg" onclick="navigate('screen-checkin')">
         ⚔️ Continue the Quest
@@ -807,23 +955,23 @@ body {
     </div>
   </div>
 
-  <div class="grid-4 mb-md">
+  <div class="grid-4 mb-md" id="studentStatsRow">
     <div class="stat-card" style="position:relative;overflow:hidden;">
-      <div style="position:absolute;top:8px;right:10px;font-size:0.65rem;font-weight:700;color:var(--gold);background:rgba(212,168,67,0.12);padding:2px 8px;border-radius:10px;">LEVEL 7</div>
-      <div class="stat-value" style="color:var(--gold);" id="dashXP">830</div>
+      <div style="position:absolute;top:8px;right:10px;font-size:0.65rem;font-weight:700;color:var(--gold);background:rgba(212,168,67,0.12);padding:2px 8px;border-radius:10px;" id="dashLevel">LEVEL 1</div>
+      <div class="stat-value" style="color:var(--gold);" id="dashXP">0</div>
       <div class="stat-label">Experience Points</div>
-      <div class="progress-bar" style="margin-top:8px;"><div class="fill fill-gold" style="width:83%;"></div></div>
-      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">170 XP to Level 8</div>
+      <div class="progress-bar" style="margin-top:8px;"><div class="fill fill-gold" id="dashXPBar" style="width:0%;"></div></div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;" id="dashXPToNext">100 XP to Level 2</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">47</div>
+      <div class="stat-value" id="dashChallenges">0</div>
       <div class="stat-label">Challenges Completed</div>
-      <div class="stat-trend up">↑ 8 this week</div>
+      <div class="stat-trend up" id="dashChallengesTrend">—</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="color:var(--green);">⚡</div>
-      <div class="stat-label">Learning Velocity</div>
-      <div class="stat-trend up">Trending up</div>
+      <div class="stat-value" style="color:var(--green);" id="dashStreak">—</div>
+      <div class="stat-label">Day Streak</div>
+      <div class="stat-trend" id="dashStreakTrend">Keep it up!</div>
     </div>
     <div class="stat-card" style="cursor:pointer;" onclick="navigate('screen-progress-map')">
       <div class="stat-value">🗺️</div>
@@ -832,8 +980,9 @@ body {
     </div>
   </div>
 
+  <div id="recentSessionsSection">
   <div class="section-label">Recent Quest Sessions</div>
-  <div class="grid-3">
+  <div class="grid-3" id="recentSessionsGrid">
     <div class="card" style="cursor:pointer;" onclick="navigate('screen-reflection')">
       <div class="flex-between mb-sm">
         <span class="badge badge-green">Completed</span>
@@ -864,6 +1013,7 @@ body {
       <div style="font-size:0.72rem;color:var(--gold);margin-top:4px;">🧩 Seeking the final fragment...</div>
       <div class="progress-bar"><div class="fill fill-gold" style="width:50%;"></div></div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -946,9 +1096,9 @@ body {
 <div class="screen" id="screen-simulation">
   <!-- Persistent Quest HUD -->
   <div style="background:var(--navy-deep);border-radius:var(--radius);padding:10px 20px;margin-bottom:0;display:flex;align-items:center;gap:16px;color:white;">
-    <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.05em;">⭐ LEVEL 7</div>
-    <div style="flex:1;"><div class="progress-bar" style="height:8px;margin:0;background:rgba(255,255,255,0.1);"><div class="fill fill-gold" style="width:83%;transition:width 0.8s ease;" id="simXPBar"></div></div></div>
-    <div style="font-family:var(--font-display);font-weight:700;font-size:0.9rem;" id="simXPTotal">830 XP</div>
+    <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.05em;" id="simLevel">⭐ LEVEL 1</div>
+    <div style="flex:1;"><div class="progress-bar" style="height:8px;margin:0;background:rgba(255,255,255,0.1);"><div class="fill fill-gold" style="width:0%;transition:width 0.8s ease;" id="simXPBar"></div></div></div>
+    <div style="font-family:var(--font-display);font-weight:700;font-size:0.9rem;" id="simXPTotal">0 XP</div>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.15);"></div>
     <div style="font-size:0.72rem;opacity:0.6;" id="chTimer">⏱ 0:00</div>
     <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:0.68rem;padding:4px 10px;" onclick="navigate('screen-student-dashboard')">Exit Quest</button>
@@ -1017,16 +1167,32 @@ body {
     </div>
 
     <!-- Travel Info Panel (shown between locations) -->
-    <div id="travelInfoPanel" style="display:none;background:linear-gradient(90deg,#0d1f33,#1a3a5c);padding:16px 24px;margin-top:-2px;color:white;border-top:2px solid var(--gold);">
+    <div id="travelInfoPanel" style="display:none;background:linear-gradient(90deg,#0d1f33,#1a3a5c);padding:16px 24px;margin-top:-2px;color:white;border-top:2px solid var(--gold);cursor:pointer;transition:background 0.2s;" onclick="openVoyageModal()" onmouseover="this.style.background='linear-gradient(90deg,#0f2640,#1e4870)'" onmouseout="this.style.background='linear-gradient(90deg,#0d1f33,#1a3a5c)'">
       <div style="display:flex;align-items:center;gap:16px;">
         <div style="font-size:1.5rem;">⛵</div>
         <div style="flex:1;">
           <div style="font-size:0.82rem;font-weight:700;color:var(--gold);margin-bottom:2px;" id="travelTitle">Voyage: Athens → Rhodes</div>
-          <div style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-top:2px;line-height:1.5;" id="travelDesc">~2,160 stadia by sea across the Aegean • 2-3 days sailing at favorable winds • Route follows the island chain past Delos and Kos</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-top:2px;line-height:1.5;" id="travelDesc">~2,160 stadia by sea across the Aegean</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.55);margin-top:4px;">📖 Click to learn about the voyage, ancient navigation, and daily life at sea →</div>
         </div>
         <div style="text-align:center;padding:4px 16px;border-left:2px solid rgba(255,255,255,0.15);min-width:80px;">
           <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--gold);" id="travelDistance">216</div>
-          <div style="font-size:0.68rem;color:rgba(255,255,255,0.6);font-weight:600;" id="travelUnit">stadia</div>
+          <div style="font-size:0.68rem;color:rgba(255,255,255,0.6);font-weight:600;cursor:help;" id="travelUnit" title="Stadia: an ancient Greek unit of distance ≈ 185 meters or 600 feet. Click the panel for more info.">stadia <span style="opacity:0.6;">ⓘ</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VOYAGE INFO MODAL ═══ -->
+    <div id="voyageModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);" onclick="if(event.target===this)closeVoyageModal()">
+      <div style="background:var(--bg-warm);border-radius:var(--radius-lg);max-width:720px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+        <div id="voyageModalHeader" style="background:linear-gradient(135deg,#0d1f33,#2a5f7a);padding:24px 32px;color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;position:relative;">
+          <button onclick="closeVoyageModal()" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:white;font-size:1.1rem;cursor:pointer;">✕</button>
+          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);margin-bottom:4px;">Voyage Journal</div>
+          <div id="voyageModalTitle" style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;">Athens → Rhodes</div>
+          <div id="voyageModalSubtitle" style="font-size:0.85rem;color:rgba(255,255,255,0.75);margin-top:6px;">A journey across the Aegean Sea</div>
+        </div>
+        <div id="voyageModalBody" style="padding:28px 32px;">
+          <!-- Populated by openVoyageModal() -->
         </div>
       </div>
     </div>
@@ -1034,19 +1200,17 @@ body {
     <!-- Pythagoras speaking panel below map -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:20px 24px;margin-top:-2px;">
       <div style="display:flex;gap:16px;align-items:flex-start;">
-        <!-- Pythagoras portrait placeholder — replace with your chatbot image -->
+        <!-- Pythagoras portrait + voice button -->
         <div style="position:relative;flex-shrink:0;">
           <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#e8d5a3,#c4a96a);display:flex;align-items:center;justify-content:center;font-size:1.8rem;box-shadow:0 2px 8px rgba(0,0,0,0.1);">🏛️</div>
-          <!-- Voice button placeholder — connects to historical-figure-voice worker -->
-          <button onclick="playPythagorasVoice()" style="position:absolute;bottom:-4px;right:-4px;width:24px;height:24px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);" title="Listen (connects to Historical Figure Voice API)">🔊</button>
+          <button onclick="playPythagorasVoice(document.getElementById('mapNPCDialogue').textContent, this)" style="position:absolute;bottom:-4px;right:-4px;width:26px;height:26px;border-radius:50%;background:var(--gold);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);color:#2D2D2D;" title="Hear Pythagoras speak">🔊</button>
         </div>
         <div style="flex:1;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div style="font-family:var(--font-display);font-size:0.85rem;color:var(--gold);font-weight:700;">Pythagoras</div>
             <span style="font-size:0.55rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:2px 6px;border-radius:4px;font-weight:600;">AI GUIDE</span>
           </div>
-          <div id="mapNPCDialogue" style="font-size:0.95rem;color:var(--text);line-height:1.6;font-style:italic;">"Welcome back, Maya. We've recovered two fragments from our journey through the villages — the foundations of my proof. Now the real adventure begins. See that golden marker over Athens? Workers are building a new temple on the Acropolis, and they need someone who understands right triangles. <strong>Click on Athens to travel there.</strong>"</div>
-          <div style="margin-top:8px;font-size:0.6rem;color:var(--text-muted);">🔗 Powered by <a href="#" style="color:var(--teal);text-decoration:none;">Historical Figure Chatbot API</a> — historical-figure-voice.workers.dev</div>
+          <div id="mapNPCDialogue" style="font-size:0.95rem;color:var(--text);line-height:1.6;font-style:italic;">"Welcome! I am Pythagoras, and this is my home — the island of Samos. Before we sail to distant lands to recover the fragments of my proof, you must first learn to see triangles as I do. See that golden marker? <strong>Click on Samos to begin your first lesson.</strong>"</div>
         </div>
       </div>
     </div>
@@ -1054,39 +1218,39 @@ body {
 
   <!-- PHASE 2: LOCATION ARRIVAL + CHALLENGE -->
   <div id="questPhaseLocation" style="display:none;">
-    <!-- Location scene header -->
-    <div id="locationScene" style="border-radius:0 0 var(--radius) var(--radius);position:relative;min-height:220px;overflow:hidden;padding:32px;display:flex;flex-direction:column;justify-content:flex-end;">
+    <!-- Compact location title bar -->
+    <div id="locationScene" style="position:relative;overflow:hidden;padding:14px 32px;display:flex;align-items:center;gap:16px;min-height:0;">
     </div>
 
-    <!-- Scene illustration placeholder — YOUR ARTWORK GOES HERE -->
-    <div id="sceneArtwork" style="background:var(--card);border:1px solid var(--border);padding:0;margin-top:1px;position:relative;min-height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-      <div id="sceneArtworkContent" style="text-align:center;padding:24px;width:100%;">
-        <div style="font-size:2.5rem;margin-bottom:8px;" id="sceneArtworkEmoji">🏗️</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);max-width:400px;margin:0 auto;">
-          <strong>Scene Illustration Placeholder</strong><br>
-          <span id="sceneArtworkDesc">Replace with 3D scene or artwork showing: temple construction site with workers, scaffolding, a ladder leaning against a wall, and columns under construction.</span>
+    <!-- NPC Dialogue — directly under title -->
+    <div id="npcDialoguePanel" style="background:var(--card);border:1px solid var(--border);padding:14px 24px;margin-top:1px;">
+      <div style="display:flex;gap:14px;align-items:center;">
+        <div style="position:relative;flex-shrink:0;">
+          <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e8d5a3,#c4a96a);display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,0.1);">🏛️</div>
+          <button onclick="playPythagorasVoice()" style="position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.45rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);" title="Listen">🔊</button>
         </div>
-        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
-          <span style="font-size:0.6rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:3px 8px;border-radius:4px;">📷 Upload artwork</span>
-          <span style="font-size:0.6rem;background:rgba(126,87,194,0.1);color:var(--purple);padding:3px 8px;border-radius:4px;">🎮 3D scene ready</span>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;color:var(--gold);font-weight:700;">Pythagoras</div>
+            <span style="font-size:0.5rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:1px 5px;border-radius:3px;font-weight:600;">AI GUIDE</span>
+          </div>
+          <div id="locationNPCDialogue" style="font-size:0.88rem;color:var(--text);line-height:1.55;"></div>
+          <div id="locationDialogueActions" style="margin-top:8px;"></div>
         </div>
       </div>
     </div>
 
-    <!-- NPC Dialogue -->
-    <div style="background:var(--card);border:1px solid var(--border);padding:20px 24px;margin-top:1px;">
-      <div style="display:flex;gap:16px;align-items:flex-start;">
-        <div style="position:relative;flex-shrink:0;">
-          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#e8d5a3,#c4a96a);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.1);">🏛️</div>
-          <button onclick="playPythagorasVoice()" style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:var(--teal);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.55rem;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2);" title="Listen">🔊</button>
+    <!-- Scene / Game embed frame — fills remaining viewport -->
+    <div id="sceneArtwork" style="background:#1a1a1a;border:1px solid var(--border);padding:0;margin-top:1px;position:relative;height:66vh;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <div id="sceneArtworkContent" style="text-align:center;padding:24px;width:100%;">
+        <div style="font-size:2.5rem;margin-bottom:8px;" id="sceneArtworkEmoji">🏗️</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);max-width:400px;margin:0 auto;">
+          <strong>Scene Illustration Placeholder</strong><br>
+          <span id="sceneArtworkDesc">Replace with 3D scene or artwork.</span>
         </div>
-        <div style="flex:1;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <div style="font-family:var(--font-display);font-size:0.82rem;color:var(--gold);font-weight:700;">Pythagoras</div>
-            <span style="font-size:0.52rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:1px 5px;border-radius:3px;font-weight:600;">AI GUIDE</span>
-          </div>
-          <div id="locationNPCDialogue" style="font-size:0.92rem;color:var(--text);line-height:1.65;"></div>
-          <div id="locationDialogueActions" style="margin-top:12px;"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+          <span style="font-size:0.6rem;background:rgba(42,127,142,0.1);color:var(--teal);padding:3px 8px;border-radius:4px;">📷 Upload artwork</span>
+          <span style="font-size:0.6rem;background:rgba(126,87,194,0.1);color:var(--purple);padding:3px 8px;border-radius:4px;">🎮 3D scene ready</span>
         </div>
       </div>
     </div>
@@ -1097,7 +1261,7 @@ body {
         <div class="flex-row gap-sm mb-sm">
           <span class="badge" id="chCogBadge">Analyze</span>
           <span class="badge" id="chDiffBadge" style="background:rgba(239,140,59,0.1);color:var(--orange);">Difficulty: ●●●○○</span>
-          <span style="font-size:0.72rem;color:var(--text-muted);" id="chProgress">Challenge 3 of 5</span>
+          <span style="font-size:0.72rem;color:var(--text-muted);" id="chProgress">Challenge 1 of 4</span>
         </div>
         <div class="challenge-prompt" id="chPrompt" style="font-size:1.05rem;line-height:1.7;margin:16px 0;color:var(--navy);"></div>
 
@@ -1118,7 +1282,10 @@ body {
             <!-- Feedback panels -->
             <div class="feedback-panel correct" id="feedbackCorrect" style="display:none;">
               <div class="feedback-npc">
-                <div class="mini-avatar">🏛️</div>
+                <div class="mini-avatar" style="position:relative;">
+                  🏛️
+                  <button onclick="playPythagorasVoice(document.getElementById('fbCorrectText').textContent, this)" title="Hear Pythagoras read this aloud" style="position:absolute;bottom:-4px;right:-4px;width:24px;height:24px;border-radius:50%;background:var(--gold);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:0.7rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);color:#2D2D2D;">🔊</button>
+                </div>
                 <div>
                   <div class="feedback-text" id="fbCorrectText"></div>
                   <div class="flex-row mt-sm" id="fbCorrectActions"></div>
@@ -1196,6 +1363,7 @@ body {
       </div>
       <div style="font-size:0.85rem;color:var(--text-soft);margin-bottom:12px;">You unlocked 2 new concepts today</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="padding:6px 12px;background:rgba(67,160,71,0.1);border-radius:20px;font-size:0.78rem;color:var(--green);font-weight:600;">✓ Triangle Classification</span>
         <span style="padding:6px 12px;background:rgba(67,160,71,0.1);border-radius:20px;font-size:0.78rem;color:var(--green);font-weight:600;">✓ Right Triangle ID</span>
         <span style="padding:6px 12px;background:rgba(67,160,71,0.1);border-radius:20px;font-size:0.78rem;color:var(--green);font-weight:600;">✓ Pythagorean Triples</span>
         <span style="padding:6px 12px;background:rgba(212,168,67,0.1);border-radius:20px;font-size:0.78rem;color:var(--gold);font-weight:600;">◐ Real-World Applications</span>
@@ -1346,7 +1514,7 @@ body {
     <div style="position:absolute;top:10px;right:20px;font-size:5rem;opacity:0.08;">📐</div>
     <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.15em;color:rgba(255,255,255,0.45);">Quest Capstone · Mastery Challenge</div>
     <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;margin:6px 0;">Build the Visual Proof</div>
-    <div style="font-size:0.88rem;color:rgba(255,255,255,0.65);max-width:700px;line-height:1.6;font-style:italic;">"You have traveled from Samos to Alexandria, solving problems that builders, navigators, and scholars have faced for generations. Now, Maya, it is time to do what I did two thousand years ago — construct the proof itself." — Pythagoras</div>
+    <div style="font-size:0.88rem;color:rgba(255,255,255,0.65);max-width:700px;line-height:1.6;font-style:italic;">"You have traveled from Samos to Alexandria, solving problems that builders, navigators, and scholars have faced for generations. Now, <span class="js-player-name">Maya</span>, it is time to do what I did two thousand years ago — construct the proof itself." — Pythagoras</div>
     <div style="display:flex;gap:12px;margin-top:14px;">
       <span class="badge" style="background:rgba(126,87,194,0.2);color:rgba(200,180,255,0.9);">CREATE</span>
       <span class="badge" style="background:rgba(212,168,67,0.2);color:rgba(255,230,160,0.9);">Mastery Shores</span>
@@ -1494,7 +1662,7 @@ body {
               <div style="font-size:0.82rem;font-weight:700;color:var(--navy);">Simplify — cancel what appears on both sides</div>
             </div>
             <div style="font-size:0.85rem;color:var(--text);margin-bottom:4px;">Look at your equation from Step C. The term <strong>2ab</strong> appears on <em>both</em> sides. Subtract it from both sides. What's left?</div>
-            <div style="font-size:0.82rem;color:var(--text-soft);margin-bottom:8px;font-style:italic;">"This is the moment of truth, Maya. What remains when you remove 2ab from both sides?"</div>
+            <div style="font-size:0.82rem;color:var(--text-soft);margin-bottom:8px;font-style:italic;">"This is the moment of truth, <span class="js-player-name">Maya</span>. What remains when you remove 2ab from both sides?"</div>
             <div style="display:flex;align-items:center;gap:8px;">
               <input type="text" class="challenge-input" id="proofStepD" placeholder="a² + b² = c²" style="flex:1;font-family:monospace;font-size:1.1rem;font-weight:700;" oninput="checkProofSteps()">
               <span id="proofStepDCheck" style="font-size:1.2rem;">❓</span>
@@ -1559,7 +1727,7 @@ body {
         <div style="text-align:center;padding:8px;">
           <div style="font-size:1.5rem;margin-bottom:4px;">🏆</div>
           <div style="font-family:var(--font-display);font-size:1.15rem;color:var(--navy);font-weight:600;">Submit Your Proof to the Council</div>
-          <div style="font-size:0.82rem;color:var(--text-soft);margin:6px 0 16px;max-width:500px;margin-left:auto;margin-right:auto;">"When you submit, your proof goes before the Council of Alexandria — and to Mrs Bernard for review. This is your moment, Maya."</div>
+          <div style="font-size:0.82rem;color:var(--text-soft);margin:6px 0 16px;max-width:500px;margin-left:auto;margin-right:auto;">"When you submit, your proof goes before the Council of Alexandria — and to Mrs Bernard for review. This is your moment, <span class="js-player-name">Maya</span>."</div>
           <button class="btn btn-primary btn-lg" onclick="submitCapstone()">📜 Submit Proof to the Council</button>
         </div>
       </div>
@@ -1647,7 +1815,7 @@ body {
         <div><span style="font-family:var(--font-display);font-size:1.3rem;color:var(--purple);font-weight:700;">MASTERY</span><div style="font-size:0.65rem;color:var(--text-muted);">Tier achieved</div></div>
       </div>
     </div>
-    <div style="font-size:0.92rem;color:var(--text);font-style:italic;margin-bottom:24px;line-height:1.65;">"You have done what only the greatest minds achieve, Maya. You didn't just learn my theorem — you understood <em>why</em> it is true. That understanding can never be taken from you. Go well, young scholar."</div>
+    <div style="font-size:0.92rem;color:var(--text);font-style:italic;margin-bottom:24px;line-height:1.65;">"You have done what only the greatest minds achieve, <span class="js-player-name">Maya</span>. You didn't just learn my theorem — you understood <em>why</em> it is true. That understanding can never be taken from you. Go well, young scholar."</div>
     <div style="display:flex;gap:12px;justify-content:center;">
       <button class="btn btn-primary btn-lg" onclick="navigate('screen-student-dashboard')">🏠 Return to Dashboard</button>
       <button class="btn btn-outline" onclick="navigate('screen-progress-map')">📊 View Progress Map</button>
@@ -1719,6 +1887,17 @@ body {
       <div class="stat-label">Avg Math Confidence</div>
       <div class="stat-trend down">↓ slight decline this week</div>
     </div>
+  </div>
+
+  <!-- Mastery by Concept: shows per-concept aggregation from student_profiles.mastery_state
+       JSON. Populated by renderConceptBreakdown() using data from /api/teacher/roster's
+       stats.concept_breakdown field. -->
+  <div class="card mb-md" id="td-concept-card" style="display:none;">
+    <div class="card-header">📊 Mastery by Concept</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">
+      Each concept tracked in student_profiles.mastery_state — average confidence and tier distribution across the class.
+    </div>
+    <div id="td-concept-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
   </div>
 
   <div class="grid-2 mb-md">
@@ -2613,10 +2792,10 @@ body {
 <div class="screen" id="screen-user-management">
   <div class="flex-between mb-md">
     <div>
-      <div class="page-title">Class Management</div>
-      <div class="page-subtitle">Manage students, sections, and pathway assignments</div>
+      <div class="page-title">User Management</div>
+      <div class="page-subtitle">Manage admins, teachers, and students</div>
     </div>
-    <button class="btn btn-outline" onclick="navigate('screen-teacher-dashboard')">← Dashboard</button>
+    <button class="btn btn-outline" onclick="navigate('screen-teacher-dashboard')">View Teacher Dashboard</button>
   </div>
 
   <div class="tab-bar">
@@ -2626,44 +2805,56 @@ body {
   </div>
 
   <div class="tab-content active" id="mgmt-students">
-    <div class="card mb-md">
+    <!-- Demo Data Controls (admin only) -->
+    <div class="card mb-md" style="background:linear-gradient(135deg,rgba(126,87,194,0.05),rgba(42,127,142,0.04));border:1px solid rgba(126,87,194,0.2);">
       <div class="flex-between mb-sm">
-        <div class="card-header" style="margin-bottom:0;">Student Roster — Period 3</div>
+        <div>
+          <div class="card-header" style="margin-bottom:4px;">🎭 Demo Data</div>
+          <div style="font-size:0.8rem;color:var(--text-soft);">Seed a fake teacher, class, and 20 students so you have something to demo before adding real users.</div>
+        </div>
         <div class="flex-row gap-sm">
-          <button class="btn btn-sm btn-primary">+ Add Student</button>
-          <button class="btn btn-sm btn-outline">Import CSV</button>
-          <button class="btn btn-sm btn-outline">Invite via Link</button>
+          <button class="btn btn-sm btn-primary" onclick="seedDemoData()">Seed Demo Data</button>
+          <button class="btn btn-sm btn-outline" onclick="clearDemoData()" style="color:var(--red);">Clear Demo</button>
         </div>
       </div>
-      <div style="padding:16px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:16px;">
-        <div class="flex-row gap-sm" style="flex-wrap:wrap;">
-          <input type="text" placeholder="Student name..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:200px;">
-          <input type="email" placeholder="Student email..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:200px;">
-          <select style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);">
-            <option>Period 3 — Geometry</option>
-            <option>Period 5 — Geometry</option>
-            <option>Period 7 — Algebra II</option>
+      <div id="seedDemoResult" style="display:none;margin-top:12px;padding:10px;background:white;border-radius:6px;font-size:0.82rem;"></div>
+    </div>
+
+    <div class="card mb-md">
+      <div class="flex-between mb-sm">
+        <div class="card-header" style="margin-bottom:0;" id="rosterTitle">All Users</div>
+        <div class="flex-row gap-sm">
+          <select id="userTypeFilter" onchange="loadUsers()" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.78rem;font-family:var(--font-body);">
+            <option value="all">All Users</option>
+            <option value="admin">Admins</option>
+            <option value="teacher">Teachers</option>
+            <option value="student">Students</option>
           </select>
-          <button class="btn btn-sm btn-primary">Add</button>
+          <button class="btn btn-sm btn-primary" onclick="document.getElementById('addUserPanel').style.display='block';">+ Add User</button>
         </div>
+      </div>
+      <div id="addUserPanel" style="display:none;padding:16px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:16px;">
+        <div class="flex-row gap-sm" style="flex-wrap:wrap;align-items:center;">
+          <input type="text" id="newUserFirstName" placeholder="First name..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:120px;">
+          <input type="text" id="newUserLastName" placeholder="Last name..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:120px;">
+          <input type="email" id="newUserEmail" placeholder="Email..." style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);flex:1;min-width:200px;">
+          <select id="newUserRole" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:0.85rem;font-family:var(--font-body);">
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button class="btn btn-sm btn-primary" onclick="addUser()">Add</button>
+          <button class="btn btn-sm btn-outline" onclick="document.getElementById('addUserPanel').style.display='none';">Cancel</button>
+        </div>
+        <div id="addUserError" style="display:none;color:var(--red);font-size:0.78rem;margin-top:8px;"></div>
       </div>
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
-          <thead><tr style="border-bottom:2px solid var(--border);"><th style="text-align:left;padding:8px 10px;"><input type="checkbox"></th><th style="text-align:left;padding:8px;">Name</th><th style="text-align:left;padding:8px;">Email</th><th style="text-align:center;padding:8px;">Section</th><th style="text-align:center;padding:8px;">Status</th><th style="text-align:center;padding:8px;">Joined</th><th style="text-align:center;padding:8px;">Actions</th></tr></thead>
-          <tbody>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Jaylen R.</td><td style="padding:8px;color:var(--text-muted);">jaylen.r@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 15</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Liam T.</td><td style="padding:8px;color:var(--text-muted);">liam.t@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 15</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Maya C.</td><td style="padding:8px;color:var(--text-muted);">maya.c@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 15</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Aisha S.</td><td style="padding:8px;color:var(--text-muted);">aisha.s@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge badge-green">Active</span></td><td style="text-align:center;font-size:0.78rem;">Jan 16</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Edit</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 10px;"><input type="checkbox"></td><td style="padding:8px;font-weight:600;">Noah K.</td><td style="padding:8px;color:var(--text-muted);">noah.k@school.edu</td><td style="text-align:center;">Period 3</td><td style="text-align:center;"><span class="badge" style="background:rgba(239,140,59,0.1);color:var(--orange);">Invited</span></td><td style="text-align:center;font-size:0.78rem;">—</td><td style="text-align:center;"><button class="btn btn-sm btn-outline" style="font-size:0.68rem;">Resend</button> <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);">Remove</button></td></tr>
-            <tr><td style="padding:8px 10px;color:var(--text-muted);font-style:italic;" colspan="7">+ 23 more students...</td></tr>
+          <thead><tr style="border-bottom:2px solid var(--border);"><th style="text-align:left;padding:8px;">Name</th><th style="text-align:left;padding:8px;">Email</th><th style="text-align:center;padding:8px;">Role</th><th style="text-align:center;padding:8px;">Status</th><th style="text-align:center;padding:8px;">Joined</th><th style="text-align:center;padding:8px;">Actions</th></tr></thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">Loading users...</td></tr>
           </tbody>
         </table>
-      </div>
-      <div class="flex-row mt-md gap-sm">
-        <button class="btn btn-sm btn-outline">Select All</button>
-        <button class="btn btn-sm btn-outline">Bulk Move Section</button>
-        <button class="btn btn-sm btn-outline" style="color:var(--red);">Bulk Remove</button>
       </div>
     </div>
   </div>
@@ -2987,20 +3178,269 @@ body {
   </div>
 </div>
 
+<script src="js/scaffolding-framework.js"></script>
 <script>
+// ═══ LOGIN ═══
+const QUESTSIM_MINI_URL = 'https://pymini1.questsim.com';
+const QUESTSIM_DEMO_URL = 'https://py-demo.questsim.com';
+let isAuthenticated = false;
+let currentUser = null;
+
+// ═══ API CLIENT ═══
+const API = {
+  async get(path) {
+    const res = await fetch(path, { credentials: 'include' });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  },
+  async post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    return res.json();
+  }
+};
+
+// ═══ AUTH ═══
+function loginWithGoogle() {
+  // Redirect to our Google OAuth endpoint
+  window.location.href = '/api/auth/google';
+}
+
+function loginAsGuest() {
+  isAuthenticated = false;
+  currentUser = null;
+  dismissLogin();
+}
+
+async function logout() {
+  try {
+    await API.post('/api/auth/logout', {});
+  } catch(e) {}
+  window.location.reload();
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function getGameUrl() {
+  // Load the Unity game from our own Cloudflare Pages site at
+  // /game/mini-123/. This HTML wrapper loads the Unity WebGL files
+  // directly from py-r2.questsim.com/mini-123/BUILD.* and bypasses
+  // pymini1's auth wall entirely (which blocks iframe embeds because
+  // of third-party cookie restrictions).
+  //
+  // Same-origin with the ACE rebuild means:
+  // - No auth passcode prompt
+  // - No third-party cookie issues
+  // - No CORS (since Unity fetches files itself, and postMessage is
+  //   same-origin)
+  // - Query param ?only=Types is never stripped
+  return '/game/mini-123/?only=Types';
+}
+
+function dismissLogin() {
+  const loginScreen = document.getElementById('loginScreen');
+  loginScreen.classList.add('hidden');
+  setTimeout(() => loginScreen.style.display = 'none', 500);
+}
+
+// Check if user is already authenticated via session cookie
+async function checkExistingSession() {
+  try {
+    const data = await API.get('/api/auth/session');
+    if (data.authenticated && data.user) {
+      isAuthenticated = true;
+      currentUser = data.user;
+      window.currentUser = data.user;
+      window.currentRole = data.user.role;
+      currentRole = data.user.role; // 'admin', 'teacher', or 'student'
+      dismissLogin();
+
+      // Fetch the real profile (xp/level/streak/mastery) and merge onto
+      // currentUser. This is what lets the QS demo shim show real stats
+      // in screen-simulation instead of Maya's seeded mock values — see
+      // QS.renderDashboard() for the read side.
+      loadRealProfileIntoCurrentUser();
+
+      // Update UI with real user info
+      document.getElementById('userName').textContent = data.user.first_name + ' ' + data.user.last_name.charAt(0) + '.';
+      document.getElementById('userAvatar').textContent = data.user.first_name.charAt(0) + data.user.last_name.charAt(0);
+      if (data.user.avatar_url) {
+        const avatar = document.getElementById('userAvatar');
+        avatar.style.backgroundImage = `url(${data.user.avatar_url})`;
+        avatar.style.backgroundSize = 'cover';
+        avatar.textContent = '';
+      }
+
+      // Update switch button label
+      const switchLabel = document.getElementById('switchLabel');
+      if (switchLabel) {
+        switchLabel.textContent = currentRole === 'admin' ? 'Teacher' : currentRole === 'teacher' ? 'Student' : 'Admin';
+      }
+
+      // Show role badge
+      updateRoleBadge();
+
+      // Rebuild nav for the user's role
+      buildNav();
+
+      // Navigate to role-appropriate landing page
+      if (data.user.role === 'admin') navigate('screen-user-management');
+      else if (data.user.role === 'teacher') navigate('screen-teacher-dashboard');
+      else navigate('screen-student-dashboard');
+    }
+  } catch(e) {
+    console.log('Auth API not available, showing login screen');
+  }
+}
+
+// ═══ PLAYER NAME TEMPLATING ═══
+// The narrative content (Pythagoras's dialogue, challenge feedback, capstone
+// text) historically addressed the student as "Maya" directly. To personalize
+// it for the real authenticated user, all those strings now use {PLAYER} as
+// a placeholder and are substituted through these helpers at render time.
+// Unauthenticated demo visitors fall back to "Maya" — the canonical character.
+
+function getPlayerName() {
+  if (window.currentUser && window.currentUser.first_name) {
+    return window.currentUser.first_name;
+  }
+  return 'Maya';
+}
+
+// Replace {PLAYER} tokens in a string with the current player's first name.
+// Safe to call on null/undefined — returns an empty string.
+function withPlayerName(text) {
+  return String(text || '').replace(/\{PLAYER\}/g, getPlayerName());
+}
+
+// Walk the DOM and replace the textContent of any element with the
+// .js-player-name class with the current player's first name. Used for
+// static HTML narrative (capstone screens) that can't be wrapped at read time.
+function updatePlayerNameInDom() {
+  document.querySelectorAll('.js-player-name').forEach(el => {
+    el.textContent = getPlayerName();
+  });
+}
+
+// Fetch the authenticated user's real profile (xp/level/streak/tier/mastery)
+// and merge it onto window.currentUser so the QS demo shim can display real
+// values instead of Maya's seeded localStorage mock. Safe for all roles —
+// the backend /api/student/profile endpoint only requires auth and returns
+// default zeros if no profile row exists yet.
+async function loadRealProfileIntoCurrentUser() {
+  if (!window.currentUser) return;
+  try {
+    const data = await API.get('/api/student/profile');
+    const p = data.profile || {};
+    Object.assign(window.currentUser, {
+      xp: p.xp ?? 0,
+      level: p.level ?? 1,
+      streak: p.streak ?? 0,
+      tier: p.tier ?? 'foundation',
+      mastery_state: p.mastery_state ?? null,
+    });
+    // Sync the client-side HUD counter with the real value so awardXP()
+    // increments from the correct baseline instead of Maya's seeded 830.
+    if (typeof totalXP !== 'undefined') {
+      totalXP = p.xp ?? 0;
+    }
+    // Log the real handoff so the console clearly shows the transition from
+    // the QS seed-cache log to the authenticated user's actual stats.
+    const u = window.currentUser;
+    console.log(
+      '[Auth] Real profile loaded for', u.first_name, u.last_name,
+      '(' + u.role + ') — XP:', u.xp,
+      '| Level:', Math.floor(u.level),
+      '| Streak:', u.streak,
+      '| Tier:', u.tier,
+    );
+    // Re-render the QS dashboard if it's already been mounted, so the stats
+    // refresh from seed-mock → real values without a page reload.
+    if (window.QS && typeof window.QS.renderDashboard === 'function') {
+      window.QS.renderDashboard();
+    }
+    // Substitute any static-HTML Maya references with the real player name.
+    updatePlayerNameInDom();
+  } catch (e) {
+    console.warn('[Auth] Failed to load real profile:', e.message);
+  }
+}
+
+// Run on page load (after DOM is ready)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', checkExistingSession);
+} else {
+  checkExistingSession();
+}
+
 // ═══ STATE ═══
 let currentRole = 'student';
 let currentScreen = 'screen-student-dashboard';
 let currentChallenge = 0;
 let sessionXP = 0;
-let totalXP = 830;
+// Client-side XP counter used by awardXP() for HUD animation when a
+// text-input challenge is solved. Starts at 0 and is synced to the
+// real authenticated user's xp by loadRealProfileIntoCurrentUser()
+// when /api/student/profile returns. For unauthenticated demo visitors
+// it stays at 0 until they earn something in-session.
+let totalXP = 0;
 let timerInterval = null;
 let timerSeconds = 0;
 
 // ═══ CHALLENGE DATA ═══
 const challenges = [
   {
-    num: 3, total: 5,
+    num: 1, total: 4,
+    tier: "Foundation Harbor",
+    cogLevel: "Understand", cogColor: "badge-green",
+    difficulty: "●○○○○", diffLabel: "Introductory",
+    location: "🏠 The School of Pythagoras — Samos",
+    storyBeat: "On the island of Samos, young Pythagoras has gathered his students in the courtyard. Stone tablets bearing different triangle shapes are spread across the ground. He turns to you: <em>\"Before we can understand the secrets of the right triangle, we must first learn to see the differences between all triangles.\"</em>",
+    prompt: "Play through the Triangle Types activity in the 3D world below. Watch the intro, walk to the activity table, and sort the triangle tiles into their correct categories.",
+    visual: "📐",
+    unit: "",
+    answer: "__interactive__",
+    interactiveType: "unityEmbed",
+    xp: 10,
+    reference: "Triangles can be classified by their sides: Equilateral (3 equal sides), Isosceles (exactly 2 equal sides), or Scalene (no equal sides).",
+    hints: [
+      { title: "Look at the side lengths", content: "Each tile shows three numbers — those are the lengths of the triangle's sides. Count how many sides are equal to each other." },
+      { title: "Equilateral = all the same", content: "If all three numbers are identical (like 5, 5, 5), the triangle is equilateral." },
+      { title: "Isosceles vs. Scalene", content: "If exactly two numbers match (like 4, 4, 6), it's isosceles. If all three are different (like 3, 4, 5), it's scalene." },
+    ],
+    correctFeedback: `All tiles sorted correctly! Pythagoras nods approvingly: <em>"You can see the differences now — equilateral, isosceles, scalene. This is the foundation. Remember: the right triangle, that special scalene shape, holds a secret that we will uncover on our journey."</em> You've recovered your first <strong>proof fragment</strong>: the classifier's eye.`,
+    incorrectFeedback: `Look carefully at the side lengths on each tile. Count how many sides are equal: all three equal → Equilateral, exactly two equal → Isosceles, none equal → Scalene.`,
+    pulseAfter: false,
+    fragmentReward: "🧩 Fragment: The Classifier's Eye",
+    challengeSupports: [
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"This triangle looks like a ___ because its sides are ___."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"Before you decide, compare the three sides. Are any two the same length?"' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"Right triangles always have one 90-degree angle. Do you see one here?"' }
+      }
+    ]
+  },
+  {
+    num: 2, total: 4,
     tier: "Extension Waters",
     cogLevel: "Apply", cogColor: "badge-teal",
     difficulty: "●●●○○", diffLabel: "Medium",
@@ -3017,13 +3457,35 @@ const challenges = [
       { title: "Set up the equation", content: "If a² + b² = c², and you know c = 13 and a = 5, solve for b." },
       { title: "Calculate step by step", content: "5² = 25, 13² = 169. So b² = 169 - 25 = 144. What's the square root of 144?" },
     ],
-    correctFeedback: `Excellent, <em>Maya</em>! The workers can reach 12 cubits — the temple construction continues! You've recovered a <strong>proof fragment</strong>: the builders' application. Pythagoras smiles: <em>"See? My theorem wasn't born in a classroom — it was born on scaffolding like this."</em>`,
+    correctFeedback: `Excellent, <em>{PLAYER}</em>! The workers can reach 12 cubits — the temple construction continues! You've recovered a <strong>proof fragment</strong>: the builders' application. Pythagoras smiles: <em>"See? My theorem wasn't born in a classroom — it was born on scaffolding like this."</em>`,
     incorrectFeedback: `The temple workers are waiting! Try labeling the sides first: the <em>ladder is the hypotenuse</em> (13 ft), and the <em>base is one leg</em> (5 ft). Now use a² + b² = c² to find how high the ladder reaches.`,
     pulseAfter: false,
     fragmentReward: "🧩 Fragment: The Builder's Application",
+    challengeSupports: [
+      {
+        supportKind: 'offload',
+        functions: ['F1'],
+        payload: { text: '"Let me handle the squaring for you. Focus on setting up the relationship first."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"The missing leg squared equals ___ squared minus ___ squared."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"Which side is the hypotenuse? That is the longest one, opposite the right angle."' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"To find a leg, rearrange: leg squared equals hypotenuse squared minus other leg squared."' }
+      }
+    ]
   },
   {
-    num: 4, total: 5,
+    num: 3, total: 4,
     tier: "Extension Waters",
     cogLevel: "Analyze", cogColor: "badge-purple",
     difficulty: "●●●●○", diffLabel: "Hard",
@@ -3044,14 +3506,31 @@ const challenges = [
     incorrectFeedback: `The ship is lost and needs your help! This isn't a geometry diagram — it's a navigation chart. But the math is the same. The ship's east and north paths form the <em>two legs</em> of a right triangle. The straight-line distance home is the <em>hypotenuse</em>. Try: 8² + 15² = c².`,
     pulseAfter: true,
     fragmentReward: "🧩 Fragment: The Navigator's Proof",
+    challengeSupports: [
+      {
+        supportKind: 'offload',
+        functions: ['F1'],
+        payload: { text: '"I will square the two legs for you. Sum them, then you take the square root."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"The hypotenuse squared equals ___ squared plus ___ squared."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"You are looking for the longest side. That side goes on the LEFT of the equation."' }
+      }
+    ]
   },
   {
-    num: 5, total: 5,
+    num: 4, total: 4,
     tier: "Extension Waters → Mastery Shores",
     cogLevel: "Evaluate", cogColor: "badge-orange",
     difficulty: "●●●●●", diffLabel: "Very Hard",
     location: "🔭 The Observatory at Alexandria",
-    storyBeat: "At the great library, a young scholar presents a claim to the council: <em>\"I've found a new right triangle!\"</em> Pythagoras raises an eyebrow: <em>\"Anyone can claim. The question is — can you verify? Maya, the council needs an evaluator, not a solver. Can you judge this claim?\"</em>",
+    storyBeat: "At the great library, a young scholar presents a claim to the council: <em>\"I've found a new right triangle!\"</em> Pythagoras raises an eyebrow: <em>\"Anyone can claim. The question is — can you verify? {PLAYER}, the council needs an evaluator, not a solver. Can you judge this claim?\"</em>",
     prompt: "A student claims: \"If a triangle has sides of length 7, 24, and 25, it must be a right triangle.\" Is the student correct? Type YES or NO, and the value of 7² + 24² to prove it.",
     visual: "🔭",
     unit: "",
@@ -3070,6 +3549,23 @@ const challenges = [
     tierAdvance: true,
     tierAdvanceText: "The proof is complete! All fragments assembled. You've sailed from Extension Waters to the legendary Mastery Shores — where you'll design proofs, teach others, and create your own challenges.",
     fragmentReward: "🧩 Fragment: The Evaluator's Proof",
+    challengeSupports: [
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"To verify: does a squared plus b squared equal c squared? Try it with the given numbers."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"If this is a Pythagorean triple, then ___ squared plus ___ squared should equal ___ squared."' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"The largest number in the set is always the hypotenuse. Square it and compare."' }
+      }
+    ]
   }
 ];
 
@@ -3085,17 +3581,23 @@ const teacherNav = [
   { id: 'screen-teacher-dashboard', label: 'Dashboard' },
   { id: 'screen-gradebook', label: 'Gradebook' },
   { id: 'screen-pathway-designer', label: 'Pathways' },
-  { id: 'screen-narrative-editor', label: 'Narratives' },
-  { id: 'screen-template-library', label: 'Templates' },
   { id: 'screen-analytics', label: 'Analytics' },
   { id: 'screen-user-management', label: 'Management' },
+];
+const adminNav = [
+  { id: 'screen-user-management', label: 'Users' },
+  { id: 'screen-teacher-dashboard', label: 'Teacher View' },
+  { id: 'screen-student-dashboard', label: 'Student View' },
+  { id: 'screen-analytics', label: 'Analytics' },
 ];
 
 // ═══ NAVIGATION ═══
 function buildNav() {
   const links = document.getElementById('navLinks');
-  const items = currentRole === 'student' ? studentNav : teacherNav;
-  links.innerHTML = items.map(item => 
+  const items = currentRole === 'admin' ? adminNav
+              : currentRole === 'teacher' ? teacherNav
+              : studentNav;
+  links.innerHTML = items.map(item =>
     `<div class="nav-link ${item.id === currentScreen ? 'active' : ''}" onclick="navigate('${item.id}')">${item.label}</div>`
   ).join('');
 }
@@ -3113,18 +3615,457 @@ function navigate(screenId) {
       document.getElementById('questPhaseLocation').style.display = 'none';
       updateMapState();
       startTimer();
+      // Personalize the Pythagoras welcome with the real user's name.
+      // Skip auto-narration if this nav happened during initial page load
+      // (autoplay policy will block it) — user can click the speaker button.
+      personalizeMapDialogue(!window._userHasInteracted);
     } else {
       stopTimer();
+      // Stop any map narration when leaving the quest screen
+      stopPythagorasVoice();
     }
+    // Load real data when navigating to data-driven screens
+    if (screenId === 'screen-user-management') loadUsers();
+    if (screenId === 'screen-teacher-dashboard') loadTeacherDashboard();
+    if (screenId === 'screen-student-dashboard') loadStudentDashboard();
+    if (screenId === 'screen-gradebook') loadGradebookData();
+  }
+}
+
+// ═══ STUDENT DASHBOARD ═══
+async function loadStudentDashboard() {
+  const welcome = document.getElementById('studentWelcome');
+  const subtitle = document.getElementById('studentSubtitle');
+  const statsRow = document.getElementById('studentStatsRow');
+  const recentSessions = document.getElementById('recentSessionsSection');
+
+  if (welcome && currentUser) {
+    welcome.innerHTML = `Welcome back, ${currentUser.first_name}! 🎉`;
+  }
+
+  // If an admin/teacher is previewing, hide the student-specific widgets
+  if (currentUser && currentUser.role !== 'student') {
+    if (subtitle) subtitle.textContent = `Previewing the student experience as ${currentUser.role}. Real student data only appears here when a student is logged in.`;
+    if (statsRow) statsRow.style.display = 'none';
+    if (recentSessions) recentSessions.style.display = 'none';
+    return;
+  }
+
+  // Real student — show widgets
+  if (statsRow) statsRow.style.display = '';
+  if (recentSessions) recentSessions.style.display = '';
+
+  // Try to load profile from API
+  try {
+    const data = await API.get('/api/student/profile');
+    const p = data.profile || { xp: 0, level: 1, streak: 0 };
+
+    if (subtitle) {
+      const streak = p.streak || 0;
+      subtitle.textContent = streak > 0
+        ? `Ready for today's quest? Your ${streak}-day streak is going strong.`
+        : `Ready for today's quest?`;
+    }
+
+    // Update stat cards with real data
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('dashXP', p.xp || 0);
+    set('dashLevel', 'LEVEL ' + (p.level || 1));
+    set('dashStreak', p.streak || 0);
+
+    // XP progress bar (100 XP per level)
+    const xpInLevel = (p.xp || 0) % 100;
+    const xpBar = document.getElementById('dashXPBar');
+    if (xpBar) xpBar.style.width = xpInLevel + '%';
+    set('dashXPToNext', (100 - xpInLevel) + ' XP to Level ' + ((p.level || 1) + 1));
+
+    // Challenges completed from recent_attempts
+    const challenges = (data.recent_attempts || []).filter(a => a.is_correct).length;
+    set('dashChallenges', challenges);
+
+    // Recent sessions
+    renderRecentSessions(data.recent_sessions || []);
+  } catch (e) {
+    console.warn('[Student] Dashboard load failed:', e.message);
+  }
+}
+
+function renderRecentSessions(sessions) {
+  const grid = document.getElementById('recentSessionsGrid');
+  if (!grid) return;
+  if (sessions.length === 0) {
+    grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:24px;">No quest sessions yet. Start your first quest to see your progress here!</div>';
+    return;
+  }
+  grid.innerHTML = sessions.slice(0, 3).map(s => {
+    const status = s.ended_at ? 'Completed' : 'In Progress';
+    const badge = s.ended_at ? 'badge-green' : 'badge-gold';
+    const timeAgo = formatLastActive(s.ended_at || s.started_at);
+    const duration = s.duration_seconds ? Math.round(s.duration_seconds / 60) + ' min' : '—';
+    return `
+      <div class="card">
+        <div class="flex-between mb-sm">
+          <span class="badge ${badge}">${status}</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);">${timeAgo}</span>
+        </div>
+        <div style="font-weight:600;font-size:0.9rem;">🏛️ Quest Session</div>
+        <div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;">${s.challenges_correct || 0}/${s.challenges_attempted || 0} correct · ${duration}</div>
+        <div style="font-size:0.72rem;color:var(--gold);margin-top:4px;">+${s.xp_earned || 0} XP</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══ USER MANAGEMENT (Admin) ═══
+async function loadUsers() {
+  const tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+  const filter = document.getElementById('userTypeFilter')?.value || 'all';
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">Loading...</td></tr>';
+  try {
+    const url = filter === 'all' ? '/api/admin/users' : `/api/admin/users?role=${filter}`;
+    const data = await API.get(url);
+    if (!data.users || data.users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted);">No users yet. Add one above to get started.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.users.map(u => `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px;font-weight:600;">${u.first_name} ${u.last_name}</td>
+        <td style="padding:10px;color:var(--text-muted);">${u.email}</td>
+        <td style="text-align:center;padding:10px;">
+          <span class="badge ${u.role === 'admin' ? 'badge-purple' : u.role === 'teacher' ? 'badge-teal' : 'badge-green'}">${u.role}</span>
+        </td>
+        <td style="text-align:center;padding:10px;">
+          ${u.last_login_at ? '<span class="badge badge-green">Active</span>' : '<span class="badge" style="background:rgba(239,140,59,0.1);color:var(--orange);">Invited</span>'}
+        </td>
+        <td style="text-align:center;font-size:0.78rem;padding:10px;">${formatDate(u.created_at)}</td>
+        <td style="text-align:center;padding:10px;">
+          <button class="btn btn-sm btn-outline" style="font-size:0.68rem;color:var(--red);" onclick="removeUser(${u.id})">Remove</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--red);">Error loading users: ${e.message}</td></tr>`;
+  }
+}
+
+function formatDate(s) {
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return s; }
+}
+
+async function addUser() {
+  const first_name = document.getElementById('newUserFirstName').value.trim();
+  const last_name = document.getElementById('newUserLastName').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  const errEl = document.getElementById('addUserError');
+  errEl.style.display = 'none';
+
+  if (!first_name || !last_name || !email) {
+    errEl.textContent = 'All fields are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    await API.post('/api/admin/users', { first_name, last_name, email, role });
+    // Clear form
+    document.getElementById('newUserFirstName').value = '';
+    document.getElementById('newUserLastName').value = '';
+    document.getElementById('newUserEmail').value = '';
+    document.getElementById('addUserPanel').style.display = 'none';
+    // Reload list
+    loadUsers();
+  } catch (e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function removeUser(id) {
+  if (!confirm('Remove this user? This cannot be undone.')) return;
+  try {
+    await fetch('/api/admin/users/' + id, { method: 'DELETE', credentials: 'include' });
+    loadUsers();
+  } catch (e) {
+    alert('Error removing user: ' + e.message);
+  }
+}
+
+async function seedDemoData() {
+  if (!confirm('This will create 1 demo teacher, 1 demo class, and 20 demo students with fake game data. Continue?')) return;
+  const resultEl = document.getElementById('seedDemoResult');
+  resultEl.style.display = 'block';
+  resultEl.textContent = 'Seeding demo data...';
+  try {
+    const data = await API.post('/api/admin/seed-demo', {});
+    resultEl.innerHTML = `✓ ${data.message}<br><strong>Class code:</strong> <code style="background:var(--bg);padding:2px 8px;border-radius:4px;">${data.class_code}</code> — share this with students to let them join.`;
+    loadUsers();
+  } catch (e) {
+    resultEl.innerHTML = '<span style="color:var(--red);">Error: ' + e.message + '</span>';
+  }
+}
+
+async function clearDemoData() {
+  if (!confirm('Remove all demo teacher/class/student data? Real users will not be affected.')) return;
+  const resultEl = document.getElementById('seedDemoResult');
+  resultEl.style.display = 'block';
+  try {
+    const data = await API.post('/api/admin/clear-demo', {});
+    resultEl.textContent = `✓ Removed ${data.removed || 0} demo users.`;
+    loadUsers();
+  } catch (e) {
+    resultEl.innerHTML = '<span style="color:var(--red);">Error: ' + e.message + '</span>';
+  }
+}
+
+// ═══ TEACHER DASHBOARD WIRING ═══
+// Fetch live roster from API and convert to format expected by existing renderTeacherDashboard
+async function loadTeacherDashboard() {
+  try {
+    // Get list of classes for this teacher (or all if admin)
+    const classesData = await API.get('/api/teacher/classes');
+    const classes = classesData.classes || [];
+    if (classes.length === 0) {
+      console.log('[Teacher] No classes yet');
+      return;
+    }
+
+    // Use the first class (could be expanded to a dropdown later)
+    const classId = classes[0].id;
+    const rosterData = await API.get('/api/teacher/roster?class_id=' + classId);
+
+    // Transform API format into legacy roster format used by QS.renderTeacherDashboard
+    const roster = (rosterData.students || []).map(s => {
+      const initials = s.name.split(' ').map(n => n[0] || '').slice(0, 2).join('').toUpperCase();
+      const mastery = s.mastery || 0;
+      const confidence = s.confidence >= 0.8 ? 5 : s.confidence >= 0.6 ? 4 : s.confidence >= 0.4 ? 3 : s.confidence >= 0.2 ? 2 : 1;
+      const lastActive = s.last_active ? formatLastActive(s.last_active) : 'Never';
+      return {
+        student_id: 's_' + s.student_id,
+        name: s.name,
+        avatar: initials,
+        class_code: rosterData.class.class_code,
+        xp: s.xp,
+        level: s.level,
+        tier: s.tier,
+        mastery: mastery,
+        challenges_completed: s.challenges_completed,
+        sessions_completed: s.sessions_completed,
+        last_active: lastActive,
+        confidence: confidence,
+        pyth: { tier: s.tier, mastery, xp: s.xp, challenges: s.challenges_completed, sessions: s.sessions_completed },
+        proofs: { tier: null, mastery: 0, xp: 0, challenges: 0, sessions: 0 },
+      };
+    });
+
+    // Store in localStorage so existing getRoster() picks it up
+    try { localStorage.setItem('qs_roster', JSON.stringify(roster)); } catch(e) {}
+
+    // Update the dashboard subtitle with real class info
+    const subtitle = document.getElementById('td-subtitle');
+    if (subtitle) subtitle.textContent = `${rosterData.class.name} · ${rosterData.students.length} students`;
+
+    // Re-render the dashboard
+    if (window.QS && typeof window.QS.renderTeacherDashboard === 'function') {
+      window.QS.renderTeacherDashboard();
+    }
+
+    // Populate the new "Mastery by Concept" card from the roster stats.
+    renderConceptBreakdown(rosterData.stats && rosterData.stats.concept_breakdown);
+  } catch (e) {
+    console.warn('[Teacher] Failed to load dashboard:', e.message);
+  }
+}
+
+// Render the per-concept mastery card. Each row shows the concept name,
+// student count touching it, average confidence bar, and tier distribution.
+// Data comes from /api/teacher/roster stats.concept_breakdown — see the
+// aggregation in functions/api/teacher/roster.ts.
+function renderConceptBreakdown(breakdown) {
+  const card = document.getElementById('td-concept-card');
+  const container = document.getElementById('td-concept-rows');
+  if (!card || !container) return;
+  if (!Array.isArray(breakdown) || breakdown.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+
+  // Turn snake_case concept keys into Title Case display labels.
+  const pretty = (name) => String(name || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  container.innerHTML = breakdown.map((c) => {
+    const pct = Math.round((c.avg_confidence || 0) * 100);
+    const barColor = pct >= 80 ? 'var(--purple)' : pct >= 60 ? 'var(--gold)' : pct >= 40 ? 'var(--teal)' : 'var(--red)';
+    const levels = c.levels || { foundation: 0, extension: 0, mastery: 0 };
+    const totalAtTiers = levels.foundation + levels.extension + levels.mastery;
+    return `
+      <div style="display:grid;grid-template-columns:180px 1fr auto;gap:16px;align-items:center;padding:10px 12px;background:var(--bg);border-radius:8px;">
+        <div>
+          <div style="font-size:0.92rem;font-weight:600;color:var(--text);">${pretty(c.name)}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);">${c.student_count} student${c.student_count === 1 ? '' : 's'} touched</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;height:8px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${barColor};transition:width 0.5s ease;"></div>
+          </div>
+          <div style="font-size:0.85rem;font-weight:700;color:${barColor};min-width:42px;text-align:right;">${pct}%</div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;white-space:nowrap;">
+          <span title="Foundation"><span style="color:var(--teal);">F</span> ${levels.foundation}</span>
+          <span title="Extension"><span style="color:var(--gold);">E</span> ${levels.extension}</span>
+          <span title="Mastery"><span style="color:var(--purple);">M</span> ${levels.mastery}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatLastActive(dateStr) {
+  if (!dateStr) return 'Never';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return diffDays + ' days ago';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ═══ GRADEBOOK DATA LOADER ═══
+// Fetches real D1 roster data and stores it in localStorage under 'qs_roster'
+// so the existing buildGradebookData() / getRoster() pipeline picks it up.
+async function loadGradebookData() {
+  try {
+    // If loadTeacherDashboard already populated the roster during this session,
+    // just re-render from the cached data — no need to re-fetch.
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem('qs_roster') || 'null'); } catch(e) {}
+
+    if (!cached || !Array.isArray(cached) || cached.length === 0) {
+      // Fetch classes, pick first, fetch roster
+      const classesData = await API.get('/api/teacher/classes');
+      const classes = classesData.classes || [];
+      if (classes.length === 0) {
+        console.log('[Gradebook] No classes yet');
+        return;
+      }
+      const classId = classes[0].id;
+      const rosterData = await API.get('/api/teacher/roster?class_id=' + classId);
+
+      // Transform API response into the legacy roster format expected by
+      // buildGradebookData() — mirrors the transform in loadTeacherDashboard().
+      const roster = (rosterData.students || []).map(s => {
+        const initials = s.name.split(' ').map(n => n[0] || '').slice(0, 2).join('').toUpperCase();
+        const mastery = s.mastery || 0;
+        const confidence = s.confidence >= 0.8 ? 5 : s.confidence >= 0.6 ? 4 : s.confidence >= 0.4 ? 3 : s.confidence >= 0.2 ? 2 : 1;
+        const lastActive = s.last_active ? formatLastActive(s.last_active) : 'Never';
+        return {
+          student_id: 's_' + s.student_id,
+          name: s.name,
+          avatar: initials,
+          class_code: rosterData.class.class_code,
+          xp: s.xp,
+          level: s.level,
+          tier: s.tier,
+          mastery: mastery,
+          challenges_completed: s.challenges_completed,
+          sessions_completed: s.sessions_completed,
+          last_active: lastActive,
+          confidence: confidence,
+          pyth: { tier: s.tier, mastery, xp: s.xp, challenges: s.challenges_completed, sessions: s.sessions_completed },
+          proofs: { tier: null, mastery: 0, xp: 0, challenges: 0, sessions: 0 },
+        };
+      });
+
+      try { localStorage.setItem('qs_roster', JSON.stringify(roster)); } catch(e) {}
+    }
+
+    // Re-render the gradebook using the currently selected pathway
+    const sel = document.getElementById('gradebookPathway');
+    const pathway = sel && sel.value ? sel.value : 'pyth';
+    if (typeof switchGradebookPathway === 'function') {
+      switchGradebookPathway(pathway);
+    }
+  } catch (e) {
+    console.warn('[Gradebook] Failed to load data:', e.message);
+  }
+}
+
+// ═══ CLASS CODE JOIN (Student) ═══
+async function joinClassByCode() {
+  const input = document.getElementById('joinClassCodeInput');
+  const code = input.value.trim().toUpperCase();
+  const errEl = document.getElementById('joinClassError');
+  errEl.style.display = 'none';
+
+  if (!code) {
+    errEl.textContent = 'Please enter a class code.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const data = await API.post('/api/student/join-class', { class_code: code });
+    if (data.already_member) {
+      alert("You're already in this class: " + data.class.name);
+    } else {
+      alert('Joined: ' + data.class.name);
+    }
+    // Hide the panel
+    document.getElementById('joinClassPanel').style.display = 'none';
+    input.value = '';
+  } catch (e) {
+    errEl.textContent = 'Invalid class code. Ask your teacher for the correct code.';
+    errEl.style.display = 'block';
   }
 }
 
 function switchRole() {
-  currentRole = currentRole === 'student' ? 'teacher' : 'student';
-  document.getElementById('switchLabel').textContent = currentRole === 'student' ? 'Teacher' : 'Student';
-  document.getElementById('userName').textContent = currentRole === 'student' ? 'Maya Chen' : 'Mrs Bernard';
-  document.getElementById('userAvatar').textContent = currentRole === 'student' ? 'MC' : 'LB';
-  navigate(currentRole === 'student' ? 'screen-student-dashboard' : 'screen-teacher-dashboard');
+  // Admin can preview all roles; teacher can preview student
+  if (currentUser && currentUser.role === 'admin') {
+    currentRole = currentRole === 'admin' ? 'teacher' : currentRole === 'teacher' ? 'student' : 'admin';
+  } else if (currentUser && currentUser.role === 'teacher') {
+    currentRole = currentRole === 'teacher' ? 'student' : 'teacher';
+  } else {
+    currentRole = currentRole === 'student' ? 'teacher' : 'student';
+  }
+  const next = currentRole === 'admin' ? 'Teacher' : currentRole === 'teacher' ? 'Student' : 'Admin';
+  document.getElementById('switchLabel').textContent = next;
+  updateRoleBadge();
+  const target = currentRole === 'admin' ? 'screen-user-management'
+               : currentRole === 'teacher' ? 'screen-teacher-dashboard'
+               : 'screen-student-dashboard';
+  navigate(target);
+}
+
+function updateRoleBadge() {
+  const badge = document.getElementById('userRoleBadge');
+  if (!badge) return;
+  badge.style.display = 'inline-block';
+  badge.textContent = currentRole.toUpperCase();
+  if (currentRole === 'admin') {
+    badge.style.background = 'rgba(126,87,194,0.2)';
+    badge.style.color = '#D1B3FF';
+  } else if (currentRole === 'teacher') {
+    badge.style.background = 'rgba(42,127,142,0.2)';
+    badge.style.color = '#7FDBEB';
+  } else {
+    badge.style.background = 'rgba(67,160,71,0.2)';
+    badge.style.color = '#B7E6BA';
+  }
+  // Indicate "previewing" if currentRole differs from actual user role
+  if (currentUser && currentUser.role !== currentRole) {
+    badge.textContent = 'PREVIEW: ' + currentRole.toUpperCase();
+  }
 }
 
 // ═══ TIMER ═══
@@ -3144,6 +4085,22 @@ function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerI
 // ═══ QUEST SCENES ═══
 const questScenes = [
   {
+    bg: 'linear-gradient(180deg,#7ac4e8 0%,#4a9ec8 30%,#3580a8 60%,#1B3A5C 100%)',
+    emoji: '🏠',
+    title: 'The School of Pythagoras',
+    subtitle: 'Samos, Greece — Birthplace of Pythagoras',
+    ambiance: 'Warm Mediterranean sun washes over a stone courtyard overlooking the Aegean Sea. Young students sit in a semicircle as Pythagoras arranges carved stone tablets — each bearing a different triangle shape.',
+    artworkEmoji: '🏠',
+    artworkDesc: 'Replace with 3D scene or artwork showing: a sun-drenched Greek courtyard on the island of Samos with stone benches, carved triangle tablets spread on the ground, olive trees, and the Aegean Sea in the background.',
+    diagramEmoji: '📐',
+    diagramDesc: 'Interactive: Drag each triangle tile to its correct classification zone — Equilateral (all sides equal), Isosceles (two sides equal), or Scalene (no sides equal).',
+    dialogue: [
+      '"Welcome to Samos, {PLAYER} — the island where I was born and first fell in love with geometry. Before we sail to distant lands, you must learn to <em>see</em> triangles the way I do."',
+      '"Look at these stone tablets. Each one bears a different triangle. Your task is simple but essential: sort each triangle into its correct type. Drag each tile to its category. <em>This is the foundation — without it, nothing else we discover will make sense.</em>"'
+    ],
+    travelFrom: null,
+  },
+  {
     bg: 'linear-gradient(180deg,#e8c87a 0%,#d4a843 30%,#c49535 60%,#8b7355 100%)',
     emoji: '🏗️',
     title: 'The Temple Construction Site',
@@ -3154,10 +4111,10 @@ const questScenes = [
     diagramEmoji: '📐',
     diagramDesc: 'Diagram: Right triangle showing ladder (13-cubit hypotenuse), wall (unknown height), and ground distance (5 cubits from wall). Labels: a = ?, b = 5, c = 13 (cubits).',
     dialogue: [
-      '"Maya! Look at this construction site. See those workers trying to reach the top of that wall? They have a ladder, but they need to know — will it reach high enough before they climb?"',
+      '"{PLAYER}! Look at this construction site. See those workers trying to reach the top of that wall? They have a ladder, but they need to know — will it reach high enough before they climb?"',
       '"This is how my theorem was first used — not by mathematicians, but by <em>builders</em>. Real people solving real problems. The ladder is 13 cubits long and its base is 5 cubits from the wall. Can you help them figure out how high the ladder reaches?"'
     ],
-    travelFrom: null,
+    travelFrom: { title: 'Voyage: Samos → Athens', desc: '~1,200 stadia by sea across the Aegean • 1-2 days sailing west past the Cyclades islands', distance: '1,200', unit: 'stadia' },
   },
   {
     bg: 'linear-gradient(180deg,#5a8fa8 0%,#3d7a9a 30%,#2a5f7a 60%,#1a3a5c 100%)',
@@ -3171,7 +4128,7 @@ const questScenes = [
     diagramDesc: 'Diagram: Coordinate grid showing a ship\'s path — 8 stadia east (horizontal), then 15 stadia north (vertical). Dashed hypotenuse line from start to current position with "?" label.',
     dialogue: [
       '"We\'ve arrived at Rhodes — one of the great shipping ports of the ancient world. A merchant vessel has gone off course and the harbor master needs to calculate the shortest route back to port."',
-      '"Here\'s the thing about my theorem, Maya — it doesn\'t just measure walls and ladders. It measures the <em>invisible straight line</em> between any two points. The path the crow flies. The ship sailed 8 stadia east and 15 stadia north. Can you find the direct distance home?"'
+      '"Here\'s the thing about my theorem, {PLAYER} — it doesn\'t just measure walls and ladders. It measures the <em>invisible straight line</em> between any two points. The path the crow flies. The ship sailed 8 stadia east and 15 stadia north. Can you find the direct distance home?"'
     ],
     travelFrom: { title: 'Voyage: Athens → Rhodes', desc: '~2,160 stadia by sea across the Aegean • 2-3 days sailing at favorable winds • Route follows the island chain past Delos, Naxos, and Kos', distance: '2,160', unit: 'stadia' },
   },
@@ -3186,7 +4143,7 @@ const questScenes = [
     diagramEmoji: '✅',
     diagramDesc: 'Diagram: A triangle labeled with sides 9, 12, and 15. Student must verify: does 9² + 12² = 15²? Show the three squares on each side for visual proof.',
     dialogue: [
-      '"This is the Library of Alexandria, Maya. The most brilliant minds in the world come here to share their discoveries. But here, <em>nothing is accepted without proof</em>."',
+      '"This is the Library of Alexandria, {PLAYER}. The most brilliant minds in the world come here to share their discoveries. But here, <em>nothing is accepted without proof</em>."',
       '"A young scholar has just stood before the council claiming to have found a new right triangle with sides 9, 12, and 15. But claiming isn\'t enough — someone must <em>verify</em> the claim with evidence. The council has asked <em>you</em> to be that evaluator. Check: does 9² + 12² = 15²?"'
     ],
     travelFrom: { title: 'Voyage: Rhodes → Alexandria', desc: '~3,500 stadia by sea across the open Mediterranean • 4-5 days sailing south past Cyprus • Ancient mariners navigated by the North Star and coastal landmarks', distance: '3,500', unit: 'stadia' },
@@ -3195,29 +4152,302 @@ const questScenes = [
 
 let questDialogueStep = 0;
 
-// Voice placeholder — connects to your historical-figure-voice Cloudflare Worker
-function playPythagorasVoice() {
-  const btn = event.target;
-  btn.textContent = '🔈';
-  btn.style.background = 'var(--gold)';
-  setTimeout(() => {
-    btn.textContent = '🔊';
-    btn.style.background = 'var(--teal)';
-  }, 2000);
-  // TODO: Connect to historical-figure-voice.YOUR_SUBDOMAIN.workers.dev
-  console.log('🔊 Voice API placeholder — connect to historical-figure-voice worker');
+// ═══ PYTHAGORAS VOICE NARRATION ═══
+// Uses the ElevenLabs voice via /api/voice/speak. Falls back to the
+// browser's SpeechSynthesis API if ElevenLabs is unavailable.
+// ═══ VOYAGE INFO (historical content for travel modals) ═══
+const voyageDetails = {
+  'Samos → Athens': {
+    distance_stadia: 1200,
+    distance_km: 222,
+    duration: '1–2 days of sailing with favorable winds',
+    boat: 'Penteconter (a 50-oar long ship) or a smaller merchant bireme',
+    boatDesc: 'These sleek wooden vessels were propelled by both sails and oars. Open to the sky, they hugged the coastline and island-hopped to avoid the dangers of the open sea.',
+    route: 'Westward from Samos, past the sacred island of Delos, through the Cyclades, skirting Attica, and into the port of Piraeus — the harbor of Athens.',
+    who: 'Traders carrying olive oil, wine, pottery, and ideas. Philosophers and students traveled this route to study in Athens. Pilgrims visited the shrines of Delos along the way.',
+    navigation: 'Ancient Greek sailors navigated by coastal landmarks during the day and by the stars at night. The constellation Ursa Minor (the Little Bear) guided them north. They also watched seabirds, cloud patterns, and wave behavior.',
+    dailyLife: 'Sailors ate salted fish, barley bread, olives, and dried figs. Fresh water was rationed from ceramic amphorae. At night, the ship would often anchor in a sheltered cove — open-sea sailing after dark was considered dangerous.',
+    dangers: 'Sudden summer storms (called *meltemi*), pirates from Cilicia and Illyria, and running aground on hidden rocks. Most voyages happened between April and October; winter sailing was almost unheard of.',
+    funFact: 'Pythagoras himself made this journey many times. He left Samos as a young man because he disagreed with the tyrant Polycrates, and eventually settled in Croton (southern Italy) where he founded his school.'
+  },
+  'Athens → Rhodes': {
+    distance_stadia: 2160,
+    distance_km: 400,
+    duration: '2–3 days of sailing with favorable winds',
+    boat: 'Merchant round-ship (holkas) — wide, deep, sail-powered',
+    boatDesc: 'Unlike the sleek war galleys, merchant ships were bulky and built for cargo. A single square sail and a small crew of 10–20 sailors.',
+    route: 'East from Piraeus across the Aegean, passing Naxos, Amorgos, and Kos. The final approach to Rhodes offered a stunning view of the (now fallen) Colossus that once guarded its harbor.',
+    who: 'Merchants trading Athenian silver and pottery for Rhodian wine and perfume. Diplomats, scholars, and wealthy tourists visiting the famous Rhodian school of rhetoric.',
+    navigation: 'Rhodian sailors were among the best navigators in the ancient world. They used the rising and setting of Polaris (the North Star), the midday sun position, and knowledge of Mediterranean currents.',
+    dailyLife: 'On longer voyages, passengers slept on deck under the stars. They carried their own food in woven baskets and leather wineskins. Wealthy travelers paid for a small cabin in the stern.',
+    dangers: 'The Aegean is dotted with hidden reefs. Sudden weather changes could force a ship to put in at an unfamiliar island. Pirates remained a constant threat until Rome suppressed them in the 1st century BCE.',
+    funFact: 'Rhodes was famous for the Colossus — a 33-meter bronze statue of the sun god Helios that once stood at the harbor entrance. By the time Pythagoras lived, it was already a ruin, toppled by an earthquake in 226 BCE.'
+  },
+  'Rhodes → Alexandria': {
+    distance_stadia: 3500,
+    distance_km: 650,
+    duration: '4–5 days of sailing with favorable winds',
+    boat: 'Large grain freighter — wooden, up to 150 tons cargo',
+    boatDesc: 'These massive merchant ships (some over 50 meters long) were the 18-wheelers of the ancient world. They hauled Egyptian grain to feed Athens, Rome, and the cities of the Aegean.',
+    route: 'The only leg of the journey that crossed open water. Sail south past Cyprus, then follow the Egyptian coast west to Alexandria. Captains watched for the famous Pharos lighthouse — one of the Seven Wonders — visible from 40+ km away.',
+    who: 'Grain merchants, scholars traveling to the Library of Alexandria, Greek-Egyptian priests, and adventurers drawn to the Ptolemaic capital. Cleopatra\'s Alexandria attracted the brightest minds of the ancient world.',
+    navigation: 'Out of sight of land for days. Sailors relied on the sun, stars, and a deep understanding of the winds. Alexandria\'s famous lighthouse (Pharos) was built specifically because this approach was so dangerous without a landmark.',
+    dailyLife: 'Cramped, hot, and smelly. Passengers lived on salted provisions. Drinking water was strictly rationed. Those who could afford it hired slaves to fan them and tend to their needs.',
+    dangers: 'The open Mediterranean crossing was the most dangerous leg. A single storm could sink a ship with all hands. The Egyptian coast is low and featureless — ships that missed Alexandria by even a few kilometers could run aground on sandbars.',
+    funFact: 'Alexandria\'s Great Library held an estimated 400,000+ scrolls and attracted scholars from across the known world. Anyone who stepped off a ship with books was required to lend them for copying — the originals often never returned.'
+  }
+};
+
+function openVoyageModal() {
+  const title = document.getElementById('travelTitle')?.textContent || '';
+  // Extract the "A → B" part from "Voyage: Samos → Athens"
+  const match = title.match(/([A-Za-z]+)\s*→\s*([A-Za-z]+)/);
+  if (!match) return;
+  const key = `${match[1]} → ${match[2]}`;
+  const data = voyageDetails[key];
+
+  document.getElementById('voyageModalTitle').textContent = key;
+
+  const body = document.getElementById('voyageModalBody');
+  if (!data) {
+    body.innerHTML = `<div style="color:var(--text-muted);font-style:italic;text-align:center;padding:40px;">Voyage details coming soon.</div>`;
+  } else {
+    document.getElementById('voyageModalSubtitle').textContent = `${data.distance_stadia.toLocaleString()} stadia (≈${data.distance_km} km) · ${data.duration}`;
+
+    body.innerHTML = `
+      <div class="card" style="background:rgba(212,168,67,0.06);border-left:4px solid var(--gold);margin-bottom:20px;">
+        <div class="card-header" style="color:var(--gold);">📏 What is a stadion?</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">
+          A <strong>stadion</strong> (plural: <strong>stadia</strong>) was the standard unit of distance in ancient Greece — about <strong>185 meters</strong> (600 feet). The word comes from the length of the running track at the Olympic Games. So <strong>${data.distance_stadia.toLocaleString()} stadia</strong> is roughly <strong>${data.distance_km} kilometers</strong> (${Math.round(data.distance_km * 0.621)} miles).
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap:20px;margin-bottom:20px;">
+        <div>
+          <div class="section-label" style="color:var(--teal);">⛵ The Ship</div>
+          <div style="font-weight:600;font-size:0.9rem;color:var(--navy);margin-bottom:4px;">${data.boat}</div>
+          <div style="font-size:0.85rem;color:var(--text-soft);line-height:1.6;">${data.boatDesc}</div>
+        </div>
+        <div>
+          <div class="section-label" style="color:var(--teal);">🗺️ The Route</div>
+          <div style="font-size:0.85rem;color:var(--text-soft);line-height:1.6;">${data.route}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--teal);">👥 Who Made This Journey?</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.who}</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--teal);">🌟 Ancient Navigation</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.navigation}</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--teal);">🏺 Daily Life at Sea</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.dailyLife}</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="section-label" style="color:var(--red);">⚠️ Dangers of the Voyage</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;">${data.dangers}</div>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,rgba(126,87,194,0.06),rgba(42,127,142,0.04));border-left:4px solid var(--purple);">
+        <div class="card-header" style="color:var(--purple);">💡 Did You Know?</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.6;font-style:italic;">${data.funFact}</div>
+      </div>
+    `;
+  }
+
+  const modal = document.getElementById('voyageModal');
+  modal.style.display = 'flex';
 }
+
+function closeVoyageModal() {
+  const modal = document.getElementById('voyageModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Close voyage modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeVoyageModal();
+});
+
+let currentAudio = null;
+// Monotonic generation counter for Pythagoras narration. Incremented every
+// time stopPythagorasVoice() runs. A playback attempt captures the current
+// generation at request time and refuses to play if the generation has moved
+// on — this cancels in-flight ElevenLabs fetches that haven't returned yet.
+let pythagorasVoiceGeneration = 0;
+// AbortController for the in-flight ElevenLabs fetch so we can cut it off
+// the instant the user navigates away.
+let pythagorasVoiceAbort = null;
+
+async function playPythagorasVoice(text, btn) {
+  // Stop any current narration (either audio or speech synthesis)
+  stopPythagorasVoice();
+
+  // Pull the text to speak: argument first, then data-narration attr, then nearest quoted text
+  if (!text && btn) {
+    const parent = btn.closest('[data-narration], .feedback-npc, .npc-frame') || btn.parentElement;
+    text = parent?.dataset?.narration || extractQuoted(parent?.textContent || '') || parent?.textContent?.trim();
+  }
+  if (!text) return;
+
+  // Strip HTML
+  text = text.replace(/<[^>]*>/g, '').replace(/[*_]/g, '').trim();
+
+  // Capture the generation at request time. If it moves (because
+  // stopPythagorasVoice ran), we abort before starting playback.
+  const myGen = pythagorasVoiceGeneration;
+  pythagorasVoiceAbort = new AbortController();
+  const mySignal = pythagorasVoiceAbort.signal;
+
+  // Visual feedback on the button
+  let originalText, originalBg;
+  if (btn) {
+    originalText = btn.textContent;
+    originalBg = btn.style.background;
+    btn.textContent = '⏳';
+  }
+  const restoreBtn = () => {
+    if (btn) {
+      btn.textContent = originalText || '🔊';
+      if (originalBg) btn.style.background = originalBg;
+    }
+  };
+
+  // Try ElevenLabs first (real Pythagoras voice)
+  try {
+    const res = await fetch('/api/voice/speak', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: mySignal,
+    });
+    // If the generation moved while we were waiting for the response,
+    // someone called stopPythagorasVoice() — drop this response on the floor.
+    if (myGen !== pythagorasVoiceGeneration) {
+      restoreBtn();
+      return;
+    }
+    if (res.ok) {
+      const blob = await res.blob();
+      // Second check after the blob download
+      if (myGen !== pythagorasVoiceGeneration) {
+        restoreBtn();
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      currentAudio = new Audio(url);
+      if (btn) btn.textContent = '🔈';
+      currentAudio.onended = () => { restoreBtn(); URL.revokeObjectURL(url); currentAudio = null; };
+      currentAudio.onerror = () => { restoreBtn(); URL.revokeObjectURL(url); currentAudio = null; };
+      await currentAudio.play();
+      return;
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      // Normal cancellation path — student navigated away before audio loaded.
+      restoreBtn();
+      return;
+    }
+    console.warn('[Voice] ElevenLabs failed, falling back:', e.message);
+  }
+
+  // Fallback: browser SpeechSynthesis
+  if (!window.speechSynthesis) {
+    restoreBtn();
+    return;
+  }
+  if (myGen !== pythagorasVoiceGeneration) { restoreBtn(); return; }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.95;
+  utter.pitch = 0.85;
+  const voices = window.speechSynthesis.getVoices();
+  const preferred =
+    voices.find(v => /daniel|alex|arthur|george|fred/i.test(v.name) && /en/i.test(v.lang)) ||
+    voices.find(v => /male/i.test(v.name) && /en/i.test(v.lang)) ||
+    voices.find(v => /en-GB/.test(v.lang));
+  if (preferred) utter.voice = preferred;
+  if (btn) btn.textContent = '🔈';
+  utter.onend = restoreBtn;
+  utter.onerror = restoreBtn;
+  window.speechSynthesis.speak(utter);
+}
+
+function stopPythagorasVoice() {
+  // Bump the generation — any in-flight fetch will see this and bail.
+  pythagorasVoiceGeneration++;
+  if (pythagorasVoiceAbort) {
+    try { pythagorasVoiceAbort.abort(); } catch(e) {}
+    pythagorasVoiceAbort = null;
+  }
+  if (currentAudio) {
+    try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e) {}
+    currentAudio = null;
+  }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+// Personalize the map NPC dialogue with the real user's first name and auto-narrate
+// Only auto-plays if the navigation was user-initiated (skipped for page-load hash routing)
+function personalizeMapDialogue(skipNarration) {
+  const el = document.getElementById('mapNPCDialogue');
+  if (!el) return;
+  const firstName = (currentUser && currentUser.first_name) ? currentUser.first_name : '';
+  const greeting = firstName ? `Welcome, ${firstName}!` : 'Welcome!';
+  el.innerHTML = `"${greeting} I am Pythagoras, and this is my home — the island of Samos. Before we sail to distant lands to recover the fragments of my proof, you must first learn to see triangles as I do. See that golden marker? <strong>Click on Samos to begin your first lesson.</strong>"`;
+
+  // Auto-narrate only on a user-initiated navigation (not page load)
+  // and only once per session (so repeat visits don't re-play)
+  if (skipNarration) return;
+  if (window._mapDialogueNarrated) return;
+  window._mapDialogueNarrated = true;
+
+  setTimeout(() => {
+    // Guard: if the user has navigated away, don't play
+    if (currentScreen !== 'screen-simulation') return;
+    const mapPhase = document.getElementById('questPhaseMap');
+    if (!mapPhase || mapPhase.style.display === 'none') return;
+    const text = extractQuoted(el.textContent) || el.textContent;
+    const btn = el.closest('div').parentElement?.querySelector('button[title*="Pythagoras"]');
+    playPythagorasVoice(text, btn);
+  }, 700);
+}
+
+// Extract the first quoted segment from a string (curly or straight quotes)
+function extractQuoted(str) {
+  const m = str.match(/[""]([^""]+)[""]/) || str.match(/"([^"]+)"/);
+  return m ? m[1] : '';
+}
+
+// Preload voices on page load (some browsers need this nudge)
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => {};
+  window.speechSynthesis.getVoices();
+}
+
+// Track if the user has interacted with the page at all (for autoplay gating)
+window._userHasInteracted = false;
+['click', 'keydown', 'touchstart'].forEach(ev => {
+  document.addEventListener(ev, () => { window._userHasInteracted = true; }, { once: false, passive: true });
+});
 
 // ═══ MAP STATE MANAGEMENT ═══
 // Track which locations have been completed
 let completedLocations = new Set(); // indices of completed challenge locations
 
 const mapLocations = [
-  { id: 'samos', name: 'Samos', emoji: '🏠', top: 170, left: 90, status: 'complete', challengeIdx: null },
-  { id: 'croton', name: 'Croton', emoji: '🏘️', top: 200, left: 200, status: 'complete', challengeIdx: null },
-  { id: 'athens', name: 'Athens', emoji: '🏗️', top: 145, left: 340, status: 'active', challengeIdx: 0 },
-  { id: 'rhodes', name: 'Rhodes', emoji: '⚓', top: 265, left: 480, status: 'next', challengeIdx: 1 },
-  { id: 'alexandria', name: 'Alexandria', emoji: '🔭', top: null, left: null, bottom: 70, right: 100, status: 'locked', challengeIdx: 2 },
+  { id: 'samos', name: 'Samos', emoji: '🏠', top: 170, left: 90, status: 'active', challengeIdx: 0 },
+  { id: 'croton', name: 'Croton', emoji: '🏘️', top: 200, left: 200, status: 'next', challengeIdx: null },
+  { id: 'athens', name: 'Athens', emoji: '🏗️', top: 145, left: 340, status: 'locked', challengeIdx: 1 },
+  { id: 'rhodes', name: 'Rhodes', emoji: '⚓', top: 265, left: 480, status: 'locked', challengeIdx: 2 },
+  { id: 'alexandria', name: 'Alexandria', emoji: '🔭', top: null, left: null, bottom: 70, right: 100, status: 'locked', challengeIdx: 3 },
 ];
 
 const mapPaths = [
@@ -3264,7 +4494,11 @@ function renderPin(loc) {
   
   if (status === 'complete') {
     pinCircle = `width:48px;height:48px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:${baseShadow} rgba(67,160,71,0.4);margin:0 auto;border:3px solid rgba(255,255,255,0.7);`;
-    labelSub = `<div style="font-size:0.6rem;color:rgba(255,255,255,0.7);">${loc.emoji} Complete</div>`;
+    labelSub = `<div style="font-size:0.6rem;color:rgba(255,255,255,0.7);">${loc.emoji} Complete · Replay</div>`;
+    // Completed locations can be re-visited
+    if (loc.challengeIdx !== null && loc.challengeIdx !== undefined) {
+      clickHandler = ` onclick="enterLocation(${loc.challengeIdx})"`;
+    }
   } else if (status === 'active') {
     pinCircle = `width:52px;height:52px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 0 20px rgba(212,168,67,0.6),0 0 40px rgba(212,168,67,0.2);margin:0 auto;animation:pulse 2s infinite;border:3px solid white;`;
     labelSub = `<div style="font-size:0.62rem;color:var(--gold);font-weight:700;">⚔️ Active Quest</div>`;
@@ -3280,7 +4514,7 @@ function renderPin(loc) {
   
   const pinIcon = status === 'complete' ? '✓' : (status === 'locked' ? '🔒' : loc.emoji);
   const labelBg = status === 'active' ? 'rgba(0,0,0,0.7);border:1px solid rgba(212,168,67,0.4)' : 'rgba(0,0,0,0.6)';
-  const cursor = (status === 'active' || status === 'next') ? 'cursor:pointer;' : '';
+  const cursor = (status === 'active' || status === 'next' || (status === 'complete' && loc.challengeIdx !== null && loc.challengeIdx !== undefined)) ? 'cursor:pointer;' : '';
   
   return `<div${clickHandler} style="${pos}z-index:5;text-align:center;${cursor}">
     <div style="${pinCircle}">${pinIcon}</div>
@@ -3308,6 +4542,16 @@ function updateMapState() {
 }
 
 function enterLocation(idx) {
+  // Stop the map's Pythagoras narration if it's still playing — otherwise
+  // the intro voice bleeds over into the activity, which is jarring.
+  stopPythagorasVoice();
+
+  // Reset adaptive state so aceChooseRoute() starts from a clean slate.
+  // Otherwise a fast-track/scaffold flag from a previous challenge would
+  // leak into this one before the route decision runs.
+  scaffoldActive = false;
+  fastTrackActive = false;
+
   currentChallenge = idx;
   questDialogueStep = 0;
   const scene = questScenes[idx];
@@ -3318,21 +4562,33 @@ function enterLocation(idx) {
   document.getElementById('questPhaseLocation').style.display = 'block';
   document.getElementById('challengeArea').style.display = 'none';
 
-  // Render scene header
+  // Render compact title bar
   document.getElementById('locationScene').style.background = scene.bg;
   document.getElementById('locationScene').innerHTML = `
-    <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.5));"></div>
-    <div style="position:absolute;top:20px;right:20px;font-size:4rem;opacity:0.2;">${scene.emoji}</div>
-    <div style="position:relative;z-index:2;">
-      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.5);margin-bottom:4px;">${scene.subtitle}</div>
-      <div style="font-family:var(--font-display);font-size:1.6rem;color:white;font-weight:600;">${scene.title}</div>
-      <div style="font-size:0.85rem;color:rgba(255,255,255,0.65);margin-top:8px;max-width:600px;line-height:1.6;font-style:italic;">${scene.ambiance}</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent 60%,rgba(0,0,0,0.2));"></div>
+    <div style="font-size:1.8rem;opacity:0.3;position:relative;z-index:1;">${scene.emoji}</div>
+    <div style="position:relative;z-index:2;flex:1;">
+      <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.5);">${scene.subtitle}</div>
+      <div style="font-family:var(--font-display);font-size:1.15rem;color:white;font-weight:600;">${scene.title}</div>
     </div>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:0.68rem;padding:4px 10px;position:relative;z-index:2;" onclick="backToMap()">← Map</button>
   `;
 
   // Update artwork placeholder
-  document.getElementById('sceneArtworkEmoji').textContent = scene.artworkEmoji;
-  document.getElementById('sceneArtworkDesc').textContent = scene.artworkDesc;
+  const artworkArea = document.getElementById('sceneArtwork');
+  const artworkContent = document.getElementById('sceneArtworkContent');
+  if (ch.interactiveType === 'unityEmbed') {
+    // Embed the Unity game in the artwork area
+    artworkContent.style.display = 'none';
+    renderUnityInArtwork(artworkArea);
+  } else {
+    // Restore normal artwork placeholder
+    artworkContent.style.display = '';
+    const oldEmbed = document.getElementById('unityEmbedWrapper');
+    if (oldEmbed) oldEmbed.remove();
+    document.getElementById('sceneArtworkEmoji').textContent = scene.artworkEmoji;
+    document.getElementById('sceneArtworkDesc').textContent = scene.artworkDesc;
+  }
 
   // Update diagram placeholder
   document.getElementById('diagramEmoji').textContent = scene.diagramEmoji;
@@ -3346,7 +4602,7 @@ function enterLocation(idx) {
 function showDialogue(locIdx, step) {
   const scene = questScenes[locIdx];
   questDialogueStep = step;
-  document.getElementById('locationNPCDialogue').innerHTML = scene.dialogue[step];
+  document.getElementById('locationNPCDialogue').innerHTML = withPlayerName(scene.dialogue[step]);
   const actionsEl = document.getElementById('locationDialogueActions');
 
   if (step < scene.dialogue.length - 1) {
@@ -3366,38 +4622,153 @@ function revealChallenge() {
   area.style.display = 'block';
   area.scrollIntoView({ behavior: 'smooth' });
   loadChallenge(currentChallenge);
+
+  // Begin tracking play time for interactive challenges. The button stays
+  // disabled until Unity fires activity_complete — no time-based unlock.
+  const ch = challenges[currentChallenge];
+  if (ch && ch.interactiveType === 'unityEmbed') {
+    unityChallengeAccepted = true;
+    unityChallengeAcceptedAt = Date.now();
+    // Kick off the Unity game load now that the student has committed to
+    // the challenge. Until this point the iframe has no src and is covered
+    // by the gate overlay, so the student cannot play early.
+    startUnityLoad();
+    // Update the hint text to tell the student to finish the activity.
+    const hint = document.getElementById('unityMarkCompleteHint');
+    if (hint) hint.innerHTML = '⏳ Play through the activity — Mark Complete will light up when you finish.';
+  }
 }
 
 function backToMap() {
   document.getElementById('questPhaseMap').style.display = 'block';
   document.getElementById('questPhaseLocation').style.display = 'none';
   updateMapState();
+  // Stop the Unity game audio by removing the iframe entirely
+  stopUnityEmbed();
+}
+
+function stopUnityEmbed() {
+  const wrapper = document.getElementById('unityEmbedWrapper');
+  if (wrapper) wrapper.remove();
+  // Stop any narration currently playing (ElevenLabs audio or browser TTS)
+  stopPythagorasVoice();
 }
 
 // ═══ ADAPTIVE CHALLENGE ENGINE ═══
 // Track student performance for adaptive branching
 let attemptTracker = {}; // { challengeIdx: { attempts: n, hintsUsed: n, timeStarted: Date, firstAttemptTime: null } }
 let masteryState = {
+  'triangle_classification': { level: 'novice', confidence: 0.10 },
   'finding_leg': { level: 'proficient', confidence: 0.88 },
   'finding_hypotenuse': { level: 'developing', confidence: 0.45 },
   'real_world_application': { level: 'developing', confidence: 0.50 },
   'proof_verification': { level: 'novice', confidence: 0.20 },
   'pythagorean_triples': { level: 'novice', confidence: 0.15 },
 };
+
 let currentTier = 'extension'; // foundation | extension | mastery
 let scaffoldActive = false; // true when student is in a side-quest scaffold
 let fastTrackActive = false;
 
+// ═══ ACE ROUTING (scaffold / fast-track / normal) ═══
+// Maps a challenge index to the concept key used in student_profiles.mastery_state.
+// When a student opens a challenge, aceChooseRoute() looks up their confidence
+// for the relevant concept and promotes them into fast-track (>=0.85) or
+// drops them into scaffold (<0.5) automatically. Normal path otherwise.
+const CHALLENGE_CONCEPT_KEY = {
+  0: 'triangle_types',         // Samos — triangle classification
+  1: 'finding_leg',             // Athens — ladder / find missing leg
+  2: 'finding_hypotenuse',      // Rhodes — navigation / find hypotenuse
+  3: 'pythagorean_triples',     // Alexandria — verify a claim
+};
+const ACE_FASTTRACK_THRESHOLD = 0.85;
+const ACE_SCAFFOLD_THRESHOLD  = 0.50;
+
+// Called at the start of loadChallenge(). Reads window.currentUser.mastery_state
+// (populated after auth by loadRealProfileIntoCurrentUser) and sets the
+// scaffoldActive / fastTrackActive flags BEFORE the challenge renders.
+// Won't override flags that the student already earned mid-session.
+function aceChooseRoute(idx) {
+  // If the student has already been put in scaffold/fast-track mode during
+  // the current session (e.g. via the existing in-session triggers), respect
+  // that and don't re-route.
+  if (scaffoldActive || fastTrackActive) return;
+
+  const conceptKey = CHALLENGE_CONCEPT_KEY[idx];
+  if (!conceptKey) return;
+
+  const mastery = (window.currentUser && window.currentUser.mastery_state) || null;
+  // mastery_state can arrive as either a parsed object (from the merge in
+  // loadRealProfileIntoCurrentUser) or a JSON string (from a raw DB row).
+  let state = mastery;
+  if (typeof state === 'string') {
+    try { state = JSON.parse(state); } catch { state = null; }
+  }
+  if (!state || typeof state !== 'object') return;
+
+  const entry = state[conceptKey];
+  if (!entry || typeof entry !== 'object') return;
+  const confidence = (typeof entry.confidence === 'number') ? entry.confidence : null;
+  if (confidence === null) return;
+
+  // Fast-track requires a matching variant for this idx.
+  if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx]) {
+    fastTrackActive = true;
+    console.log('[ACE] Fast-track route chosen for idx', idx,
+      '— concept:', conceptKey, '| confidence:', confidence);
+    return;
+  }
+
+  // Scaffold requires a matching scaffold challenge for this idx.
+  if (confidence < ACE_SCAFFOLD_THRESHOLD && scaffoldChallenges[idx]) {
+    scaffoldActive = true;
+    console.log('[ACE] Scaffold route chosen for idx', idx,
+      '— concept:', conceptKey, '| confidence:', confidence);
+    return;
+  }
+
+  // Otherwise: normal route.
+  console.log('[ACE] Normal route for idx', idx,
+    '— concept:', conceptKey, '| confidence:', confidence);
+}
+
 // Scaffold challenges — appear when student fails main challenge twice
 const scaffoldChallenges = {
-  0: { // Scaffold for Athens (ladder problem)
+  0: { // Scaffold for Samos (Triangle Types)
+    sceneBg: 'linear-gradient(180deg,#8ac4d4 0%,#6aacbc 30%,#4a8ca0 60%,#2a6c80 100%)',
+    sceneEmoji: '🐚',
+    sceneTitle: 'The Beach Lesson',
+    sceneSubtitle: 'Samos — A Quiet Cove',
+    sceneAmbiance: 'Pythagoras draws three triangles in the wet sand. The waves wash gently nearby.',
+    dialogue: [
+      '"Let me simplify this, {PLAYER}. Forget the categories for a moment. Let\'s just look at one triangle at a time."',
+      '"This triangle has sides 3, 3, 3. All three sides are the same length. What type of triangle is that? Type: equilateral, isosceles, or scalene."'
+    ],
+    prompt: 'A triangle has sides of length 3, 3, and 3. All three sides are equal. What type of triangle is this? (equilateral, isosceles, or scalene)',
+    answer: 'equilateral',
+    answerAlt: ['equilateral triangle'],
+    unit: '',
+    xp: 5,
+    difficulty: '●○○○○', diffLabel: 'Easy',
+    cogLevel: 'Remember', cogColor: 'badge-green',
+    reference: 'Equilateral = all sides equal. Isosceles = exactly two sides equal. Scalene = no sides equal.',
+    hints: [
+      { title: 'Count the equal sides', content: '3, 3, 3 — how many sides have the same length? All three!' },
+      { title: 'Match the definition', content: 'All 3 sides equal → Equilateral. Two sides equal → Isosceles. No sides equal → Scalene.' },
+      { title: 'The answer', content: 'Since all three sides (3, 3, 3) are equal, this is an equilateral triangle.' },
+    ],
+    correctFeedback: 'Pythagoras smiles warmly. <em>"Yes! When all three sides are equal, we call it equilateral — \'equal sides\' in our language. Now let\'s go back and sort those tablets."</em>',
+    incorrectFeedback: 'Look at the side lengths: 3, 3, 3. All three numbers are the same. The type where all sides are equal is called equilateral.',
+    returnDialogue: '"You understand the building blocks now. Equilateral means equal sides. Let\'s return to the courtyard — those tablets are waiting for you."',
+  },
+  1: { // Scaffold for Athens (ladder problem)
     sceneBg: 'linear-gradient(180deg,#6a9b6a 0%,#4a7a4a 30%,#3a6a3a 60%,#2a4a2a 100%)',
     sceneEmoji: '🌿',
     sceneTitle: 'The Practice Grove',
     sceneSubtitle: 'Near Athens — A Quiet Olive Grove',
     sceneAmbiance: 'Pythagoras leads you away from the noisy construction site to a quiet grove of olive trees. He draws a triangle in the dirt with a stick.',
     dialogue: [
-      '"Don\'t worry, Maya. Even my best students at Croton needed practice before they could help builders. Let me draw something simpler in the dirt."',
+      '"Don\'t worry, {PLAYER}. Even my best students at Croton needed practice before they could help builders. Let me draw something simpler in the dirt."',
       '"See this triangle? The two shorter sides are 3 and 4. Before we go back to that tall wall, let\'s find the longest side — the hypotenuse. Just use <em>a² + b² = c²</em> and solve for c."'
     ],
     prompt: 'A right triangle has legs of length 3 and 4. What is the length of the hypotenuse?',
@@ -3417,7 +4788,7 @@ const scaffoldChallenges = {
     incorrectFeedback: 'Almost there! Remember: a² + b² = c². That means 3² + 4² = c². Calculate 9 + 16, then find the square root.',
     returnDialogue: '"See? The pattern is the same whether the triangle is drawn in dirt or formed by a ladder against a wall. Now let\'s return to the temple — the workers are waiting for you."',
   },
-  1: { // Scaffold for Rhodes (navigation problem)
+  2: { // Scaffold for Rhodes (navigation problem)
     sceneBg: 'linear-gradient(180deg,#8a7a6a 0%,#6a5a4a 30%,#5a4a3a 60%,#3a2a1a 100%)',
     sceneEmoji: '🗺️',
     sceneTitle: 'The Cartographer\'s Hut',
@@ -3444,7 +4815,7 @@ const scaffoldChallenges = {
     incorrectFeedback: 'The cartographer taps the grid chart. The boat went east (horizontal) and north (vertical) — that\'s two legs of a right triangle! Try: 6² + 8² = c².',
     returnDialogue: '"Excellent! You handled the small waters perfectly. Now let\'s return to the harbor master — that merchant ship is still lost, and the numbers are bigger, but the method is exactly the same."',
   },
-  2: { // Scaffold for Alexandria (proof verification)
+  3: { // Scaffold for Alexandria (proof verification)
     sceneBg: 'linear-gradient(180deg,#7a6a8a 0%,#5a4a6a 30%,#4a3a5a 60%,#2a1a3a 100%)',
     sceneEmoji: '📜',
     sceneTitle: 'The Scholar\'s Anteroom',
@@ -3475,7 +4846,8 @@ const scaffoldChallenges = {
 
 // Fast-track variants — harder versions when student solves main challenge very quickly
 const fastTrackVariants = {
-  0: { // Hard variant for Athens
+  // No fast-track for Samos (interactive activity handles its own pacing)
+  1: { // Hard variant for Athens
     prompt: 'A second ladder leans against the opposite wall. This one is 25 cubits long, and the wall is 24 cubits high. How far is the base of the ladder from the wall?',
     answer: '7',
     answerAlt: ['7.0'],
@@ -3488,11 +4860,11 @@ const fastTrackVariants = {
       { title: 'Set up the equation', content: 'a² + 24² = 25². So a² = 625 - 576.' },
       { title: 'Solve', content: 'a² = 49. a = √49 = 7. The 7-24-25 triple!' },
     ],
-    pythagorasIntro: '"By the tetractys, Maya! You solved that faster than my best student at Croton. The workers have a second, taller wall. Let me give you something worthy of your speed."',
+    pythagorasIntro: '"By the tetractys, {PLAYER}! You solved that faster than my best student at Croton. The workers have a second, taller wall. Let me give you something worthy of your speed."',
     correctFeedback: '<em>"Magnificent! 7-24-25 — one of the rarer Pythagorean triples. Most students never see this one."</em> Pythagoras looks genuinely impressed. <strong>+10 bonus XP for fast-track mastery!</strong>',
     incorrectFeedback: 'This is a harder variant — the numbers are bigger but the method is the same. The ladder (25 ft) is the hypotenuse, the wall (24 ft) is one leg. Find the other leg: a² + 24² = 25².',
   },
-  1: { // Hard variant for Rhodes
+  2: { // Hard variant for Rhodes
     prompt: 'A second ship departed from Rhodes heading 20 stadia south, then 21 stadia west. The harbor master needs the direct distance back. What is it?',
     answer: '29',
     answerAlt: ['29.0'],
@@ -3505,7 +4877,7 @@ const fastTrackVariants = {
       { title: 'Set up', content: '20² + 21² = c². That\'s 400 + 441 = c².' },
       { title: 'Solve', content: 'c² = 841. c = √841 = 29. The 20-21-29 triple!' },
     ],
-    pythagorasIntro: '"You navigate charts like a born sailor, Maya! But here\'s a vessel in deeper trouble — the numbers aren\'t as friendly this time."',
+    pythagorasIntro: '"You navigate charts like a born sailor, {PLAYER}! But here\'s a vessel in deeper trouble — the numbers aren\'t as friendly this time."',
     correctFeedback: '"<em>29 stadia! That\'s a triple most harbor masters have never seen: 20, 21, 29.</em>" Pythagoras marks it on the star chart. <strong>+15 bonus XP for fast-track mastery!</strong>',
     incorrectFeedback: 'The method is identical — 20² + 21² = c². The numbers are larger: 400 + 441 = 841. What\'s √841?',
   },
@@ -3516,14 +4888,23 @@ function loadChallenge(idx) {
     navigate('screen-reflection');
     return;
   }
-  
+
   // Initialize attempt tracker
   if (!attemptTracker[idx]) {
     attemptTracker[idx] = { attempts: 0, hintsUsed: 0, timeStarted: Date.now(), firstAttemptTime: null };
   }
 
-  const ch = scaffoldActive ? scaffoldChallenges[idx] : 
-             fastTrackActive ? Object.assign({}, challenges[idx], fastTrackVariants[idx]) : 
+  // ═══ ACE ROUTING DECISION ═══
+  // Consult the student's mastery_state (populated from D1 via
+  // loadRealProfileIntoCurrentUser) to decide whether to open the challenge
+  // in scaffold mode, fast-track mode, or the normal variant. This is a
+  // PRE-CHALLENGE decision based on historical confidence — the existing
+  // in-session triggers (attempts === 2 → scaffold, fast-solve → fast-track)
+  // still fire as fallbacks for mid-session struggles/wins.
+  aceChooseRoute(idx);
+
+  const ch = scaffoldActive ? scaffoldChallenges[idx] :
+             fastTrackActive ? Object.assign({}, challenges[idx], fastTrackVariants[idx]) :
              challenges[idx];
 
   document.getElementById('chProgress').textContent = scaffoldActive ? 
@@ -3558,31 +4939,558 @@ function loadChallenge(idx) {
   `).join('');
 
   // Clear previous state
-  document.getElementById('answerInput').value = '';
-  document.getElementById('answerInput').focus();
   clearFeedback();
   document.getElementById('tierAdvance').style.display = 'none';
-  document.getElementById('chInputRow').style.display = 'flex';
-  
+
+  // Handle interactive challenges
+  const diagArea = document.getElementById('challengeDiagram');
+  if (ch.interactiveType === 'unityEmbed') {
+    document.getElementById('chInputRow').style.display = 'none';
+    document.getElementById('answerInput').value = '';
+    renderUnityEmbed(ch, idx);
+  } else {
+    document.getElementById('chInputRow').style.display = 'flex';
+    document.getElementById('answerInput').value = '';
+    document.getElementById('answerInput').focus();
+    diagArea.style.display = '';
+    // Remove any leftover interactive UI
+    const embedUI = document.getElementById('unityEmbedUI');
+    if (embedUI) embedUI.remove();
+  }
+
   timerSeconds = 0;
 }
 
+// ═══ UNITY WEBGL EMBED ═══
+let unityInstance = null;
+const UNITY_BUILD_URL = 'https://py-r2.questsim.com';
+
+// Anti-cheat state: Mark Complete is ONLY enabled when Unity fires
+// activity_complete via postMessage. No time-based unlock.
+let unityChallengeAccepted = false;
+let unityChallengeAcceptedAt = 0;
+let unityGameCompletedEvent = false; // flipped to true when Unity postMessages completion
+
+function renderUnityInArtwork(artworkArea) {
+  // Remove old embed if present
+  let existing = document.getElementById('unityEmbedWrapper');
+  if (existing) existing.remove();
+
+  // Reset anti-cheat state for this render
+  unityChallengeAccepted = false;
+  unityChallengeAcceptedAt = 0;
+  unityGameCompletedEvent = false;
+
+  const wrapper = document.createElement('div');
+  wrapper.id = 'unityEmbedWrapper';
+  wrapper.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
+  wrapper.innerHTML = `
+    <div style="background:#FAF8F4;border-bottom:2px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="font-size:0.85rem;color:var(--navy);line-height:1.4;">
+        <strong style="color:#B8860B;">🎯 Your Task:</strong> Play only the <strong>Triangle Types</strong> activity (Activity 1). When you finish sorting all the tiles, the <strong>Mark Complete</strong> button will light up below.
+      </div>
+    </div>
+    <div class="unity-embed-container" id="unityContainer" style="flex:1;min-height:0;position:relative;">
+      <iframe id="questsimIframe"
+        src=""
+        style="width:100%;height:100%;border:none;display:block;"
+        allow="autoplay; fullscreen; gamepad; keyboard-map; web-share; clipboard-write; clipboard-read"
+        allowfullscreen>
+      </iframe>
+      <div class="unity-loading-overlay" id="unityLoadingOverlay">
+        <div class="unity-loading-title">🏛️ Entering the World of Pythagoras...</div>
+        <div class="unity-loading-bar"><div class="unity-loading-fill" id="unityLoadingFill" style="width:100%"></div></div>
+        <div class="unity-loading-text" id="unityLoadingText">Connecting to game server...</div>
+      </div>
+      <!-- Post-game overlay: appears the moment Unity signals activity_complete.
+           Covers the iframe so Unity's in-game Continue button can't be seen or
+           clicked (it grabs pointer lock and confuses the student). The only
+           path forward is the Mark Complete button below. -->
+      <div id="unityPostGameOverlay" style="display:none;position:absolute;inset:0;background:linear-gradient(160deg,rgba(15,38,64,0.96) 0%,rgba(27,58,92,0.96) 50%,rgba(42,127,142,0.96) 100%);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:15;pointer-events:auto;">
+        <div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>
+        <div style="font-family:var(--font-display);font-size:1.5rem;color:var(--gold);font-weight:600;margin-bottom:10px;">Activity Finished!</div>
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.88);max-width:480px;line-height:1.55;margin-bottom:22px;">You've correctly classified every triangle on Pythagoras's table. Click the glowing <strong>Mark Complete</strong> button below to continue your quest.</div>
+        <div style="font-size:2rem;animation:pulse 1.4s ease-in-out infinite;">⬇</div>
+      </div>
+      <!-- Pre-game gate overlay: shown until the student clicks Accept the
+           Challenge in the dialogue below. Prevents playing the game early. -->
+      <div id="unityGateOverlay" style="display:flex;position:absolute;inset:0;background:linear-gradient(160deg,rgba(15,38,64,0.96) 0%,rgba(27,58,92,0.96) 50%,rgba(42,127,142,0.96) 100%);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:18;pointer-events:auto;">
+        <div style="font-size:3rem;margin-bottom:10px;">🏛️</div>
+        <div style="font-family:var(--font-display);font-size:1.4rem;color:var(--gold);font-weight:600;margin-bottom:10px;">Awaiting your decision...</div>
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.88);max-width:480px;line-height:1.55;margin-bottom:22px;">Read Pythagoras's words below, then click <strong>⚔️ Accept the Challenge</strong> to enter the classroom and begin the activity.</div>
+        <div style="font-size:2rem;animation:pulse 1.4s ease-in-out infinite;">⬇</div>
+      </div>
+      <!-- Lockout overlay: appears when student marks complete to stop them playing more activities -->
+      <div id="unityLockoutOverlay" style="display:none;position:absolute;inset:0;background:rgba(27,58,92,0.92);color:white;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px;z-index:20;">
+        <div style="font-size:3rem;margin-bottom:12px;">🏛️</div>
+        <div style="font-family:var(--font-display);font-size:1.4rem;color:var(--gold);font-weight:600;margin-bottom:8px;">Activity 1 Complete!</div>
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.85);max-width:480px;line-height:1.6;">Well done, student of Pythagoras. Return to the map to continue your quest — more activities await at Athens, Rhodes, and Alexandria.</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);">
+      <span style="font-size:0.78rem;color:var(--text-soft);" id="unityMarkCompleteHint">⏳ Accept the challenge below and play through the activity to continue.</span>
+      <button class="btn" id="unityCompleteBtn" onclick="onUnityActivityComplete()" disabled style="padding:10px 20px;font-weight:600;background:#cccccc;color:#666666;cursor:not-allowed;">✓ Mark Complete</button>
+    </div>
+  `;
+
+  artworkArea.appendChild(wrapper);
+
+  // Set the iframe name so Unity's ACE_GetUrlParam jslib can read it as
+  // window.name (survives auth redirects on pymini1).
+  const iframe = document.getElementById('questsimIframe');
+  iframe.name = 'only=Types';
+
+  // NOTE: we intentionally do NOT set iframe.src here. Unity loading is
+  // gated behind the student clicking "⚔️ Accept the Challenge" in the
+  // dialogue panel below — see startUnityLoad(), called from revealChallenge().
+  // Until then, the unityGateOverlay covers the iframe and blocks clicks.
+  // Also hide the unity loading overlay since nothing is loading yet.
+  const loadingOverlay = document.getElementById('unityLoadingOverlay');
+  if (loadingOverlay) loadingOverlay.classList.add('hidden');
+}
+
+// Kick off the actual Unity load. Called from revealChallenge() when the
+// student clicks "Accept the Challenge" on a unityEmbed challenge.
+function startUnityLoad() {
+  const iframe = document.getElementById('questsimIframe');
+  if (!iframe) return;
+  // Swap the gate overlay for the loading overlay
+  const gate = document.getElementById('unityGateOverlay');
+  if (gate) gate.style.display = 'none';
+  const loadingOverlay = document.getElementById('unityLoadingOverlay');
+  if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+  // Wire up the load listener, then set src
+  iframe.addEventListener('load', () => {
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+  }, { once: true });
+  // Fallback: hide overlay after 8 seconds regardless
+  setTimeout(() => {
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+  }, 8000);
+  // Finally, set the src — this starts the Unity load.
+  getGameUrl().then(url => { iframe.src = url; });
+}
+
+// ═══ LISTEN FOR UNITY EVENTS ═══
+// The Unity wrapper forwards these events via postMessage:
+//   unity_ready      — Unity loaded
+//   activity_begin   — student started the activity
+//   unity_pickup     — student picked up a tile (one per click)
+//   unity_progress   — correct drop (Progress.AddCoins fired)
+//   activity_complete — Activity_Types.LessonPassed fired
+//
+// We buffer pickups/progress between activity_begin and activity_complete
+// so we can compute real learning analytics (accuracy, duration, wrong
+// attempts, mastery confidence) and send them to D1 when the student
+// clicks Mark Complete.
+let unityEventBuffer = {
+  begin_at: null,
+  end_at: null,
+  pickups: [],       // [{ name, path, ts }]
+  correct_drops: 0,  // count of Progress.AddCoins events
+  answers: [],       // [{ tile, target, correct, ts }] — per-drop answer from Activity.Answer
+};
+
+function resetUnityEventBuffer() {
+  unityEventBuffer = { begin_at: null, end_at: null, pickups: [], correct_drops: 0, answers: [] };
+}
+
+window.addEventListener('message', (event) => {
+  if (!event.data || event.data.source !== 'ace_unity') return;
+  const d = event.data;
+  // Quiet log — skip unity_ready heartbeat noise
+  if (d.type !== 'unity_ready') {
+    console.log('[ACE] Received from Unity:', d.type, d.data);
+  }
+
+  if (d.type === 'activity_begin') {
+    resetUnityEventBuffer();
+    unityEventBuffer.begin_at = d.timestamp || Date.now();
+  } else if (d.type === 'unity_pickup') {
+    unityEventBuffer.pickups.push({
+      name: d.data && d.data.name,
+      path: d.data && d.data.path,
+      ts: d.timestamp || Date.now(),
+    });
+  } else if (d.type === 'unity_progress') {
+    unityEventBuffer.correct_drops++;
+  } else if (d.type === 'unity_answer') {
+    // Per-drop answer from TileMatchArea.OnTriggerEnter via Activity.Answer.
+    // Captures: which tile was dropped, on which target, and whether it was correct.
+    // Used to compute per-concept mastery (equilateral/right/isosceles/scalene).
+    unityEventBuffer.answers.push({
+      tile: d.data && d.data.tile,
+      target: d.data && d.data.target,
+      correct: d.data && d.data.correct,
+      ts: d.timestamp || Date.now(),
+    });
+  } else if (d.type === 'activity_complete') {
+    unityEventBuffer.end_at = d.timestamp || Date.now();
+    // Flag that the student genuinely finished the game. This lets
+    // onUnityActivityComplete() bypass the "accept challenge + 30s"
+    // anti-cheat guard, but the student still has to click Mark Complete
+    // themselves — we do NOT auto-invoke the handler here.
+    unityGameCompletedEvent = true;
+    enableMarkCompleteButton();
+  }
+});
+
+// Flip the Mark Complete button from disabled/gray to enabled/primary
+// and draw the student's attention to it. Also drop a celebratory
+// overlay over the Unity canvas to hide Unity's in-game Continue button
+// (which would otherwise grab pointer lock and confuse the student).
+// Called from the postMessage listener when Unity signals activity_complete.
+function enableMarkCompleteButton() {
+  console.log('[ACE] enableMarkCompleteButton() fired');
+
+  // Cover the Unity canvas so the student can't see or click Unity's
+  // built-in "Continue" button. The only path forward is Mark Complete.
+  // If the overlay element isn't in the DOM (e.g. cached older HTML),
+  // build it on the fly inside the Unity container.
+  let postGame = document.getElementById('unityPostGameOverlay');
+  const container = document.getElementById('unityContainer');
+  if (!postGame && container) {
+    console.log('[ACE] Creating unityPostGameOverlay dynamically');
+    postGame = document.createElement('div');
+    postGame.id = 'unityPostGameOverlay';
+    postGame.innerHTML = `
+      <div style="font-size:3.2rem;margin-bottom:8px;">🎉</div>
+      <div style="font-family:var(--font-display);font-size:1.5rem;color:#D4A843;font-weight:600;margin-bottom:10px;">Activity Finished!</div>
+      <div style="font-size:0.95rem;color:rgba(255,255,255,0.88);max-width:480px;line-height:1.55;margin-bottom:22px;">You've correctly classified every triangle on Pythagoras's table. Click the glowing <strong>Mark Complete</strong> button below to continue your quest.</div>
+      <div style="font-size:2rem;animation:pulse 1.4s ease-in-out infinite;">⬇</div>
+    `;
+    container.appendChild(postGame);
+  }
+  if (postGame) {
+    // Force-apply every style we need, so cached stale CSS/markup can't hide us.
+    postGame.style.cssText = [
+      'display:flex',
+      'position:absolute',
+      'inset:0',
+      'top:0','right:0','bottom:0','left:0',
+      'width:100%','height:100%',
+      'background:linear-gradient(160deg,rgba(15,38,64,0.97) 0%,rgba(27,58,92,0.97) 50%,rgba(42,127,142,0.97) 100%)',
+      'color:#fff',
+      'align-items:center','justify-content:center','flex-direction:column',
+      'text-align:center','padding:32px',
+      'z-index:9999',
+      'pointer-events:auto',
+    ].join(';');
+    console.log('[ACE] unityPostGameOverlay shown');
+  } else {
+    console.warn('[ACE] No unityContainer found — overlay not rendered');
+  }
+
+  const btn = document.getElementById('unityCompleteBtn');
+  const hint = document.getElementById('unityMarkCompleteHint');
+  if (!btn) return;
+  btn.disabled = false;
+  btn.style.background = 'var(--gold)';
+  btn.style.color = '#fff';
+  btn.style.cursor = 'pointer';
+  btn.textContent = '✓ Mark Complete';
+  btn.style.boxShadow = '0 0 0 4px rgba(212,168,67,0.25)';
+  btn.style.animation = 'pulse 1.4s ease-in-out infinite';
+  if (hint) {
+    hint.textContent = '🎉 Activity finished! Click Mark Complete to continue.';
+    hint.style.color = 'var(--gold)';
+    hint.style.fontWeight = '600';
+  }
+}
+
+// Legacy hook — if loadChallenge still calls this for the challenge area
+function renderUnityEmbed(ch, idx) {
+  // Unity is already loaded in the artwork area by enterLocation
+  // Just hide the diagram placeholder
+  document.getElementById('challengeDiagram').style.display = 'none';
+}
+
+// Unity build loading removed — using iframe to py.questsim.com instead
+
+// NOTE: Unity completion is now handled by the 'ace_unity' listener
+// above, which enables the Mark Complete button. Students must click
+// the button themselves — we no longer auto-invoke the handler.
+
+function onUnityActivityComplete() {
+  // Anti-cheat guard: the ONLY way this handler should fire is after Unity
+  // sends activity_complete via postMessage, which sets unityGameCompletedEvent
+  // and enables the button. If it runs without that flag, the student has
+  // somehow bypassed the disabled state (e.g. devtools), so we refuse.
+  if (!unityGameCompletedEvent) {
+    alert('Please finish the Triangle Types activity before marking complete.');
+    return;
+  }
+
+  const ch = challenges[currentChallenge];
+
+  // Show the "Activity 1 Complete!" lockout overlay to prevent playing more activities
+  const lockout = document.getElementById('unityLockoutOverlay');
+  if (lockout) lockout.style.display = 'flex';
+
+  // Stop the game audio by clearing the iframe src (fully stops WebGL audio)
+  const iframe = document.getElementById('questsimIframe');
+  if (iframe) {
+    try { iframe.src = 'about:blank'; } catch(e) {}
+  }
+
+  // Show the correct feedback panel
+  showCorrectFeedback(ch);
+
+  // Narrate the correct feedback with Pythagoras's voice
+  // Extract the quoted portion (his actual words) from the HTML
+  setTimeout(() => {
+    const fbText = document.getElementById('fbCorrectText')?.textContent || '';
+    const quoted = extractQuoted(fbText);
+    if (quoted) playPythagorasVoice(quoted);
+  }, 500);
+
+  // Record real learning analytics from the Unity event buffer.
+  // The buffer was populated by the postMessage listener between
+  // activity_begin and activity_complete. We use it to compute
+  // accuracy, duration, wrong-attempt count, and a mastery confidence.
+  // Admins/teachers playing in test mode are also recorded so the
+  // learning-analytics pipeline can be validated without a student login.
+  if (isAuthenticated && currentUser) {
+    const buf = unityEventBuffer;
+    const totalPickups = buf.pickups.length;
+    const correctDrops = buf.correct_drops;
+    const wrongAttempts = Math.max(0, totalPickups - correctDrops);
+    const durationMs = (buf.end_at && buf.begin_at)
+      ? (buf.end_at - buf.begin_at)
+      : 60000;  // fallback if somehow we didn't see begin/end
+    const durationSec = Math.max(1, Math.round(durationMs / 1000));
+    const accuracy = totalPickups > 0 ? (correctDrops / totalPickups) : 1;
+    const uniqueTiles = Array.from(new Set(buf.pickups.map(p => p.name))).filter(Boolean);
+
+    // Split tile pickups into "property" tiles vs "triangle shape" tiles
+    // by matching on the path prefix the wrapper forwards.
+    const propertyTiles = buf.pickups.filter(p => (p.path || '').indexOf('Grab_Tiles_ArrayOf') >= 0).length;
+    const trianglePieces = buf.pickups.filter(p => (p.path || '').indexOf('Grab_Triangles') >= 0).length;
+
+    // Include per-drop answer events when available (new Unity build)
+    const answerLog = buf.answers.map(a => ({
+      tile: a.tile,
+      target: a.target,
+      correct: a.correct,
+    }));
+
+    const userAnswerSummary = JSON.stringify({
+      total_pickups: totalPickups,
+      correct_drops: correctDrops,
+      wrong_attempts: wrongAttempts,
+      property_tile_pickups: propertyTiles,
+      triangle_piece_pickups: trianglePieces,
+      unique_tiles: uniqueTiles,
+      duration_ms: durationMs,
+      accuracy: Math.round(accuracy * 100) / 100,
+      answer_log: answerLog.length > 0 ? answerLog : undefined,
+    });
+
+    // ═══ PER-CONCEPT MASTERY ═══
+    // If the new Unity build emits Activity.Answer events (per-drop with
+    // tile + target + correct), we can compute mastery per triangle type
+    // (equilateral, right, isosceles, scalene) instead of one aggregate.
+    // Falls back to aggregate accuracy when no answer events are available
+    // (i.e. older Unity build without the TileMatchArea change).
+    //
+    // Drop target name → concept key mapping. The TileMatchArea GameObjects
+    // in the Unity scene are named DropTarget_01 through DropTarget_04:
+    const TARGET_CONCEPT = {
+      'DropTarget_01': 'equilateral',
+      'DropTarget_02': 'right',
+      'DropTarget_03': 'isosceles',
+      'DropTarget_04': 'scalene',
+    };
+
+    const now = new Date().toISOString();
+    let masteryState;
+
+    if (buf.answers.length > 0) {
+      // NEW PATH: per-concept mastery from Activity.Answer events
+      const perConcept = {};
+      for (const a of buf.answers) {
+        const concept = TARGET_CONCEPT[a.target] || a.target || 'unknown';
+        if (!perConcept[concept]) perConcept[concept] = { correct: 0, total: 0 };
+        perConcept[concept].total++;
+        if (a.correct) perConcept[concept].correct++;
+      }
+
+      masteryState = {};
+      const tierFor = (conf) => conf >= 0.9 ? 'mastery' : (conf >= 0.7 ? 'extension' : 'foundation');
+      for (const [concept, stats] of Object.entries(perConcept)) {
+        const conf = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) / 100 : 0;
+        masteryState[concept] = {
+          level: tierFor(conf),
+          confidence: conf,
+          correct: stats.correct,
+          total: stats.total,
+          last_activity: 'samos_types',
+          updated_at: now,
+        };
+      }
+      // Also include the aggregate triangle_types for backwards compatibility
+      const aggConf = Math.round(accuracy * 100) / 100;
+      masteryState.triangle_types = {
+        level: tierFor(aggConf),
+        confidence: aggConf,
+        last_activity: 'samos_types',
+        updated_at: now,
+      };
+
+      console.log('[ACE] Per-concept mastery from', buf.answers.length, 'answer events:', masteryState);
+    } else {
+      // FALLBACK: aggregate accuracy only (older Unity build without Activity.Answer)
+      const confidence = Math.round(accuracy * 100) / 100;
+      const masteryLevel = accuracy >= 0.9 ? 'mastery' : (accuracy >= 0.7 ? 'extension' : 'foundation');
+      masteryState = {
+        triangle_types: {
+          level: masteryLevel,
+          confidence: confidence,
+          last_activity: 'samos_types',
+          updated_at: now,
+        }
+      };
+      console.log('[ACE] Aggregate mastery (no per-drop answers):', masteryState);
+    }
+
+    console.log('[ACE] Saving Unity attempt to D1:', {
+      duration_sec: durationSec,
+      total_pickups: totalPickups,
+      correct_drops: correctDrops,
+      accuracy: Math.round(accuracy * 100) / 100,
+      answer_events: buf.answers.length,
+    });
+
+    saveUnityAttemptToD1({
+      ch,
+      challengeIndex: currentChallenge,
+      userAnswer: userAnswerSummary,
+      attemptNumber: totalPickups || 1,
+      timeSpentSec: durationSec,
+      xpAwarded: ch.xp || 0,
+      masteryState,
+    });
+  }
+}
+
+// ═══ PROGRESS SAVE TO D1 ═══
+let activeGameSessionId = null;
+
+async function ensureGameSession() {
+  if (activeGameSessionId) return activeGameSessionId;
+  // Only bail if no authenticated user at all. Admins and teachers playing
+  // through the activity in testing mode should still record their attempts,
+  // so we no longer gate on role === 'student'. The backend /api/student/*
+  // middleware only requires auth, not a specific role.
+  if (!isAuthenticated || !currentUser) return null;
+  try {
+    const data = await API.post('/api/student/session', { action: 'start' });
+    activeGameSessionId = data.session_id;
+    return activeGameSessionId;
+  } catch (e) {
+    console.warn('[Progress] Failed to start session:', e.message);
+    return null;
+  }
+}
+
+async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
+  if (!isAuthenticated || !currentUser) return;
+  const sessionId = await ensureGameSession();
+  if (!sessionId) return;
+
+  const locMatch = (ch.location || '').toLowerCase().match(/samos|athens|rhodes|alexandria/);
+  const location = locMatch ? locMatch[0] : 'samos';
+  const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || idx+1}`;
+
+  try {
+    await API.post('/api/student/progress', {
+      session_id: sessionId,
+      challenge_id: challengeId,
+      location,
+      tier: ch.tier || 'foundation',
+      user_answer: String(val),
+      is_correct: isCorrect,
+      attempt_number: tracker.attempts,
+      hints_used: tracker.hintsUsed,
+      time_spent_seconds: Math.round((Date.now() - tracker.timeStarted) / 1000),
+      was_scaffold: scaffoldActive,
+      was_fast_track: fastTrackActive,
+      xp_awarded: isCorrect ? (ch.xp || 0) : 0,
+    });
+  } catch (e) {
+    console.warn('[Progress] Failed to save attempt:', e.message);
+  }
+}
+
+// Rich attempt-save for Unity interactive activities. Unlike saveAttemptToD1,
+// this carries a JSON user_answer summary, a real wall-clock time_spent,
+// and a mastery_state update — all derived from the event buffer built up
+// by the postMessage listener between activity_begin and activity_complete.
+async function saveUnityAttemptToD1(opts) {
+  if (!isAuthenticated || !currentUser) return;
+  const sessionId = await ensureGameSession();
+  if (!sessionId) return;
+
+  const ch = opts.ch;
+  // For Unity activities, the location is authoritative on the challenge def,
+  // not currentChallenge — so this always attributes to the right location
+  // even if currentChallenge index disagreed for any reason.
+  const locMatch = (ch.location || '').toLowerCase().match(/samos|athens|rhodes|alexandria/);
+  const location = locMatch ? locMatch[0] : 'samos';
+  const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || opts.challengeIndex+1}`;
+
+  try {
+    await API.post('/api/student/progress', {
+      session_id: sessionId,
+      challenge_id: challengeId,
+      location,
+      tier: ch.tier || 'foundation',
+      user_answer: opts.userAnswer,
+      is_correct: true,
+      attempt_number: opts.attemptNumber,
+      hints_used: 0,
+      time_spent_seconds: opts.timeSpentSec,
+      was_scaffold: false,
+      was_fast_track: false,
+      xp_awarded: opts.xpAwarded,
+      mastery_state: opts.masteryState,
+    });
+  } catch (e) {
+    console.warn('[Progress] Failed to save Unity attempt:', e.message);
+  }
+}
+
+async function endGameSession() {
+  if (!activeGameSessionId) return;
+  try {
+    await API.post('/api/student/session', { action: 'end', session_id: activeGameSessionId });
+    activeGameSessionId = null;
+  } catch (e) {
+    console.warn('[Progress] Failed to end session:', e.message);
+  }
+}
+
 function submitAnswer() {
-  const ch = scaffoldActive ? scaffoldChallenges[currentChallenge] : 
+  const ch = scaffoldActive ? scaffoldChallenges[currentChallenge] :
              fastTrackActive ? Object.assign({}, challenges[currentChallenge], fastTrackVariants[currentChallenge]) :
              challenges[currentChallenge];
+  // Interactive challenges handle their own submission
+  if (ch.interactiveType) return;
   const val = document.getElementById('answerInput').value.trim().toLowerCase();
   const tracker = attemptTracker[currentChallenge] || { attempts: 0, hintsUsed: 0, timeStarted: Date.now() };
-  
+
   tracker.attempts++;
   if (!tracker.firstAttemptTime && !scaffoldActive) {
     tracker.firstAttemptTime = Date.now() - tracker.timeStarted;
   }
   attemptTracker[currentChallenge] = tracker;
-  
+
   clearFeedback();
 
   const isCorrect = val === ch.answer || (ch.answerAlt && ch.answerAlt.includes(val));
+
+  // Fire-and-forget save to D1 (students only, authenticated only)
+  saveAttemptToD1(ch, currentChallenge, isCorrect, val, tracker);
 
   if (isCorrect) {
     // ═══ CORRECT ANSWER PATH ═══
@@ -3615,7 +5523,7 @@ function submitAnswer() {
 }
 
 function showCorrectFeedback(ch) {
-  document.getElementById('fbCorrectText').innerHTML = ch.correctFeedback;
+  document.getElementById('fbCorrectText').innerHTML = withPlayerName(ch.correctFeedback);
   
   const isLast = currentChallenge >= challenges.length - 1;
   const nextLabel = isLast ? 'Complete Quest →' : 'Next Challenge →';
@@ -3644,6 +5552,37 @@ function showCorrectFeedback(ch) {
 }
 
 function handleIncorrectAnswer(idx, ch, tracker) {
+  // ═══ ACE v3.0 consult: Feedback Loop, Step 4 (Narrative Match) ═══
+  // Phase 3: F1/F2 producers are wired and can return real scaffolds. This
+  // requires the per-challenge support pool (ch.challengeSupports) and the
+  // time-on-task in ms (since tracker.timeStarted) to reach consult(), or
+  // F1_simplify/F2_strategicHelp will always see an empty pool and return
+  // null. Rendered below, after the existing v2 narrative.
+  // Scoping note: the plan's example referenced the module-level
+  // `currentChallenge` and an outer `tracker` local. Both are reachable
+  // here under different names: `idx` and `tracker` are this function's
+  // own parameters (submitAnswer() calls
+  // handleIncorrectAnswer(currentChallenge, ch, tracker)), so idx stands
+  // in for currentChallenge and tracker is used directly, no substitution
+  // to null was needed.
+  let v3Scaffolds = [];
+  try {
+    v3Scaffolds = window.ScaffoldingFramework.consult({
+      studentId: (window.currentUser && window.currentUser.id) || null,
+      challengeIdx: idx,
+      phase: 'narrative-match',
+      challengeSupports: (ch && ch.challengeSupports) || [],
+      performanceEvent: {
+        correct: false,
+        attempts: (tracker && tracker.attempts) || 1,
+        timeMs: (tracker && typeof tracker.timeStarted === 'number') ? (Date.now() - tracker.timeStarted) : 0
+      }
+    });
+    console.log('[ACE v3] consult() returned', v3Scaffolds.length, 'scaffolds');
+  } catch (err) {
+    console.error('[ACE v3] consult failed (non-fatal in Phase 1):', err);
+  }
+
   // Determine feedback voice based on attempt count and affective signals
   let feedbackHTML = '';
   
@@ -3665,13 +5604,32 @@ function handleIncorrectAnswer(idx, ch, tracker) {
     // Third+ attempt — more direct guidance, warmer tone
     feedbackHTML = `<div style="margin-bottom:8px;">${ch.incorrectFeedback}</div>
       <div style="font-size:0.8rem;color:var(--text-soft);margin-top:8px;font-style:italic;">
-        "You're closer than you think, Maya. ${tracker.hintsUsed === 0 ? 'Open the hints in the Scholar\'s Toolkit — no shame in that. Even I needed guidance from my teachers.' : 'Look at Hint ' + Math.min(tracker.attempts - 1, 3) + ' again carefully — the answer is almost in your hands.'}"
+        "You're closer than you think, ${getPlayerName()}. ${tracker.hintsUsed === 0 ? 'Open the hints in the Scholar\'s Toolkit — no shame in that. Even I needed guidance from my teachers.' : 'Look at Hint ' + Math.min(tracker.attempts - 1, 3) + ' again carefully — the answer is almost in your hands.'}"
       </div>`;
     if (scaffoldChallenges[idx] && !scaffoldActive) {
       feedbackHTML += `<div style="margin-top:8px;"><button class="btn btn-sm" style="background:var(--teal);color:white;border:none;padding:6px 14px;" onclick="enterScaffold(${idx})">🌿 Practice with easier numbers first</button></div>`;
     }
   } else {
     feedbackHTML = ch.incorrectFeedback;
+  }
+
+  // Append v3 scaffolds (from consult() at Step 4 of Feedback Loop).
+  if (Array.isArray(v3Scaffolds) && v3Scaffolds.length > 0) {
+    let scaffoldsHTML = '<div class="v3-scaffolds">';
+    scaffoldsHTML += '<div class="v3-scaffolds-header">Support from Pythagoras</div>';
+    for (const scaffold of v3Scaffolds) {
+      const kindLabel = scaffold.supportKind
+        .split('-')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      const payloadText = (scaffold.payload && scaffold.payload.text) || '';
+      scaffoldsHTML += '<div class="v3-scaffold-card">';
+      scaffoldsHTML += '<span class="v3-scaffold-kind">' + kindLabel + '</span>';
+      scaffoldsHTML += '<div class="v3-scaffold-payload">' + payloadText + '</div>';
+      scaffoldsHTML += '</div>';
+    }
+    scaffoldsHTML += '</div>';
+    feedbackHTML += scaffoldsHTML;
   }
 
   document.getElementById('fbIncorrectText').innerHTML = feedbackHTML;
@@ -3724,9 +5682,9 @@ function handleScaffoldComplete(idx, ch) {
   const scaffold = scaffoldChallenges[idx];
   
   // Show success with return dialogue
-  document.getElementById('fbCorrectText').innerHTML = `${ch.correctFeedback}
+  document.getElementById('fbCorrectText').innerHTML = `${withPlayerName(ch.correctFeedback)}
     <div style="margin-top:12px;padding:12px;background:linear-gradient(135deg,rgba(42,127,142,0.08),rgba(42,127,142,0.02));border:1px solid rgba(42,127,142,0.2);border-radius:var(--radius);">
-      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${scaffold.returnDialogue}</div>
+      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${withPlayerName(scaffold.returnDialogue)}</div>
     </div>`;
   
   document.getElementById('fbCorrectActions').innerHTML = `
@@ -3766,7 +5724,7 @@ function returnFromScaffold(idx) {
 
   // Show return dialogue from Pythagoras
   const dialogueEl = document.getElementById('locationNPCDialogue');
-  dialogueEl.innerHTML = `"<em>Welcome back, Maya. You've practiced with simpler numbers and you understand the pattern now. This time, the wall is taller and the numbers are bigger — but the method is exactly the same. I believe in you.</em>"`;
+  dialogueEl.innerHTML = `"<em>Welcome back, ${getPlayerName()}. You've practiced with simpler numbers and you understand the pattern now. This time, the wall is taller and the numbers are bigger — but the method is exactly the same. I believe in you.</em>"`;
   const actionsEl = document.getElementById('locationDialogueActions');
   actionsEl.innerHTML = '<button class="btn btn-primary" onclick="revealChallenge()">⚔️ Try the Challenge Again</button>';
   
@@ -3780,10 +5738,10 @@ function returnFromScaffold(idx) {
 function handleFastTrackOffer(idx, ch, solveTime) {
   const variant = fastTrackVariants[idx];
   
-  document.getElementById('fbCorrectText').innerHTML = `${ch.correctFeedback}
+  document.getElementById('fbCorrectText').innerHTML = `${withPlayerName(ch.correctFeedback)}
     <div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,rgba(126,87,194,0.08),rgba(126,87,194,0.02));border:1px solid rgba(126,87,194,0.25);border-radius:var(--radius);">
       <div style="font-size:0.82rem;color:var(--purple);font-weight:700;margin-bottom:4px;">⚡ Fast-Track Challenge Available!</div>
-      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${variant.pythagorasIntro}</div>
+      <div style="font-size:0.82rem;color:var(--navy);font-style:italic;">${withPlayerName(variant.pythagorasIntro)}</div>
       <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">Solved in ${Math.round(solveTime)}s on first attempt — you've earned a harder challenge for bonus XP!</div>
     </div>`;
   
@@ -3811,7 +5769,7 @@ function enterFastTrack(idx) {
   
   // Show fast-track intro dialogue
   const dialogueEl = document.getElementById('locationNPCDialogue');
-  dialogueEl.innerHTML = `<em>${variant.pythagorasIntro}</em>`;
+  dialogueEl.innerHTML = `<em>${withPlayerName(variant.pythagorasIntro)}</em>`;
   const actionsEl = document.getElementById('locationDialogueActions');
   actionsEl.innerHTML = '<span style="font-size:0.78rem;color:var(--purple);font-weight:600;">⚡ Fast-Track challenge active</span>';
   
@@ -3825,9 +5783,9 @@ function enterFastTrack(idx) {
 function handleFastTrackComplete(idx, ch) {
   fastTrackActive = false;
   
-  const bonusXP = idx === 0 ? 10 : 15;
+  const bonusXP = idx === 1 ? 10 : 15;
   
-  document.getElementById('fbCorrectText').innerHTML = `${ch.correctFeedback}
+  document.getElementById('fbCorrectText').innerHTML = `${withPlayerName(ch.correctFeedback)}
     <div style="margin-top:8px;padding:10px;background:linear-gradient(135deg,rgba(126,87,194,0.1),rgba(126,87,194,0.03));border-radius:var(--radius);border:1px solid rgba(126,87,194,0.2);">
       <div style="font-size:0.78rem;color:var(--purple);font-weight:600;">⚡ Fast-Track Mastery Demonstrated!</div>
       <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">This achievement is recorded in your Mastery Map and visible to your teacher.</div>
@@ -3854,14 +5812,18 @@ function handleFastTrackComplete(idx, ch) {
 // ═══ MASTERY STATE ═══
 function updateMasteryAfterCorrect(idx) {
   if (idx === 0) {
+    // Samos — Triangle Types classification
+    masteryState['triangle_classification'].confidence = Math.min(1, masteryState['triangle_classification'].confidence + 0.5);
+    masteryState['triangle_classification'].level = 'proficient';
+  } else if (idx === 1) {
     masteryState['finding_leg'].confidence = Math.min(1, masteryState['finding_leg'].confidence + 0.15);
     masteryState['real_world_application'].confidence = Math.min(1, masteryState['real_world_application'].confidence + 0.1);
     if (fastTrackActive) masteryState['pythagorean_triples'].confidence = Math.min(1, masteryState['pythagorean_triples'].confidence + 0.2);
-  } else if (idx === 1) {
+  } else if (idx === 2) {
     masteryState['finding_hypotenuse'].confidence = Math.min(1, masteryState['finding_hypotenuse'].confidence + 0.2);
     masteryState['real_world_application'].confidence = Math.min(1, masteryState['real_world_application'].confidence + 0.15);
     if (fastTrackActive) masteryState['pythagorean_triples'].confidence = Math.min(1, masteryState['pythagorean_triples'].confidence + 0.25);
-  } else if (idx === 2) {
+  } else if (idx === 3) {
     masteryState['proof_verification'].confidence = Math.min(1, masteryState['proof_verification'].confidence + 0.4);
     masteryState['proof_verification'].level = 'developing';
   }
@@ -3901,7 +5863,17 @@ function advanceChallenge() {
   } else {
     // Return to map — update map NPC dialogue and show travel info
     const nextScene = questScenes[currentChallenge];
-    document.getElementById('mapNPCDialogue').innerHTML = `"Excellent work! We recovered the fragment. But our journey isn't over — the next piece of my proof awaits at <strong>${nextScene.title}</strong>. Click the marker to travel there."`;
+    const mapDlgEl = document.getElementById('mapNPCDialogue');
+    // Extract just the city name from the subtitle (e.g. "Athens, Greece — The Acropolis" → "Athens")
+    // so the dialogue reads naturally: "awaits at Athens" instead of "awaits at The Temple Construction Site".
+    const nextCity = (nextScene.subtitle || '').split(',')[0].trim() || nextScene.title;
+    const mapMsg = `"Excellent work! We recovered the fragment. But our journey isn't over — the next piece of my proof awaits at <strong>${nextCity}</strong>. Click the marker to travel there."`;
+    mapDlgEl.innerHTML = mapMsg;
+    // Narrate the new message in Pythagoras's voice
+    setTimeout(() => {
+      const text = extractQuoted(mapDlgEl.textContent) || mapDlgEl.textContent;
+      playPythagorasVoice(text);
+    }, 500);
     
     // Show travel info if available
     const travelPanel = document.getElementById('travelInfoPanel');
@@ -3929,6 +5901,8 @@ function finishSession() {
   document.getElementById('reflXPEarned').textContent = `+${sessionXP}`;
   document.getElementById('reflChallenges').textContent = challenges.length;
   stopTimer();
+  // Close out the D1 game session
+  endGameSession();
   navigate('screen-reflection');
 }
 
@@ -4260,7 +6234,7 @@ function showLabelSuccess() {
     feedback = document.createElement('div');
     feedback.id = 'labelFeedback';
     feedback.style.cssText = 'margin-top:12px;padding:12px;background:rgba(67,160,71,0.06);border:1px solid rgba(67,160,71,0.2);border-radius:8px;animation:fadeIn 0.5s ease;';
-    feedback.innerHTML = '<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ All labels correct!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"Excellent labeling, Maya. You understand the geometry. Now express it in algebra." — Pythagoras</div>';
+    feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ All labels correct!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"Excellent labeling, ${getPlayerName()}. You understand the geometry. Now express it in algebra." — Pythagoras</div>`;
     document.getElementById('labelSection').appendChild(feedback);
   }
 }
@@ -4346,7 +6320,7 @@ function showProofSuccess() {
     feedback = document.createElement('div');
     feedback.id = 'proofFeedback';
     feedback.style.cssText = 'margin-top:12px;padding:12px;background:rgba(126,87,194,0.06);border:1px solid rgba(126,87,194,0.2);border-radius:8px;animation:fadeIn 0.5s ease;';
-    feedback.innerHTML = '<div style="font-size:0.82rem;color:var(--purple);font-weight:600;">✓ Proof steps complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"You have constructed the proof, Maya — algebraically and in your own words. You don\'t just know the theorem. You understand <em>why</em> it must be true." — Pythagoras</div>';
+    feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--purple);font-weight:600;">✓ Proof steps complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"You have constructed the proof, ${getPlayerName()} — algebraically and in your own words. You don't just know the theorem. You understand <em>why</em> it must be true." — Pythagoras</div>`;
     document.getElementById('capstoneStep3').querySelector('[style*="background:var(--bg)"]').appendChild(feedback);
   }
 }
@@ -4381,7 +6355,7 @@ function checkVerification() {
       feedback = document.createElement('div');
       feedback.id = 'verifyFeedback';
       feedback.style.cssText = 'margin-top:12px;padding:12px;background:rgba(67,160,71,0.06);border:1px solid rgba(67,160,71,0.2);border-radius:8px;animation:fadeIn 0.5s ease;';
-      feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ Verification complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"${a}² + ${b}² = ${a*a} + ${b*b} = ${a*a+b*b} = ${c}². The numbers confirm what the proof already told us must be true. You have the mind of a mathematician, Maya!" — Pythagoras</div>`;
+      feedback.innerHTML = `<div style="font-size:0.82rem;color:var(--green);font-weight:600;">✓ Verification complete!</div><div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"${a}² + ${b}² = ${a*a} + ${b*b} = ${a*a+b*b} = ${c}². The numbers confirm what the proof already told us must be true. You have the mind of a mathematician, ${getPlayerName()}!" — Pythagoras</div>`;
       document.getElementById('verifySection').appendChild(feedback);
     }
   } else {
@@ -4405,7 +6379,7 @@ function submitCapstone() {
   
   if (incomplete.length > 0) {
     const missing = incomplete.join(', ');
-    alert(`"The council requires a complete proof, Maya. You still need to finish: ${missing}. Take your time — there is no shame in thoroughness." — Pythagoras`);
+    alert(`"The council requires a complete proof, ${getPlayerName()}. You still need to finish: ${missing}. Take your time — there is no shame in thoroughness." — Pythagoras`);
     // Scroll to first incomplete step
     if (!capstoneState.triangle) document.getElementById('capstoneStep1').scrollIntoView({ behavior: 'smooth' });
     else if (!capstoneState.labels) document.getElementById('capstoneStep2').scrollIntoView({ behavior: 'smooth' });
@@ -4563,6 +6537,27 @@ window.QS = (() => {
   const SEED_THRESHOLDS = { foundation_to_extension: 0.75, extension_to_mastery: 0.85 };
 
     const SEED_CHALLENGES = [
+    // ── Samos (Triangle Types) ──────────────────────────────────────────────
+    {
+      id:           'ch_samos_f1',
+      location:     'samos',
+      tier:         'foundation',
+      tier_label:   'Foundation',
+      cog_badge:    '📐',
+      diff_badge:   '⭐',
+      prompt:       'Sort six triangles into their correct type categories: Equilateral (all sides equal), Isosceles (two sides equal), or Scalene (no sides equal).',
+      diagram_emoji: '📐',
+      diagram_desc:  'Interactive drag-and-drop triangle classification activity.',
+      given:         { type: 'classification' },
+      answer:        'interactive',
+      unit:          '',
+      hint_1:        'Count how many sides share the same length on each triangle.',
+      hint_2:        'All three equal → Equilateral. Exactly two equal → Isosceles. All different → Scalene.',
+      hint_3:        'For example: 5,5,5 is equilateral; 4,4,6 is isosceles; 3,4,5 is scalene.',
+      reference:     'Classify triangles by side lengths',
+      xp_award:      30,
+      fragment:      'Fragment 0: The Classifier\'s Eye'
+    },
     // ── Rhodes ──────────────────────────────────────────────────────────────
     {
       id:           'ch_rhodes_f1',
@@ -4690,8 +6685,13 @@ window.QS = (() => {
     if (!load('sessions'))   save('sessions',   []);
     if (!load('roster'))     save('roster',     SEED_ROSTER);
     if (!load('thresholds')) save('thresholds', SEED_THRESHOLDS);
+    // QS.init() runs before checkExistingSession() resolves, so
+    // window.currentUser may still be null here. Log the localStorage
+    // cache with a clear "seed cache" label so it isn't mistaken for the
+    // authenticated user — the real user is logged separately by
+    // loadRealProfileIntoCurrentUser() once /api/auth/session returns.
     const p = load('profile');
-    console.log('[QS] Init — student:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length);
+    console.log('[QS] Init — seed cache:', p.name, '| XP:', p.xp, '| challenges:', load('challenges').length, '(real user resolves after auth)');
   }
 
   // ── SESSION ───────────────────────────────────────────────────────────────
@@ -4889,14 +6889,60 @@ window.QS = (() => {
   // ── DASHBOARD ─────────────────────────────────────────────────────────────
 
   function renderDashboard() {
-    const profile = load('profile') || SEED_PROFILE;
+    // Prefer the real authenticated user over the SEED profile.
+    // Name/avatar always override if a real user is logged in. XP/level/
+    // streak/challenges_completed also override IF loadRealProfileIntoCurrentUser()
+    // has populated them — this prevents the Maya/Linda split-brain where the
+    // top nav showed the real user but the stats card showed Maya's seeded XP.
+    let profile = load('profile') || SEED_PROFILE;
+    if (typeof window !== 'undefined' && window.currentUser) {
+      const u = window.currentUser;
+      profile = {
+        ...profile,
+        name: u.first_name + ' ' + (u.last_name || '').charAt(0) + '.',
+        avatar: (u.first_name || '?').charAt(0) + (u.last_name || '').charAt(0),
+        avatar_url: u.avatar_url,
+        // Only override stats when we've actually fetched real profile data.
+        // Otherwise leave the SEED values so the dashboard isn't empty.
+        ...(u.xp !== undefined ? {
+          xp: u.xp,
+          level: u.level,
+          streak: u.streak,
+          // Zero out challenge counts — the real challenges_completed comes
+          // from challenge_attempts, which isn't aggregated in the profile
+          // endpoint. Teacher dashboard handles that query separately.
+          challenges_completed: 0,
+          challenges_this_week: 0,
+        } : {}),
+      };
+    }
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
     };
     set('dashXP',     profile.xp);
     set('userName',   profile.name);
-    set('userAvatar', profile.avatar);
+
+    // Persistent Quest HUD on screen-simulation: sync LEVEL / XP total / XP bar
+    // Previously hardcoded in HTML as "⭐ LEVEL 7" / "830 XP", so real users
+    // saw Maya's seed values at the top of the map screen even after auth.
+    // Math.floor() defends against any stale decimal levels written before
+    // progress.ts was fixed to use integer division.
+    set('simLevel', '⭐ LEVEL ' + Math.max(1, Math.floor(profile.level || 1)));
+    set('simXPTotal', (profile.xp || 0) + ' XP');
+    const xpBar = document.getElementById('simXPBar');
+    if (xpBar) {
+      // 100 XP per level; progress bar shows position within current level.
+      const xpInLevel = (profile.xp || 0) % 100;
+      xpBar.style.width = xpInLevel + '%';
+    }
+
+    // Don't overwrite avatar if we have a real avatar image
+    const avatarEl = document.getElementById('userAvatar');
+    if (avatarEl && !profile.avatar_url) {
+      avatarEl.textContent = profile.avatar;
+      avatarEl.style.backgroundImage = '';
+    }
 
     // data-qs attribute hook: any element with data-qs="xp" (etc.) updates automatically
     document.querySelectorAll('[data-qs]').forEach(el => {
@@ -4964,7 +7010,11 @@ window.QS = (() => {
 
     const barSet = (id, n) => {
       const el = document.getElementById(id);
-      if (el) { el.style.width = Math.round(n / total * 100) + "%"; el.textContent = n; }
+      if (el) {
+        // Bar chart uses data-value attribute for the label above the bar (CSS ::before)
+        el.setAttribute('data-value', n);
+        el.style.height = Math.round(n / total * 100) + "%";
+      }
     };
     barSet("td-bar-found", tiers.foundation);
     barSet("td-bar-ext",   tiers.extension);
@@ -5076,8 +7126,9 @@ window.QS = (() => {
       };
     }
 
-    // 4. Override submitAnswer & showHint
-    window.submitAnswer = submitAnswer;
+    // 4. Override showHint. submitAnswer is intentionally NOT overridden here:
+    // window.submitAnswer stays bound to the top-level submitAnswer (line 5450),
+    // which is what reaches the ACE v3 consult() call in handleIncorrectAnswer.
     window.showHint     = showHint;
 
     // 5. Wrap navigate (sits on top of the routing patch's navigate wrapper)
