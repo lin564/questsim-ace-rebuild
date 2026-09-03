@@ -810,6 +810,46 @@ body {
   position:absolute; bottom:-60px; right:-60px; font-size:12rem; opacity:0.04;
   transform:rotate(-15deg); pointer-events:none;
 }
+
+/* ═══ ACE v3.0 SCAFFOLD CARDS (Feedback Loop, Support from Pythagoras) ═══ */
+.v3-scaffolds {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(42, 127, 142, 0.06);
+  border-radius: var(--radius);
+  border: 1px solid rgba(42, 127, 142, 0.15);
+}
+.v3-scaffolds-header {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.v3-scaffold-card {
+  padding: 12px 14px;
+  background: white;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  border-left: 3px solid var(--teal);
+}
+.v3-scaffold-card:last-child {
+  margin-bottom: 0;
+}
+.v3-scaffold-kind {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+.v3-scaffold-payload {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+  font-style: italic;
+}
 </style>
 </head>
 <body>
@@ -3138,6 +3178,7 @@ body {
   </div>
 </div>
 
+<script src="js/scaffolding-framework.js"></script>
 <script>
 // ═══ LOGIN ═══
 const QUESTSIM_MINI_URL = 'https://pymini1.questsim.com';
@@ -3380,6 +3421,23 @@ const challenges = [
     incorrectFeedback: `Look carefully at the side lengths on each tile. Count how many sides are equal: all three equal → Equilateral, exactly two equal → Isosceles, none equal → Scalene.`,
     pulseAfter: false,
     fragmentReward: "🧩 Fragment: The Classifier's Eye",
+    challengeSupports: [
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"This triangle looks like a ___ because its sides are ___."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"Before you decide, compare the three sides. Are any two the same length?"' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"Right triangles always have one 90-degree angle. Do you see one here?"' }
+      }
+    ]
   },
   {
     num: 2, total: 4,
@@ -3403,6 +3461,28 @@ const challenges = [
     incorrectFeedback: `The temple workers are waiting! Try labeling the sides first: the <em>ladder is the hypotenuse</em> (13 ft), and the <em>base is one leg</em> (5 ft). Now use a² + b² = c² to find how high the ladder reaches.`,
     pulseAfter: false,
     fragmentReward: "🧩 Fragment: The Builder's Application",
+    challengeSupports: [
+      {
+        supportKind: 'offload',
+        functions: ['F1'],
+        payload: { text: '"Let me handle the squaring for you. Focus on setting up the relationship first."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"The missing leg squared equals ___ squared minus ___ squared."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"Which side is the hypotenuse? That is the longest one, opposite the right angle."' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"To find a leg, rearrange: leg squared equals hypotenuse squared minus other leg squared."' }
+      }
+    ]
   },
   {
     num: 3, total: 4,
@@ -3426,6 +3506,23 @@ const challenges = [
     incorrectFeedback: `The ship is lost and needs your help! This isn't a geometry diagram — it's a navigation chart. But the math is the same. The ship's east and north paths form the <em>two legs</em> of a right triangle. The straight-line distance home is the <em>hypotenuse</em>. Try: 8² + 15² = c².`,
     pulseAfter: true,
     fragmentReward: "🧩 Fragment: The Navigator's Proof",
+    challengeSupports: [
+      {
+        supportKind: 'offload',
+        functions: ['F1'],
+        payload: { text: '"I will square the two legs for you. Sum them, then you take the square root."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"The hypotenuse squared equals ___ squared plus ___ squared."' }
+      },
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"You are looking for the longest side. That side goes on the LEFT of the equation."' }
+      }
+    ]
   },
   {
     num: 4, total: 4,
@@ -3452,6 +3549,23 @@ const challenges = [
     tierAdvance: true,
     tierAdvanceText: "The proof is complete! All fragments assembled. You've sailed from Extension Waters to the legendary Mastery Shores — where you'll design proofs, teach others, and create your own challenges.",
     fragmentReward: "🧩 Fragment: The Evaluator's Proof",
+    challengeSupports: [
+      {
+        supportKind: 'prompt',
+        functions: ['F2'],
+        payload: { text: '"To verify: does a squared plus b squared equal c squared? Try it with the given numbers."' }
+      },
+      {
+        supportKind: 'sentence-stem',
+        functions: ['F2'],
+        payload: { text: '"If this is a Pythagorean triple, then ___ squared plus ___ squared should equal ___ squared."' }
+      },
+      {
+        supportKind: 'hint',
+        functions: ['F2'],
+        payload: { text: '"The largest number in the set is always the hypotenuse. Square it and compare."' }
+      }
+    ]
   }
 ];
 
@@ -4552,97 +4666,6 @@ let masteryState = {
   'pythagorean_triples': { level: 'novice', confidence: 0.15 },
 };
 
-// ═══ ACE v3.0 SCAFFOLDING FRAMEWORK (LENS 4) ═══
-// Phase 1+2 skeleton. Consult pattern established; policy logic added in later phases.
-// Spec: docs/superpowers/specs/2026-08-30-ace-scaffolding-lens4-design.md
-//
-// This module owns runtime scaffolding decisions per the ACE v3 spec. It does
-// NOT own per-concept mastery scores (Mastery Map), affect (Learner Profile),
-// or the challengeSupports pool per challenge (Challenge). It consults those.
-//
-// In this phase all six-function stubs return null and consult() returns [].
-// Existing v2 behavior via scaffoldActive / fastTrackActive / aceChooseRoute()
-// is untouched and will be retired in Phase 9.
-window.ScaffoldingFramework = {
-  version: 'v3.0-phase-1',
-  // Support Kinds are curriculum-agnostic. Each maps to one or more of the
-  // six paper functions (see spec Section 4). Wire-level identifier is the
-  // lowercase kebab-case string on the right.
-  SupportKinds: {
-    OFFLOAD:                  'offload',
-    PROMPT:                   'prompt',
-    SENTENCE_STEM:            'sentence-stem',
-    HINT:                     'hint',
-    WORKED_EXAMPLE_FRAGMENT:  'worked-example-fragment',
-    PROBLEMATIZING_NUDGE:     'problematizing-nudge'
-  },
-
-  // Scaffold instance shape. Every Scaffold produced by a Function has these
-  // fields. Spec Section 3.
-  //   supportKind:   one of SupportKinds values
-  //   functions:     array of function IDs served: ['F1'] | ['F2', 'F4'] etc.
-  //   payload:       { text: string, template?: string, vars?: object }
-  //   source:        'system' | 'teacher-authored' | 'teacher-live' | 'student-requested'
-  //   fadeStateRef:  { studentId, concept, supportKind } | null
-  //   producedAt:    ISO timestamp
-  createScaffold(spec) {
-    if (!spec || typeof spec !== 'object') {
-      throw new Error('createScaffold requires a spec object');
-    }
-    return {
-      supportKind:   spec.supportKind,
-      functions:     Array.isArray(spec.functions) ? spec.functions.slice() : [],
-      payload:       spec.payload || { text: '' },
-      source:        spec.source || 'system',
-      fadeStateRef:  spec.fadeStateRef || null,
-      producedAt:    new Date().toISOString()
-    };
-  },
-
-  // Six-function API. Producers return a Scaffold or null. Modifiers take
-  // a Scaffold and return a (possibly-modified) Scaffold. Guardrails return
-  // { allow: bool, reason: string }. Spec Section 4.
-  // Phase 1+2: all functions are inert stubs. Real logic added Phase 3+.
-  Functions: {
-    // F1 Simplify (producer). Returns Offload or Worked-Example Fragment or null.
-    F1_simplify(context) {
-      return null;
-    },
-    // F2 Strategic help (producer). Returns Prompt, Hint, or Sentence Stem or null.
-    F2_strategicHelp(context) {
-      return null;
-    },
-    // F3 Offset frustration (modifier). Adjusts tone; returns scaffold unmodified in stub.
-    F3_offsetFrustration(scaffold, affect) {
-      return scaffold;
-    },
-    // F4 Problematize (producer). Returns Problematizing Nudge or null.
-    F4_problematize(context) {
-      return null;
-    },
-    // F5 Reflect (producer). Returns Reflection Prompt or null.
-    F5_reflect(context) {
-      return null;
-    },
-    // F6 Learning-by-doing (guardrail). Enforces Principle #1.
-    F6_learningByDoing(scaffold) {
-      return { allow: true, reason: 'phase-1-stub' };
-    }
-  },
-
-  // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
-  // Step 5 (Calibration Check). Also invoked proactively mid-solve.
-  // context: { studentId, challengeIdx, phase, performanceEvent?, affect?, mastery? }
-  // Returns: array of Scaffold instances (empty in this phase)
-  consult(context) {
-    if (!context || typeof context !== 'object') return [];
-    // No producers wired yet. Later phases add F1..F5 invocations and
-    // Intervention Policy here.
-    return [];
-  }
-};
-console.log('[ACE v3] ScaffoldingFramework loaded:', window.ScaffoldingFramework.version);
-
 let currentTier = 'extension'; // foundation | extension | mastery
 let scaffoldActive = false; // true when student is in a side-quest scaffold
 let fastTrackActive = false;
@@ -5530,8 +5553,11 @@ function showCorrectFeedback(ch) {
 
 function handleIncorrectAnswer(idx, ch, tracker) {
   // ═══ ACE v3.0 consult: Feedback Loop, Step 4 (Narrative Match) ═══
-  // Phase 1+2: framework returns [] here (no producers wired). Later phases
-  // populate this with runtime scaffolds. UI is not affected in this phase.
+  // Phase 3: F1/F2 producers are wired and can return real scaffolds. This
+  // requires the per-challenge support pool (ch.challengeSupports) and the
+  // time-on-task in ms (since tracker.timeStarted) to reach consult(), or
+  // F1_simplify/F2_strategicHelp will always see an empty pool and return
+  // null. Rendered below, after the existing v2 narrative.
   // Scoping note: the plan's example referenced the module-level
   // `currentChallenge` and an outer `tracker` local. Both are reachable
   // here under different names: `idx` and `tracker` are this function's
@@ -5539,12 +5565,18 @@ function handleIncorrectAnswer(idx, ch, tracker) {
   // handleIncorrectAnswer(currentChallenge, ch, tracker)), so idx stands
   // in for currentChallenge and tracker is used directly, no substitution
   // to null was needed.
+  let v3Scaffolds = [];
   try {
-    const v3Scaffolds = window.ScaffoldingFramework.consult({
+    v3Scaffolds = window.ScaffoldingFramework.consult({
       studentId: (window.currentUser && window.currentUser.id) || null,
       challengeIdx: idx,
       phase: 'narrative-match',
-      performanceEvent: { correct: false, attempts: (tracker && tracker.attempts) || 1 }
+      challengeSupports: (ch && ch.challengeSupports) || [],
+      performanceEvent: {
+        correct: false,
+        attempts: (tracker && tracker.attempts) || 1,
+        timeMs: (tracker && typeof tracker.timeStarted === 'number') ? (Date.now() - tracker.timeStarted) : 0
+      }
     });
     console.log('[ACE v3] consult() returned', v3Scaffolds.length, 'scaffolds');
   } catch (err) {
@@ -5579,6 +5611,25 @@ function handleIncorrectAnswer(idx, ch, tracker) {
     }
   } else {
     feedbackHTML = ch.incorrectFeedback;
+  }
+
+  // Append v3 scaffolds (from consult() at Step 4 of Feedback Loop).
+  if (Array.isArray(v3Scaffolds) && v3Scaffolds.length > 0) {
+    let scaffoldsHTML = '<div class="v3-scaffolds">';
+    scaffoldsHTML += '<div class="v3-scaffolds-header">Support from Pythagoras</div>';
+    for (const scaffold of v3Scaffolds) {
+      const kindLabel = scaffold.supportKind
+        .split('-')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      const payloadText = (scaffold.payload && scaffold.payload.text) || '';
+      scaffoldsHTML += '<div class="v3-scaffold-card">';
+      scaffoldsHTML += '<span class="v3-scaffold-kind">' + kindLabel + '</span>';
+      scaffoldsHTML += '<div class="v3-scaffold-payload">' + payloadText + '</div>';
+      scaffoldsHTML += '</div>';
+    }
+    scaffoldsHTML += '</div>';
+    feedbackHTML += scaffoldsHTML;
   }
 
   document.getElementById('fbIncorrectText').innerHTML = feedbackHTML;
@@ -7075,8 +7126,9 @@ window.QS = (() => {
       };
     }
 
-    // 4. Override submitAnswer & showHint
-    window.submitAnswer = submitAnswer;
+    // 4. Override showHint. submitAnswer is intentionally NOT overridden here:
+    // window.submitAnswer stays bound to the top-level submitAnswer (line 5450),
+    // which is what reaches the ACE v3 consult() call in handleIncorrectAnswer.
     window.showHint     = showHint;
 
     // 5. Wrap navigate (sits on top of the routing patch's navigate wrapper)
