@@ -118,9 +118,32 @@ globalThis.ScaffoldingFramework = {
         source: 'system'
       });
     },
-    // F3 Offset frustration (modifier). Adjusts tone; returns scaffold unmodified in stub.
+    // F3 Offset frustration (modifier). Adjusts tone based on student affect.
+    // Phase 4 heuristic:
+    //   - mathConfidence <= 2 (storm/rain): prepend validating framing
+    //   - engagementReadiness === 'maximum': prepend twist framing (respects confidence)
+    //   - validating wins over twist when both apply
+    //   - otherwise: return scaffold unchanged (neutral tone)
+    // Returns a NEW scaffold object (does not mutate input).
     F3_offsetFrustration(scaffold, affect) {
-      return scaffold;
+      if (!scaffold) return scaffold;
+      if (!affect || typeof affect !== 'object') return scaffold;
+
+      let prefix = '';
+      if (typeof affect.mathConfidence === 'number' && affect.mathConfidence <= 2) {
+        prefix = 'Math can feel tough sometimes. Here is one way in. ';
+      } else if (affect.engagementReadiness === 'maximum') {
+        prefix = 'You came in strong. This one has a twist. ';
+      }
+
+      if (!prefix) return scaffold;
+
+      const originalText = (scaffold.payload && scaffold.payload.text) || '';
+      return Object.assign({}, scaffold, {
+        payload: Object.assign({}, scaffold.payload, {
+          text: prefix + originalText
+        })
+      });
     },
     // F4 Problematize (producer). Returns Problematizing Nudge or null.
     F4_problematize(context) {
