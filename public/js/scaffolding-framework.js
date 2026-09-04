@@ -153,9 +153,50 @@ globalThis.ScaffoldingFramework = {
     F5_reflect(context) {
       return null;
     },
-    // F6 Learning-by-doing (guardrail). Enforces Principle #1.
+    // F6 Learning-by-doing (guardrail). Enforces Principle #1 (authentic tasks).
+    // Rejects malformed scaffolds and answer-giveaway patterns.
+    // Phase 4 rules:
+    //   - reject null/non-object scaffold
+    //   - reject unknown supportKind
+    //   - reject empty/missing payload text
+    //   - reject answer-giveaway prefixes (case-insensitive)
+    //   - otherwise allow
+    // Returns { allow: boolean, reason: string }. Denials logged to console.warn.
     F6_learningByDoing(scaffold) {
-      return { allow: true, reason: 'phase-1-stub' };
+      const knownKinds = new Set([
+        'offload', 'prompt', 'sentence-stem', 'hint',
+        'worked-example-fragment', 'problematizing-nudge'
+      ]);
+      const giveawayPrefixes = [
+        'the answer is',
+        'the correct answer is',
+        'just do',
+        'simply',
+        'just use'
+      ];
+
+      const deny = (reason) => {
+        console.warn('[ACE v3] F6 denied scaffold:', reason, scaffold);
+        return { allow: false, reason };
+      };
+
+      if (!scaffold || typeof scaffold !== 'object') {
+        return deny('scaffold must be an object');
+      }
+      if (!knownKinds.has(scaffold.supportKind)) {
+        return deny('unknown supportKind: ' + scaffold.supportKind);
+      }
+      const text = scaffold.payload && scaffold.payload.text;
+      if (typeof text !== 'string' || text.trim().length === 0) {
+        return deny('payload.text is empty or missing');
+      }
+      const lower = text.trim().toLowerCase();
+      for (const prefix of giveawayPrefixes) {
+        if (lower.startsWith(prefix)) {
+          return deny('violates Principle #1 (authentic tasks): starts with "' + prefix + '"');
+        }
+      }
+      return { allow: true, reason: 'passed-phase-4-checks' };
     }
   },
 
