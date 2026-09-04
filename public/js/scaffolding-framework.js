@@ -206,19 +206,28 @@ globalThis.ScaffoldingFramework = {
   // Returns: array of Scaffold instances (empty in this phase)
   consult(context) {
     if (!context || typeof context !== 'object') return [];
-    const scaffolds = [];
     const fns = globalThis.ScaffoldingFramework.Functions;
 
-    // Phase 3 evaluation order (subset of spec Section 4):
-    // F2 Strategic help, then F1 Simplify. F4, F5, F3, F6, and Intervention
-    // Policy are wired in later phases and skipped here.
+    // Phase 4 evaluation order (subset of spec Section 4):
+    // F2 -> F1 -> F3 (modulator) -> F6 (guardrail).
+    // F4, F5, and Intervention Policy are wired in later phases.
+
+    const producedScaffolds = [];
     const f2Result = fns.F2_strategicHelp(context);
-    if (f2Result) scaffolds.push(f2Result);
-
+    if (f2Result) producedScaffolds.push(f2Result);
     const f1Result = fns.F1_simplify(context);
-    if (f1Result) scaffolds.push(f1Result);
+    if (f1Result) producedScaffolds.push(f1Result);
 
-    return scaffolds;
+    // F3 modulator: adjust tone on each surviving scaffold
+    const modulated = producedScaffolds.map(s => fns.F3_offsetFrustration(s, context.affect));
+
+    // F6 guardrail: filter out scaffolds that violate Principle #1
+    const allowed = modulated.filter(s => {
+      const verdict = fns.F6_learningByDoing(s);
+      return verdict.allow;
+    });
+
+    return allowed;
   }
 };
 console.log('[ACE v3] ScaffoldingFramework loaded:', globalThis.ScaffoldingFramework.version);
