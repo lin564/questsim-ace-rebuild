@@ -4738,6 +4738,8 @@ function aceChooseRoute(idx) {
 // Defined at top level (not inside the QS Phase 1 data-layer closure further
 // down the file) so computeAndPersistFadeLevel and loadChallenge, both in
 // this scope, can call them directly.
+// readFadeLevel has no caller yet in Phase 5a; it is here for Phase 5c,
+// which un-fades a student back up and needs the previous level to do so.
 function fadeStorageKey(studentId, conceptKey) {
   return 'qs_fade_' + String(studentId || 'anon') + '_' + String(conceptKey);
 }
@@ -4766,7 +4768,8 @@ function writeFadeLevel(studentId, conceptKey, fadeLevel) {
 
 // Compute the fade level for a challenge's concept from mastery confidence,
 // persist it, and expose it as window.aceCurrentFadeLevel.
-// Reads masteryState (and window.currentUser.mastery_state as fallback).
+// Reads window.currentUser.mastery_state (D1) only; the in-page masteryState
+// object is a display seed, not a data source, see the comment below.
 // Read-only with respect to mastery: never assigns to masteryState or
 // window.currentUser.mastery_state.
 function computeAndPersistFadeLevel(idx) {
@@ -4777,8 +4780,12 @@ function computeAndPersistFadeLevel(idx) {
   }
   const studentId = (window.currentUser && window.currentUser.id) || 'anon';
 
-  // Prefer the live mastery_state from D1 if present; fall back to the
-  // in-page masteryState object.
+  // D1 mastery_state is the only source consulted here. The in-page
+  // masteryState object is a hardcoded demo seed for the Mastery Map
+  // display, not real student data, so it is not read for this decision
+  // (matches aceChooseRoute above, which also reads D1 only). A missing
+  // confidence stays null, and FadingPolicy.computeFadeLevel(null) then
+  // returns 0, full support.
   let confidence = null;
   let state = (window.currentUser && window.currentUser.mastery_state) || null;
   if (typeof state === 'string') {
@@ -4786,8 +4793,6 @@ function computeAndPersistFadeLevel(idx) {
   }
   if (state && state[conceptKey] && typeof state[conceptKey].confidence === 'number') {
     confidence = state[conceptKey].confidence;
-  } else if (masteryState && masteryState[conceptKey] && typeof masteryState[conceptKey].confidence === 'number') {
-    confidence = masteryState[conceptKey].confidence;
   }
 
   const fadeLevel = globalThis.ScaffoldingFramework.FadingPolicy.computeFadeLevel(confidence);
