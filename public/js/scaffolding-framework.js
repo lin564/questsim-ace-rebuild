@@ -200,6 +200,47 @@ globalThis.ScaffoldingFramework = {
     }
   },
 
+  // ═══ FADING POLICY (spec Section 5) ═══
+  // Phase 5a: mastery-driven only. fadeLevel = clamped concept confidence.
+  // Three modes: full (< 0.4), delayed (0.4 to 0.8), withdrawn (>= 0.8).
+  // Later phases add repetition, tier, decay, override dimensions, weakened and
+  // frequency-reduced modes, per-Support-Kind cardinality, and un-fading.
+  FadingPolicy: {
+    DELAY_THRESHOLD_MS: 20000,
+
+    // Map concept mastery confidence to a fade level in [0, 1].
+    // Phase 5a: identity with clamping. Null or non-numeric -> 0 (full support).
+    computeFadeLevel(confidence) {
+      if (typeof confidence !== 'number' || Number.isNaN(confidence)) return 0;
+      if (confidence < 0) return 0;
+      if (confidence > 1) return 1;
+      return confidence;
+    },
+
+    // Classify a fade level into a mode.
+    getMode(fadeLevel) {
+      if (typeof fadeLevel !== 'number' || Number.isNaN(fadeLevel)) return 'full';
+      if (fadeLevel >= 0.8) return 'withdrawn';
+      if (fadeLevel >= 0.4) return 'delayed';
+      return 'full';
+    },
+
+    // Decide whether a scaffold fires given the fade level and time on task.
+    // Returns the scaffold to fire, or null to withhold.
+    apply(scaffold, fadeLevel, performanceEvent) {
+      if (!scaffold) return null;
+      const mode = this.getMode(fadeLevel);
+      if (mode === 'full') return scaffold;
+      if (mode === 'withdrawn') return null;
+      // delayed: fire only after a confirmed pause
+      const timeMs = performanceEvent && typeof performanceEvent.timeMs === 'number'
+        ? performanceEvent.timeMs
+        : null;
+      if (timeMs === null) return null;
+      return timeMs >= this.DELAY_THRESHOLD_MS ? scaffold : null;
+    }
+  },
+
   // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
   // Step 5 (Calibration Check). Also invoked proactively mid-solve.
   // context: { studentId, challengeIdx, phase, performanceEvent?, affect?, mastery? }
