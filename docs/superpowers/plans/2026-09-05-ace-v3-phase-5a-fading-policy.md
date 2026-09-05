@@ -22,11 +22,11 @@
 | Tier-driven dimension | no | Phase 5b |
 | Decay-driven dimension (un-fading) | no | Phase 5c |
 | Teacher-override dimension | no | Progressive Authoring phase |
-| Full support mode (fade < 0.4) | YES | |
-| Weakened mode (0.2-0.5) | no | Phase 5b |
-| Delayed mode (0.4-0.8) | YES (simplified boundary) | |
-| Frequency-reduced mode (0.7-0.9) | no | Phase 5b |
-| Withdrawn mode (fade >= 0.8) | YES (simplified boundary) | |
+| Full support mode (spec band 0.0 to 0.2) | YES, widened to fade < 0.4 | |
+| Weakened mode (spec band 0.2 to 0.5) | no | Phase 5b |
+| Delayed mode (spec band 0.5 to 0.7) | YES, widened to 0.4 to 0.8 | |
+| Frequency-reduced mode (spec band 0.7 to 0.9) | no | Phase 5b |
+| Withdrawn mode (spec band 0.9 to 1.0) | YES, widened to fade >= 0.8 | |
 | Persistence | localStorage (`qs_fade_` prefix) | Phase 5c: D1 for teacher visibility |
 | Fade State history | no | Phase 5c |
 
