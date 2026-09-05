@@ -243,14 +243,15 @@ globalThis.ScaffoldingFramework = {
 
   // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
   // Step 5 (Calibration Check). Also invoked proactively mid-solve.
-  // context: { studentId, challengeIdx, phase, performanceEvent?, affect?, mastery? }
+  // context: { studentId, challengeIdx, phase, performanceEvent?, affect?, mastery?, fadeLevel? }
   // Returns: array of Scaffold instances (empty in this phase)
   consult(context) {
     if (!context || typeof context !== 'object') return [];
     const fns = globalThis.ScaffoldingFramework.Functions;
+    const fading = globalThis.ScaffoldingFramework.FadingPolicy;
 
-    // Phase 4 evaluation order (subset of spec Section 4):
-    // F2 -> F1 -> F3 (modulator) -> F6 (guardrail).
+    // Phase 5a evaluation order (subset of spec Section 4 plus Section 5):
+    // F2 -> F1 -> F3 (modulator) -> FadingPolicy -> F6 (guardrail).
     // F4, F5, and Intervention Policy are wired in later phases.
 
     const producedScaffolds = [];
@@ -262,8 +263,13 @@ globalThis.ScaffoldingFramework = {
     // F3 modulator: adjust tone on each surviving scaffold
     const modulated = producedScaffolds.map(s => fns.F3_offsetFrustration(s, context.affect));
 
+    // Fading: withhold scaffolds the student has faded past
+    const faded = modulated
+      .map(s => fading.apply(s, context.fadeLevel, context.performanceEvent))
+      .filter(s => s !== null);
+
     // F6 guardrail: filter out scaffolds that violate Principle #1
-    const allowed = modulated.filter(s => {
+    const allowed = faded.filter(s => {
       const verdict = fns.F6_learningByDoing(s);
       return verdict.allow;
     });
