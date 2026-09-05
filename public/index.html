@@ -4732,6 +4732,71 @@ function aceChooseRoute(idx) {
     '— concept:', conceptKey, '| confidence:', confidence);
 }
 
+// ═══ ACE v3.0 FADE STATE PERSISTENCE (Phase 5a) ═══
+// Per-student per-concept fade level, keyed qs_fade_<studentId>_<conceptKey>.
+// Phase 5a persists to localStorage only. D1 persistence is a later phase.
+// Defined at top level (not inside the QS Phase 1 data-layer closure further
+// down the file) so computeAndPersistFadeLevel and loadChallenge, both in
+// this scope, can call them directly.
+function fadeStorageKey(studentId, conceptKey) {
+  return 'qs_fade_' + String(studentId || 'anon') + '_' + String(conceptKey);
+}
+
+function readFadeLevel(studentId, conceptKey) {
+  try {
+    const raw = localStorage.getItem(fadeStorageKey(studentId, conceptKey));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed.fadeLevel === 'number') ? parsed.fadeLevel : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeFadeLevel(studentId, conceptKey, fadeLevel) {
+  try {
+    localStorage.setItem(
+      fadeStorageKey(studentId, conceptKey),
+      JSON.stringify({ fadeLevel, computedAt: new Date().toISOString() })
+    );
+  } catch (e) {
+    // localStorage unavailable (private mode, quota). Fade falls back to in-memory only.
+  }
+}
+
+// Compute the fade level for a challenge's concept from mastery confidence,
+// persist it, and expose it as window.aceCurrentFadeLevel.
+// Reads masteryState (and window.currentUser.mastery_state as fallback).
+// Read-only with respect to mastery: never assigns to masteryState or
+// window.currentUser.mastery_state.
+function computeAndPersistFadeLevel(idx) {
+  const conceptKey = CHALLENGE_CONCEPT_KEY[idx];
+  if (!conceptKey) {
+    window.aceCurrentFadeLevel = null;
+    return;
+  }
+  const studentId = (window.currentUser && window.currentUser.id) || 'anon';
+
+  // Prefer the live mastery_state from D1 if present; fall back to the
+  // in-page masteryState object.
+  let confidence = null;
+  let state = (window.currentUser && window.currentUser.mastery_state) || null;
+  if (typeof state === 'string') {
+    try { state = JSON.parse(state); } catch (e) { state = null; }
+  }
+  if (state && state[conceptKey] && typeof state[conceptKey].confidence === 'number') {
+    confidence = state[conceptKey].confidence;
+  } else if (masteryState && masteryState[conceptKey] && typeof masteryState[conceptKey].confidence === 'number') {
+    confidence = masteryState[conceptKey].confidence;
+  }
+
+  const fadeLevel = globalThis.ScaffoldingFramework.FadingPolicy.computeFadeLevel(confidence);
+  writeFadeLevel(studentId, conceptKey, fadeLevel);
+  window.aceCurrentFadeLevel = fadeLevel;
+  console.log('[ACE v3] fade level for', conceptKey, ':', fadeLevel,
+    '(mode:', globalThis.ScaffoldingFramework.FadingPolicy.getMode(fadeLevel) + ')');
+}
+
 // Scaffold challenges — appear when student fails main challenge twice
 const scaffoldChallenges = {
   0: { // Scaffold for Samos (Triangle Types)
@@ -4902,6 +4967,12 @@ function loadChallenge(idx) {
   // in-session triggers (attempts === 2 → scaffold, fast-solve → fast-track)
   // still fire as fallbacks for mid-session struggles/wins.
   aceChooseRoute(idx);
+
+  // ═══ ACE v3.0 FADE LEVEL (Phase 5a) ═══
+  // Compute this challenge's fade level from mastery confidence and expose
+  // it as window.aceCurrentFadeLevel for handleIncorrectAnswer's consult
+  // context (Task 4). Read-only: does not affect scaffold/fast-track routing.
+  computeAndPersistFadeLevel(idx);
 
   const ch = scaffoldActive ? scaffoldChallenges[idx] :
              fastTrackActive ? Object.assign({}, challenges[idx], fastTrackVariants[idx]) :
@@ -5939,6 +6010,11 @@ window.aceCheckinState = {
   openExpression: null,
   completedAt: null
 };
+
+// Fade level for the currently loaded challenge's concept. Set on challenge
+// load by computeAndPersistFadeLevel(). Read by handleIncorrectAnswer into
+// the consult context. Null until the first challenge loads.
+window.aceCurrentFadeLevel = null;
 
 // ═══ CHECK-IN ═══
 function selectEmoji(el, nextQ) {
