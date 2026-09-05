@@ -118,9 +118,32 @@ globalThis.ScaffoldingFramework = {
         source: 'system'
       });
     },
-    // F3 Offset frustration (modifier). Adjusts tone; returns scaffold unmodified in stub.
+    // F3 Offset frustration (modifier). Adjusts tone based on student affect.
+    // Phase 4 heuristic:
+    //   - mathConfidence <= 2 (storm/rain): prepend validating framing
+    //   - engagementReadiness === 'maximum': prepend twist framing (respects confidence)
+    //   - validating wins over twist when both apply
+    //   - otherwise: return scaffold unchanged (neutral tone)
+    // Returns a NEW scaffold object (does not mutate input).
     F3_offsetFrustration(scaffold, affect) {
-      return scaffold;
+      if (!scaffold) return scaffold;
+      if (!affect || typeof affect !== 'object') return scaffold;
+
+      let prefix = '';
+      if (typeof affect.mathConfidence === 'number' && affect.mathConfidence <= 2) {
+        prefix = 'Math can feel tough sometimes. Here is one way in. ';
+      } else if (affect.engagementReadiness === 'maximum') {
+        prefix = 'You came in strong. This one has a twist. ';
+      }
+
+      if (!prefix) return scaffold;
+
+      const originalText = (scaffold.payload && scaffold.payload.text) || '';
+      return Object.assign({}, scaffold, {
+        payload: Object.assign({}, scaffold.payload, {
+          text: prefix + originalText
+        })
+      });
     },
     // F4 Problematize (producer). Returns Problematizing Nudge or null.
     F4_problematize(context) {
@@ -130,9 +153,50 @@ globalThis.ScaffoldingFramework = {
     F5_reflect(context) {
       return null;
     },
-    // F6 Learning-by-doing (guardrail). Enforces Principle #1.
+    // F6 Learning-by-doing (guardrail). Enforces Principle #1 (authentic tasks).
+    // Rejects malformed scaffolds and answer-giveaway patterns.
+    // Phase 4 rules:
+    //   - reject null/non-object scaffold
+    //   - reject unknown supportKind
+    //   - reject empty/missing payload text
+    //   - reject answer-giveaway prefixes (case-insensitive)
+    //   - otherwise allow
+    // Returns { allow: boolean, reason: string }. Denials logged to console.warn.
     F6_learningByDoing(scaffold) {
-      return { allow: true, reason: 'phase-1-stub' };
+      const knownKinds = new Set([
+        'offload', 'prompt', 'sentence-stem', 'hint',
+        'worked-example-fragment', 'problematizing-nudge'
+      ]);
+      const giveawayPrefixes = [
+        'the answer is',
+        'the correct answer is',
+        'just do',
+        'simply',
+        'just use'
+      ];
+
+      const deny = (reason) => {
+        console.warn('[ACE v3] F6 denied scaffold:', reason, scaffold);
+        return { allow: false, reason };
+      };
+
+      if (!scaffold || typeof scaffold !== 'object') {
+        return deny('scaffold must be an object');
+      }
+      if (!knownKinds.has(scaffold.supportKind)) {
+        return deny('unknown supportKind: ' + scaffold.supportKind);
+      }
+      const text = scaffold.payload && scaffold.payload.text;
+      if (typeof text !== 'string' || text.trim().length === 0) {
+        return deny('payload.text is empty or missing');
+      }
+      const lower = text.trim().toLowerCase();
+      for (const prefix of giveawayPrefixes) {
+        if (lower.startsWith(prefix)) {
+          return deny('violates Principle #1 (authentic tasks): starts with "' + prefix + '"');
+        }
+      }
+      return { allow: true, reason: 'passed-phase-4-checks' };
     }
   },
 
@@ -142,19 +206,28 @@ globalThis.ScaffoldingFramework = {
   // Returns: array of Scaffold instances (empty in this phase)
   consult(context) {
     if (!context || typeof context !== 'object') return [];
-    const scaffolds = [];
     const fns = globalThis.ScaffoldingFramework.Functions;
 
-    // Phase 3 evaluation order (subset of spec Section 4):
-    // F2 Strategic help, then F1 Simplify. F4, F5, F3, F6, and Intervention
-    // Policy are wired in later phases and skipped here.
+    // Phase 4 evaluation order (subset of spec Section 4):
+    // F2 -> F1 -> F3 (modulator) -> F6 (guardrail).
+    // F4, F5, and Intervention Policy are wired in later phases.
+
+    const producedScaffolds = [];
     const f2Result = fns.F2_strategicHelp(context);
-    if (f2Result) scaffolds.push(f2Result);
-
+    if (f2Result) producedScaffolds.push(f2Result);
     const f1Result = fns.F1_simplify(context);
-    if (f1Result) scaffolds.push(f1Result);
+    if (f1Result) producedScaffolds.push(f1Result);
 
-    return scaffolds;
+    // F3 modulator: adjust tone on each surviving scaffold
+    const modulated = producedScaffolds.map(s => fns.F3_offsetFrustration(s, context.affect));
+
+    // F6 guardrail: filter out scaffolds that violate Principle #1
+    const allowed = modulated.filter(s => {
+      const verdict = fns.F6_learningByDoing(s);
+      return verdict.allow;
+    });
+
+    return allowed;
   }
 };
 console.log('[ACE v3] ScaffoldingFramework loaded:', globalThis.ScaffoldingFramework.version);

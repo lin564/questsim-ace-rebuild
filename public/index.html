@@ -1079,15 +1079,15 @@ body {
     <div id="checkin-q4" style="display:none;">
       <div class="npc-speech">"Anything else on your mind before we begin?"</div>
       <div style="margin:20px auto;max-width:400px;">
-        <input type="text" class="challenge-input" placeholder="Optional — share anything... (140 chars)" maxlength="140" style="width:100%;text-align:center;">
+        <input type="text" class="challenge-input" placeholder="Optional: share anything... (140 chars)" maxlength="140" style="width:100%;text-align:center;">
       </div>
-      <button class="btn btn-primary btn-lg" onclick="navigate('screen-simulation')" style="margin-top:16px;">
+      <button class="btn btn-primary btn-lg" onclick="finishCheckin()" style="margin-top:16px;">
         ⚔️ Begin Quest
       </button>
     </div>
 
     <div style="margin-top:20px;">
-      <span style="font-size:0.78rem;color:var(--text-muted);cursor:pointer;" onclick="navigate('screen-simulation')">Jump straight to the quest →</span>
+      <span style="font-size:0.78rem;color:var(--text-muted);cursor:pointer;" onclick="skipCheckin()">Jump straight to the quest →</span>
     </div>
   </div>
 </div>
@@ -5576,7 +5576,8 @@ function handleIncorrectAnswer(idx, ch, tracker) {
         correct: false,
         attempts: (tracker && tracker.attempts) || 1,
         timeMs: (tracker && typeof tracker.timeStarted === 'number') ? (Date.now() - tracker.timeStarted) : 0
-      }
+      },
+      affect: window.aceCheckinState || null
     });
     console.log('[ACE v3] consult() returned', v3Scaffolds.length, 'scaffolds');
   } catch (err) {
@@ -5926,10 +5927,30 @@ function awardXP(amount) {
   document.getElementById('simXPBar').style.width = pct + '%';
 }
 
+// ═══ ACE v3.0 CHECK-IN STATE ═══
+// Populated by selectEmoji/selectChoice as the student advances through
+// the pre-game check-in. Consumed by handleIncorrectAnswer's consult call
+// as context.affect for F3 tone modulation. In-memory only in Phase 4;
+// D1 persistence is deferred to a later phase.
+window.aceCheckinState = {
+  mathConfidence: null,
+  selfAssessedUnderstanding: null,
+  engagementReadiness: null,
+  openExpression: null,
+  completedAt: null
+};
+
 // ═══ CHECK-IN ═══
 function selectEmoji(el, nextQ) {
   el.parentElement.querySelectorAll('.emoji-option').forEach(e => e.classList.remove('selected'));
   el.classList.add('selected');
+  // Capture: 5-emoji scale, left to right = 1..5 (storm..sunny)
+  const options = Array.from(el.parentElement.querySelectorAll('.emoji-option'));
+  const idx = options.indexOf(el);
+  if (idx >= 0) {
+    window.aceCheckinState.mathConfidence = idx + 1;
+    console.log('[ACE v3] check-in Q1 mathConfidence:', idx + 1);
+  }
   setTimeout(() => {
     el.closest('[id^="checkin-"]').style.display = 'none';
     document.getElementById('checkin-' + nextQ).style.display = 'block';
@@ -5939,10 +5960,39 @@ function selectEmoji(el, nextQ) {
 function selectChoice(el, nextQ) {
   el.parentElement.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
+  // Capture: which question we are on (q2 = understanding, q3 = readiness) and which index
+  const options = Array.from(el.parentElement.querySelectorAll('.choice-card'));
+  const idx = options.indexOf(el);
+  const currentQ = el.closest('[id^="checkin-"]').id;  // 'checkin-q2' | 'checkin-q3'
+  if (currentQ === 'checkin-q2' && idx >= 0) {
+    const map = ['confused', 'partial', 'confident'];
+    window.aceCheckinState.selfAssessedUnderstanding = map[idx] || null;
+    console.log('[ACE v3] check-in Q2 selfAssessedUnderstanding:', map[idx]);
+  } else if (currentQ === 'checkin-q3' && idx >= 0) {
+    const map = ['calm', 'challenge', 'maximum'];
+    window.aceCheckinState.engagementReadiness = map[idx] || null;
+    console.log('[ACE v3] check-in Q3 engagementReadiness:', map[idx]);
+  }
   setTimeout(() => {
     el.closest('[id^="checkin-"]').style.display = 'none';
     document.getElementById('checkin-' + nextQ).style.display = 'block';
   }, 500);
+}
+
+function finishCheckin() {
+  const input = document.querySelector('#checkin-q4 input[type="text"]');
+  if (input && input.value) {
+    window.aceCheckinState.openExpression = input.value.trim();
+  }
+  window.aceCheckinState.completedAt = new Date().toISOString();
+  console.log('[ACE v3] check-in complete:', window.aceCheckinState);
+  navigate('screen-simulation');
+}
+
+function skipCheckin() {
+  window.aceCheckinState.completedAt = new Date().toISOString();
+  console.log('[ACE v3] check-in skipped:', window.aceCheckinState);
+  navigate('screen-simulation');
 }
 
 // ═══ SIMULATION HELPERS ═══
