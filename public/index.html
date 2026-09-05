@@ -5648,7 +5648,8 @@ function handleIncorrectAnswer(idx, ch, tracker) {
         attempts: (tracker && tracker.attempts) || 1,
         timeMs: (tracker && typeof tracker.timeStarted === 'number') ? (Date.now() - tracker.timeStarted) : 0
       },
-      affect: window.aceCheckinState || null
+      affect: window.aceCheckinState || null,
+      fadeLevel: (typeof window.aceCurrentFadeLevel === 'number') ? window.aceCurrentFadeLevel : null
     });
     console.log('[ACE v3] consult() returned', v3Scaffolds.length, 'scaffolds');
   } catch (err) {
