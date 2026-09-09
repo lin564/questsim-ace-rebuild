@@ -260,6 +260,204 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
     else if (t === 'mastery') tiers.mastery++;
   }
 
+  // ═══ MODULE-SCOPED ALERTS ═══
+  // Each module (game location) gets its own set of actionable alerts
+  // derived from attempts at that location — no time cutoff, uses all
+  // attempts recorded for students in this class. Produces three alert
+  // types per module:
+  //   - struggling:   students with low accuracy at this location (≥ 2 attempts, < 50%)
+  //   - stuck:        students with many attempts but still low accuracy
+  //   - ready:        students with high mastery confidence for the module's concept
+  //   - confusion:    Samos only — per (actual, placed_as) pair aggregated from answer_log
+  const MODULES = [
+    { key: 'samos',      label: 'Samos',      concept: 'triangle_types',     subconcepts: true },
+    { key: 'athens',     label: 'Athens',     concept: 'finding_leg',         subconcepts: false },
+    { key: 'rhodes',     label: 'Rhodes',     concept: 'finding_hypotenuse',  subconcepts: false },
+    { key: 'alexandria', label: 'Alexandria', concept: 'pythagorean_triples', subconcepts: false },
+  ];
+
+  // Drop-target → concept (Samos only, used for confusion pair aggregation)
+  const TARGET_CONCEPT: Record<string, string> = {
+    'DropTarget_01': 'equilateral',
+    'DropTarget_02': 'right',
+    'DropTarget_03': 'isosceles',
+    'DropTarget_04': 'scalene',
+  };
+  const TILE_CONCEPT: Record<string, string> = {
+    'EquilateralT': 'equilateral',
+    'RightT': 'right',
+    'IsoscelesT': 'isosceles',
+    'ScaleneT': 'scalene',
+  };
+
+  // Fetch all per-attempt rows for students in this class across all modules.
+  // We need user_answer to extract answer_log for confusion pairs; the row
+  // count per class should stay small (dozens to low hundreds).
+  const moduleAttemptsResult = await db.prepare(`
+    SELECT ca.student_id, ca.location, ca.is_correct, ca.user_answer
+    FROM challenge_attempts ca
+    WHERE ca.student_id IN (${placeholders})
+  `).bind(...studentIds).all<{
+    student_id: number;
+    location: string | null;
+    is_correct: number;
+    user_answer: string | null;
+  }>();
+
+  // Build a per-module → per-student → {attempts, correct} map, plus a
+  // per-module confusion matrix map for Samos.
+  const perModuleStudentStats: Record<string, Map<number, { attempts: number; correct: number }>> = {};
+  const perModuleConfusion: Record<string, Record<string, Record<string, number>>> = {};
+  const perModuleConfusionStudents: Record<string, Record<string, Set<number>>> = {};
+
+  for (const row of moduleAttemptsResult.results) {
+    const loc = (row.location || '').toLowerCase();
+    if (!loc) continue;
+    if (!perModuleStudentStats[loc]) perModuleStudentStats[loc] = new Map();
+    const map = perModuleStudentStats[loc];
+    const entry = map.get(row.student_id) || { attempts: 0, correct: 0 };
+    entry.attempts++;
+    if (row.is_correct) entry.correct++;
+    map.set(row.student_id, entry);
+
+    // For Samos, extract answer_log entries to build a class-wide confusion matrix
+    if (loc === 'samos' && row.user_answer) {
+      try {
+        const ua = JSON.parse(row.user_answer);
+        const answerLog = ua && ua.answer_log;
+        if (Array.isArray(answerLog)) {
+          if (!perModuleConfusion[loc]) perModuleConfusion[loc] = {};
+          if (!perModuleConfusionStudents[loc]) perModuleConfusionStudents[loc] = {};
+          for (const e of answerLog) {
+            if (!e || typeof e !== 'object' || e.correct) continue; // only track WRONG drops
+            const actual = TILE_CONCEPT[e.tile];
+            const placed = TARGET_CONCEPT[e.target];
+            if (!actual || !placed || actual === placed) continue;
+            const pairKey = `${actual}__${placed}`;
+            if (!perModuleConfusion[loc][pairKey]) perModuleConfusion[loc][pairKey] = { count: 0 } as any;
+            (perModuleConfusion[loc][pairKey] as any).count =
+              ((perModuleConfusion[loc][pairKey] as any).count || 0) + 1;
+            if (!perModuleConfusionStudents[loc][pairKey]) {
+              perModuleConfusionStudents[loc][pairKey] = new Set();
+            }
+            perModuleConfusionStudents[loc][pairKey].add(row.student_id);
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+  }
+
+  // Build a per-student mastery-by-concept lookup keyed by student_id
+  const studentMasteryMap = new Map<number, Record<string, any>>();
+  for (const s of students) {
+    try {
+      if (s.mastery_state) studentMasteryMap.set(s.student_id, JSON.parse(s.mastery_state));
+    } catch { /* skip */ }
+  }
+
+  // Generate alerts per module
+  const alertsByModule: Array<{
+    module: string;
+    label: string;
+    concept: string;
+    alerts: Array<{
+      type: 'struggling' | 'stuck' | 'ready' | 'confusion';
+      severity: 'low' | 'med' | 'high';
+      message: string;
+      student_count: number;
+      student_ids: number[];
+      // Optional structured payload for future client-side filtering
+      extra?: any;
+    }>;
+  }> = [];
+
+  for (const mod of MODULES) {
+    const alerts: any[] = [];
+    const studentStats = perModuleStudentStats[mod.key];
+
+    if (studentStats && studentStats.size > 0) {
+      // Struggling: ≥ 2 attempts, accuracy < 50%
+      const struggling: number[] = [];
+      const stuck: number[] = [];
+      for (const [sid, s] of studentStats) {
+        if (s.attempts < 2) continue;
+        const acc = s.correct / s.attempts;
+        if (s.attempts >= 6 && acc < 0.4) {
+          stuck.push(sid);
+        } else if (acc < 0.5) {
+          struggling.push(sid);
+        }
+      }
+      if (struggling.length > 0) {
+        alerts.push({
+          type: 'struggling',
+          severity: struggling.length >= 3 ? 'high' : 'med',
+          message: `${struggling.length} student${struggling.length === 1 ? ' is' : 's are'} struggling with ${mod.label} (< 50% accuracy)`,
+          student_count: struggling.length,
+          student_ids: struggling,
+        });
+      }
+      if (stuck.length > 0) {
+        alerts.push({
+          type: 'stuck',
+          severity: 'high',
+          message: `${stuck.length} student${stuck.length === 1 ? ' is' : 's are'} stuck at ${mod.label} (≥ 6 attempts, < 40% accuracy)`,
+          student_count: stuck.length,
+          student_ids: stuck,
+        });
+      }
+    }
+
+    // Ready-for-extension: students whose mastery confidence for this module's
+    // concept is ≥ 0.85 (the ACE fast-track threshold)
+    const ready: number[] = [];
+    for (const s of enrichedStudents) {
+      const masteryState = studentMasteryMap.get(s.student_id);
+      if (!masteryState) continue;
+      const entry = masteryState[mod.concept];
+      if (!entry || typeof entry.confidence !== 'number') continue;
+      if (entry.confidence >= 0.85) ready.push(s.student_id);
+    }
+    if (ready.length > 0) {
+      alerts.push({
+        type: 'ready',
+        severity: 'low',
+        message: `${ready.length} student${ready.length === 1 ? ' is' : 's are'} ready for the extension variant of ${mod.label} (confidence ≥ 85%)`,
+        student_count: ready.length,
+        student_ids: ready,
+      });
+    }
+
+    // Confusion-pair alerts (Samos only): pairs with ≥ 2 different students
+    // showing the same misclassification
+    if (mod.subconcepts && perModuleConfusion[mod.key]) {
+      for (const [pairKey, info] of Object.entries(perModuleConfusion[mod.key])) {
+        const students = perModuleConfusionStudents[mod.key][pairKey];
+        const sCount = students ? students.size : 0;
+        if (sCount < 2) continue;
+        const [actual, placed] = pairKey.split('__');
+        const pretty = (s: string) => s.replace(/^\w/, (c) => c.toUpperCase());
+        alerts.push({
+          type: 'confusion',
+          severity: sCount >= 3 ? 'high' : 'med',
+          message: `${sCount} students confusing ${pretty(actual)} ↔ ${pretty(placed)} in ${mod.label}`,
+          student_count: sCount,
+          student_ids: Array.from(students || []),
+          extra: { actual, placed, total_misclassifications: (info as any).count || 0 },
+        });
+      }
+    }
+
+    if (alerts.length > 0) {
+      alertsByModule.push({
+        module: mod.key,
+        label: mod.label,
+        concept: mod.concept,
+        alerts,
+      });
+    }
+  }
+
   return Response.json({
     class: { id: classRow.id, name: classRow.name, class_code: classRow.class_code },
     students: enrichedStudents,
@@ -269,6 +467,7 @@ export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context
       avg_mastery: avgMastery,
       tiers,
       concept_breakdown: conceptBreakdown,
+      alerts_by_module: alertsByModule,
     },
   });
 };
