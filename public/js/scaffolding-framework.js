@@ -200,16 +200,58 @@ globalThis.ScaffoldingFramework = {
     }
   },
 
+  // ═══ FADING POLICY (spec Section 5) ═══
+  // Phase 5a: mastery-driven only. fadeLevel = clamped concept confidence.
+  // Three modes: full (< 0.4), delayed (0.4 to 0.8), withdrawn (>= 0.8).
+  // Later phases add repetition, tier, decay, override dimensions, weakened and
+  // frequency-reduced modes, per-Support-Kind cardinality, and un-fading.
+  FadingPolicy: {
+    DELAY_THRESHOLD_MS: 20000,
+
+    // Map concept mastery confidence to a fade level in [0, 1].
+    // Phase 5a: identity with clamping. Null or non-numeric -> 0 (full support).
+    computeFadeLevel(confidence) {
+      if (typeof confidence !== 'number' || Number.isNaN(confidence)) return 0;
+      if (confidence < 0) return 0;
+      if (confidence > 1) return 1;
+      return confidence;
+    },
+
+    // Classify a fade level into a mode.
+    getMode(fadeLevel) {
+      if (typeof fadeLevel !== 'number' || Number.isNaN(fadeLevel)) return 'full';
+      if (fadeLevel >= 0.8) return 'withdrawn';
+      if (fadeLevel >= 0.4) return 'delayed';
+      return 'full';
+    },
+
+    // Decide whether a scaffold fires given the fade level and time on task.
+    // Returns the scaffold to fire, or null to withhold.
+    apply(scaffold, fadeLevel, performanceEvent) {
+      if (!scaffold) return null;
+      const mode = this.getMode(fadeLevel);
+      if (mode === 'full') return scaffold;
+      if (mode === 'withdrawn') return null;
+      // delayed: fire only after a confirmed pause
+      const timeMs = performanceEvent && typeof performanceEvent.timeMs === 'number'
+        ? performanceEvent.timeMs
+        : null;
+      if (timeMs === null) return null;
+      return timeMs >= this.DELAY_THRESHOLD_MS ? scaffold : null;
+    }
+  },
+
   // Consult method called by Feedback Loop at Step 4 (Narrative Match) and
   // Step 5 (Calibration Check). Also invoked proactively mid-solve.
-  // context: { studentId, challengeIdx, phase, performanceEvent?, affect?, mastery? }
+  // context: { studentId, challengeIdx, phase, performanceEvent?, affect?, mastery?, fadeLevel? }
   // Returns: array of Scaffold instances (empty in this phase)
   consult(context) {
     if (!context || typeof context !== 'object') return [];
     const fns = globalThis.ScaffoldingFramework.Functions;
+    const fading = globalThis.ScaffoldingFramework.FadingPolicy;
 
-    // Phase 4 evaluation order (subset of spec Section 4):
-    // F2 -> F1 -> F3 (modulator) -> F6 (guardrail).
+    // Phase 5a evaluation order (subset of spec Section 4 plus Section 5):
+    // F2 -> F1 -> F3 (modulator) -> FadingPolicy -> F6 (guardrail).
     // F4, F5, and Intervention Policy are wired in later phases.
 
     const producedScaffolds = [];
@@ -221,8 +263,13 @@ globalThis.ScaffoldingFramework = {
     // F3 modulator: adjust tone on each surviving scaffold
     const modulated = producedScaffolds.map(s => fns.F3_offsetFrustration(s, context.affect));
 
+    // Fading: withhold scaffolds the student has faded past
+    const faded = modulated
+      .map(s => fading.apply(s, context.fadeLevel, context.performanceEvent))
+      .filter(s => s !== null);
+
     // F6 guardrail: filter out scaffolds that violate Principle #1
-    const allowed = modulated.filter(s => {
+    const allowed = faded.filter(s => {
       const verdict = fns.F6_learningByDoing(s);
       return verdict.allow;
     });

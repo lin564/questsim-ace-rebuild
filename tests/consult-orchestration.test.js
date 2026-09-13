@@ -144,3 +144,84 @@ describe('consult orchestration Phase 4 additions', () => {
     expect(scaffolds[0].payload.text).toMatch(/^Math can feel tough/);
   });
 });
+
+describe('consult orchestration Phase 5a fading', () => {
+  let consult;
+
+  beforeAll(() => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../public/js/scaffolding-framework.js'),
+      'utf8'
+    );
+    // eslint-disable-next-line no-eval
+    eval(source);
+    consult = globalThis.ScaffoldingFramework.consult;
+  });
+
+  const promptSupport = { supportKind: 'prompt', functions: ['F2'], payload: { text: 'base prompt.' } };
+
+  it('fires normally when fadeLevel is missing (full support default)', () => {
+    const scaffolds = consult({
+      challengeSupports: [promptSupport],
+      performanceEvent: { correct: false, attempts: 1, timeMs: 1000 }
+    });
+    expect(scaffolds).toHaveLength(1);
+  });
+
+  it('fires normally when fadeLevel is low (full mode)', () => {
+    const scaffolds = consult({
+      challengeSupports: [promptSupport],
+      performanceEvent: { correct: false, attempts: 1, timeMs: 1000 },
+      fadeLevel: 0.2
+    });
+    expect(scaffolds).toHaveLength(1);
+  });
+
+  it('withholds when fadeLevel is high (withdrawn mode)', () => {
+    const scaffolds = consult({
+      challengeSupports: [promptSupport],
+      performanceEvent: { correct: false, attempts: 1, timeMs: 60000 },
+      fadeLevel: 0.9
+    });
+    expect(scaffolds).toHaveLength(0);
+  });
+
+  it('withholds in delayed mode before the pause threshold', () => {
+    const scaffolds = consult({
+      challengeSupports: [promptSupport],
+      performanceEvent: { correct: false, attempts: 1, timeMs: 5000 },
+      fadeLevel: 0.6
+    });
+    expect(scaffolds).toHaveLength(0);
+  });
+
+  it('fires in delayed mode once the pause threshold is met', () => {
+    const scaffolds = consult({
+      challengeSupports: [promptSupport],
+      performanceEvent: { correct: false, attempts: 1, timeMs: 25000 },
+      fadeLevel: 0.6
+    });
+    expect(scaffolds).toHaveLength(1);
+  });
+
+  it('fading runs after F3: a fired scaffold in delayed mode still carries F3 tone', () => {
+    const scaffolds = consult({
+      challengeSupports: [promptSupport],
+      performanceEvent: { correct: false, attempts: 1, timeMs: 25000 },
+      fadeLevel: 0.6,
+      affect: { mathConfidence: 1 }
+    });
+    expect(scaffolds).toHaveLength(1);
+    expect(scaffolds[0].payload.text).toMatch(/^Math can feel tough sometimes\./);
+  });
+
+  it('fading applies to F1 scaffolds too', () => {
+    const offload = { supportKind: 'offload', functions: ['F1'], payload: { text: 'offload.' } };
+    const scaffolds = consult({
+      challengeSupports: [offload],
+      performanceEvent: { correct: false, attempts: 3, timeMs: 60000 },
+      fadeLevel: 0.9
+    });
+    expect(scaffolds).toHaveLength(0);
+  });
+});
