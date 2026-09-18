@@ -78,3 +78,88 @@ export function isAssisted(a: AssistanceInputs): boolean {
 export function validateConceptKey(key: unknown): key is string {
   return typeof key === 'string' && CONCEPT_KEY_PATTERN.test(key);
 }
+
+export interface ConceptEntry {
+  level: MasteryLevel;
+  confidence: number;
+  correct: number;
+  total: number;
+  assisted: number;
+  last_activity: string | null;
+  updated_at: string;
+}
+
+export type MasteryState = Record<string, ConceptEntry>;
+
+export interface MasteryAttempt {
+  conceptKey: string;
+  correct: boolean;
+  assisted: boolean;
+  source: string | null;
+  now: string;
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+function countOf(v: unknown): number {
+  return (typeof v === 'number' && Number.isFinite(v) && v > 0) ? Math.floor(v) : 0;
+}
+
+// One attempt on one concept. Returns a new state object; never mutates the
+// input and never touches other concepts. A missing entry, or one whose
+// confidence is not a finite number, starts from the prior with zero counts.
+export function applyAttempt(state: MasteryState | null | undefined, attempt: MasteryAttempt): MasteryState {
+  if (!validateConceptKey(attempt.conceptKey)) {
+    throw new Error('invalid concept key: ' + String(attempt.conceptKey));
+  }
+  const base: MasteryState = isPlainObject(state) ? (state as MasteryState) : {};
+  const prev = base[attempt.conceptKey] as Partial<ConceptEntry> | undefined;
+  const usable = isPlainObject(prev)
+    && typeof prev.confidence === 'number'
+    && Number.isFinite(prev.confidence);
+
+  const startConfidence = usable ? (prev as ConceptEntry).confidence : MASTERY_PARAMS.prior;
+  const priorCorrect = usable ? countOf(prev!.correct) : 0;
+  const priorTotal = usable ? countOf(prev!.total) : 0;
+  const priorAssisted = usable ? countOf(prev!.assisted) : 0;
+
+  const confidence = round3(bktUpdate(startConfidence, { correct: attempt.correct, assisted: attempt.assisted }));
+
+  const entry: ConceptEntry = {
+    level: tierFor(confidence),
+    confidence,
+    correct: priorCorrect + (attempt.correct ? 1 : 0),
+    total: priorTotal + 1,
+    assisted: priorAssisted + (attempt.correct && attempt.assisted ? 1 : 0),
+    last_activity: attempt.source ?? null,
+    updated_at: attempt.now,
+  };
+
+  return { ...base, [attempt.conceptKey]: entry };
+}
+
+// Validation for a Samos-style mastery_state payload. Returns an error
+// message, or null when the payload is acceptable.
+export function validateMasteryPayload(incoming: unknown): string | null {
+  if (!isPlainObject(incoming)) return 'mastery_state must be an object';
+  for (const [key, value] of Object.entries(incoming)) {
+    if (!validateConceptKey(key)) return 'invalid concept key in mastery_state: ' + key;
+    if (!isPlainObject(value)) return 'mastery_state entry must be an object: ' + key;
+  }
+  return null;
+}
+
+// The Samos branch: lay incoming concept entries over the existing state per
+// key, so a Samos write no longer erases concepts written by other paths.
+export function mergeMasteryPayload(existing: MasteryState | null | undefined, incoming: unknown): MasteryState {
+  const problem = validateMasteryPayload(incoming);
+  if (problem) throw new Error(problem);
+  const base: MasteryState = isPlainObject(existing) ? (existing as MasteryState) : {};
+  const out: MasteryState = { ...base };
+  for (const [key, value] of Object.entries(incoming as Record<string, unknown>)) {
+    out[key] = value as ConceptEntry;
+  }
+  return out;
+}

@@ -9,6 +9,9 @@ import {
   tierFor,
   isAssisted,
   validateConceptKey,
+  applyAttempt,
+  validateMasteryPayload,
+  mergeMasteryPayload,
 } from '../lib/mastery-rule';
 
 describe('MASTERY_PARAMS', () => {
@@ -109,5 +112,120 @@ describe('validateConceptKey', () => {
     expect(validateConceptKey('a' + 'b'.repeat(41))).toBe(false);
     expect(validateConceptKey(null)).toBe(false);
     expect(validateConceptKey(42)).toBe(false);
+  });
+});
+
+describe('applyAttempt', () => {
+  const NOW = '2026-09-16T18:00:00.000Z';
+  const clean = (key) => ({ conceptKey: key, correct: true, assisted: false, source: 'ch_athens_extension_waters2', now: NOW });
+  const helped = (key) => ({ conceptKey: key, correct: true, assisted: true, source: 'ch_athens_extension_waters2', now: NOW });
+  const wrong = (key) => ({ conceptKey: key, correct: false, assisted: false, source: 'ch_athens_extension_waters2', now: NOW });
+
+  it('story 1: right first try, no help, reaches 0.727 and the extension tier', () => {
+    const s = applyAttempt(null, clean('finding_leg'));
+    expect(s.finding_leg).toEqual({
+      level: 'extension', confidence: 0.727, correct: 1, total: 1, assisted: 0,
+      last_activity: 'ch_athens_extension_waters2', updated_at: NOW,
+    });
+  });
+
+  it('story 2: a second clean success reaches 0.938 and mastery', () => {
+    const s1 = applyAttempt(null, clean('finding_leg'));
+    const s2 = applyAttempt(s1, clean('finding_leg'));
+    expect(s2.finding_leg.confidence).toBe(0.938);
+    expect(s2.finding_leg.level).toBe('mastery');
+    expect(s2.finding_leg.correct).toBe(2);
+    expect(s2.finding_leg.total).toBe(2);
+  });
+
+  it('story 3: right first try with a hint reaches 0.548', () => {
+    const s = applyAttempt({}, helped('finding_leg'));
+    expect(s.finding_leg.confidence).toBe(0.548);
+    expect(s.finding_leg.level).toBe('foundation');
+    expect(s.finding_leg.assisted).toBe(1);
+  });
+
+  it('story 4: wrong, then right with a Support card, ends at 0.491', () => {
+    const s1 = applyAttempt(null, wrong('finding_leg'));
+    expect(s1.finding_leg.confidence).toBe(0.241);
+    expect(s1.finding_leg.correct).toBe(0);
+    expect(s1.finding_leg.total).toBe(1);
+    const s2 = applyAttempt(s1, helped('finding_leg'));
+    expect(s2.finding_leg.confidence).toBe(0.491);
+    expect(s2.finding_leg).toMatchObject({ correct: 1, total: 2, assisted: 1, level: 'foundation' });
+  });
+
+  it('story 5: wrong twice, then right with a Support card, ends at 0.481', () => {
+    let s = applyAttempt(null, wrong('finding_leg'));
+    s = applyAttempt(s, wrong('finding_leg'));
+    expect(s.finding_leg.confidence).toBe(0.231);
+    s = applyAttempt(s, helped('finding_leg'));
+    expect(s.finding_leg.confidence).toBe(0.481);
+    expect(s.finding_leg.total).toBe(3);
+  });
+
+  it('a Samos-written 1.0 still moves after a wrong answer', () => {
+    const existing = { triangle_types: { level: 'mastery', confidence: 1.0, correct: 4, total: 4, last_activity: 'samos_types', updated_at: NOW } };
+    const s = applyAttempt(existing, wrong('triangle_types'));
+    expect(s.triangle_types.confidence).toBe(0.888);
+    expect(s.triangle_types.total).toBe(5);
+  });
+
+  it('leaves other concepts untouched and does not mutate its input', () => {
+    const existing = { finding_hypotenuse: { level: 'foundation', confidence: 0.3, correct: 0, total: 1, assisted: 0, last_activity: null, updated_at: NOW } };
+    const frozen = JSON.stringify(existing);
+    const s = applyAttempt(existing, clean('finding_leg'));
+    expect(s.finding_hypotenuse).toBe(existing.finding_hypotenuse);
+    expect(JSON.stringify(existing)).toBe(frozen);
+    expect(s).not.toBe(existing);
+  });
+
+  it('starts from the prior with zero counts when the entry has no numeric confidence', () => {
+    const existing = { finding_leg: { level: 'foundation', confidence: 'high', correct: 7, total: 9 } };
+    const s = applyAttempt(existing, clean('finding_leg'));
+    expect(s.finding_leg.confidence).toBe(0.727);
+    expect(s.finding_leg.correct).toBe(1);
+    expect(s.finding_leg.total).toBe(1);
+  });
+
+  it('accepts a null source', () => {
+    const s = applyAttempt(null, { conceptKey: 'finding_leg', correct: true, assisted: false, source: null, now: NOW });
+    expect(s.finding_leg.last_activity).toBeNull();
+  });
+
+  it('throws on an invalid concept key', () => {
+    expect(() => applyAttempt(null, clean('Finding Leg'))).toThrow(/concept key/);
+  });
+});
+
+describe('validateMasteryPayload', () => {
+  it('returns null for a valid Samos-style object', () => {
+    expect(validateMasteryPayload({ triangle_types: { level: 'mastery', confidence: 1 }, right: { confidence: 0.5 } })).toBeNull();
+  });
+  it('rejects a non-object, an array, a bad key, and a non-object value', () => {
+    expect(validateMasteryPayload('x')).toMatch(/object/);
+    expect(validateMasteryPayload([1])).toMatch(/object/);
+    expect(validateMasteryPayload({ 'Bad Key': {} })).toMatch(/Bad Key/);
+    expect(validateMasteryPayload({ right: 0.5 })).toMatch(/right/);
+  });
+});
+
+describe('mergeMasteryPayload', () => {
+  it('lays incoming entries over existing ones per key and preserves untouched keys', () => {
+    const existing = { finding_leg: { confidence: 0.727 }, triangle_types: { confidence: 0.5 } };
+    const incoming = { triangle_types: { confidence: 1 }, scalene: { confidence: 0.75 } };
+    const merged = mergeMasteryPayload(existing, incoming);
+    expect(merged).toEqual({
+      finding_leg: { confidence: 0.727 },
+      triangle_types: { confidence: 1 },
+      scalene: { confidence: 0.75 },
+    });
+    expect(existing.triangle_types.confidence).toBe(0.5);
+  });
+  it('treats a null existing state as empty', () => {
+    expect(mergeMasteryPayload(null, { right: { confidence: 0.2 } })).toEqual({ right: { confidence: 0.2 } });
+  });
+  it('throws with the validation message', () => {
+    expect(() => mergeMasteryPayload({}, { 'Bad Key': {} })).toThrow(/Bad Key/);
   });
 });
