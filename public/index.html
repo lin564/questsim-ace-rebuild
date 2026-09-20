@@ -3400,6 +3400,7 @@ let timerSeconds = 0;
 const challenges = [
   {
     num: 1, total: 4,
+    concept: "triangle_types",
     tier: "Foundation Harbor",
     cogLevel: "Understand", cogColor: "badge-green",
     difficulty: "●○○○○", diffLabel: "Introductory",
@@ -3441,6 +3442,7 @@ const challenges = [
   },
   {
     num: 2, total: 4,
+    concept: "finding_leg",
     tier: "Extension Waters",
     cogLevel: "Apply", cogColor: "badge-teal",
     difficulty: "●●●○○", diffLabel: "Medium",
@@ -3486,6 +3488,7 @@ const challenges = [
   },
   {
     num: 3, total: 4,
+    concept: "finding_hypotenuse",
     tier: "Extension Waters",
     cogLevel: "Analyze", cogColor: "badge-purple",
     difficulty: "●●●●○", diffLabel: "Hard",
@@ -3526,6 +3529,7 @@ const challenges = [
   },
   {
     num: 4, total: 4,
+    concept: "pythagorean_triples",
     tier: "Extension Waters → Mastery Shores",
     cogLevel: "Evaluate", cogColor: "badge-orange",
     difficulty: "●●●●●", diffLabel: "Very Hard",
@@ -4675,26 +4679,28 @@ let fastTrackActive = false;
 // When a student opens a challenge, aceChooseRoute() looks up their confidence
 // for the relevant concept and promotes them into fast-track (>=0.85) or
 // drops them into scaffold (<0.5) automatically. Normal path otherwise.
-const CHALLENGE_CONCEPT_KEY = {
-  0: 'triangle_types',         // Samos — triangle classification
-  1: 'finding_leg',             // Athens — ladder / find missing leg
-  2: 'finding_hypotenuse',      // Rhodes — navigation / find hypotenuse
-  3: 'pythagorean_triples',     // Alexandria — verify a claim
-};
+// Each challenge carries its own concept key (see the challenges array).
+// Read it with challengeConceptKey(idx). The former index-keyed map was
+// retired with the Mastery Map write path so a challenge is authored in one
+// place, concept included.
+function challengeConceptKey(idx) {
+  const ch = challenges[idx];
+  return (ch && typeof ch.concept === 'string') ? ch.concept : null;
+}
 const ACE_FASTTRACK_THRESHOLD = 0.85;
-const ACE_SCAFFOLD_THRESHOLD  = 0.50;
 
 // Called at the start of loadChallenge(). Reads window.currentUser.mastery_state
-// (populated after auth by loadRealProfileIntoCurrentUser) and sets the
-// scaffoldActive / fastTrackActive flags BEFORE the challenge renders.
+// (populated after auth by loadRealProfileIntoCurrentUser, refreshed from each
+// progress reply) and sets the fastTrackActive flag BEFORE the challenge renders.
 // Won't override flags that the student already earned mid-session.
+// The automatic scaffold route (easier version below a confidence threshold)
+// was removed with the Mastery Map write path: the student always meets the
+// main problem, with Lens 4 support around it. The in-session side-quest offer
+// on the second wrong attempt is unchanged until Phase 9.
 function aceChooseRoute(idx) {
-  // If the student has already been put in scaffold/fast-track mode during
-  // the current session (e.g. via the existing in-session triggers), respect
-  // that and don't re-route.
   if (scaffoldActive || fastTrackActive) return;
 
-  const conceptKey = CHALLENGE_CONCEPT_KEY[idx];
+  const conceptKey = challengeConceptKey(idx);
   if (!conceptKey) return;
 
   const mastery = (window.currentUser && window.currentUser.mastery_state) || null;
@@ -4715,21 +4721,12 @@ function aceChooseRoute(idx) {
   if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx]) {
     fastTrackActive = true;
     console.log('[ACE] Fast-track route chosen for idx', idx,
-      '— concept:', conceptKey, '| confidence:', confidence);
+      'concept:', conceptKey, '| confidence:', confidence);
     return;
   }
 
-  // Scaffold requires a matching scaffold challenge for this idx.
-  if (confidence < ACE_SCAFFOLD_THRESHOLD && scaffoldChallenges[idx]) {
-    scaffoldActive = true;
-    console.log('[ACE] Scaffold route chosen for idx', idx,
-      '— concept:', conceptKey, '| confidence:', confidence);
-    return;
-  }
-
-  // Otherwise: normal route.
   console.log('[ACE] Normal route for idx', idx,
-    '— concept:', conceptKey, '| confidence:', confidence);
+    'concept:', conceptKey, '| confidence:', confidence);
 }
 
 // ═══ ACE v3.0 FADE STATE PERSISTENCE (Phase 5a) ═══
@@ -4773,7 +4770,7 @@ function writeFadeLevel(studentId, conceptKey, fadeLevel) {
 // Read-only with respect to mastery: never assigns to masteryState or
 // window.currentUser.mastery_state.
 function computeAndPersistFadeLevel(idx) {
-  const conceptKey = CHALLENGE_CONCEPT_KEY[idx];
+  const conceptKey = challengeConceptKey(idx);
   if (!conceptKey) {
     window.aceCurrentFadeLevel = null;
     return;
@@ -4966,11 +4963,11 @@ function loadChallenge(idx) {
 
   // ═══ ACE ROUTING DECISION ═══
   // Consult the student's mastery_state (populated from D1 via
-  // loadRealProfileIntoCurrentUser) to decide whether to open the challenge
-  // in scaffold mode, fast-track mode, or the normal variant. This is a
-  // PRE-CHALLENGE decision based on historical confidence — the existing
-  // in-session triggers (attempts === 2 → scaffold, fast-solve → fast-track)
-  // still fire as fallbacks for mid-session struggles/wins.
+  // loadRealProfileIntoCurrentUser and refreshed from each progress reply)
+  // to decide whether to open the challenge in fast-track mode or the normal
+  // variant. This is a PRE-CHALLENGE decision based on historical confidence.
+  // The existing in-session triggers (attempts === 2 offers the side quest,
+  // fast-solve offers fast-track) still fire for mid-session struggles/wins.
   aceChooseRoute(idx);
 
   // ═══ ACE v3.0 FADE LEVEL (Phase 5a) ═══
