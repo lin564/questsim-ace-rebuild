@@ -5466,6 +5466,29 @@ async function ensureGameSession() {
   }
 }
 
+// Copy the refreshed mastery JSON from a /api/student/progress reply onto the
+// in-page user, so the next loadChallenge sees it for routing and fade level
+// without a second request or a reload.
+function applyProgressReply(data) {
+  if (!data || !data.profile || !window.currentUser) return;
+  if (data.profile.mastery_state === undefined) return;
+  window.currentUser.mastery_state = data.profile.mastery_state;
+}
+
+// Proof-of-life line, the Mastery Map counterpart of the Phase 5a fade line.
+function logMasteryFromReply(data, conceptKey) {
+  try {
+    let state = (data && data.profile) ? data.profile.mastery_state : null;
+    if (typeof state === 'string') state = JSON.parse(state);
+    const entry = (state && conceptKey) ? state[conceptKey] : null;
+    if (entry && typeof entry.confidence === 'number') {
+      console.log('[ACE v3] mastery ' + conceptKey + ': ' + entry.confidence + ' (' + entry.level + ')');
+    }
+  } catch (e) {
+    // display only; never let logging break the save path
+  }
+}
+
 async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
   if (!isAuthenticated || !currentUser) return;
   const sessionId = await ensureGameSession();
@@ -5476,7 +5499,12 @@ async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
   const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || idx+1}`;
 
   try {
-    await API.post('/api/student/progress', {
+    // The concept comes from the main challenge at idx, not from ch: on the
+    // side quest, ch is the scaffold challenge (no concept), and the attempt
+    // must still count toward the main concept. It arrives with was_scaffold
+    // true, so the server scores it as assisted.
+    const conceptKey = challengeConceptKey(idx);
+    const data = await API.post('/api/student/progress', {
       session_id: sessionId,
       challenge_id: challengeId,
       location,
@@ -5489,7 +5517,10 @@ async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
       was_scaffold: scaffoldActive,
       was_fast_track: fastTrackActive,
       xp_awarded: isCorrect ? (ch.xp || 0) : 0,
+      ...(conceptKey ? { concept_key: conceptKey } : {}),
     });
+    applyProgressReply(data);
+    logMasteryFromReply(data, conceptKey);
   } catch (e) {
     console.warn('[Progress] Failed to save attempt:', e.message);
   }
@@ -5513,7 +5544,7 @@ async function saveUnityAttemptToD1(opts) {
   const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || opts.challengeIndex+1}`;
 
   try {
-    await API.post('/api/student/progress', {
+    const data = await API.post('/api/student/progress', {
       session_id: sessionId,
       challenge_id: challengeId,
       location,
@@ -5528,6 +5559,7 @@ async function saveUnityAttemptToD1(opts) {
       xp_awarded: opts.xpAwarded,
       mastery_state: opts.masteryState,
     });
+    applyProgressReply(data);
   } catch (e) {
     console.warn('[Progress] Failed to save Unity attempt:', e.message);
   }
