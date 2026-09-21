@@ -5368,6 +5368,16 @@ function onUnityActivityComplete() {
     //
     // Drop target name → concept key mapping. The TileMatchArea GameObjects
     // in the Unity scene are named DropTarget_01 through DropTarget_04:
+    // The server validates every mastery_state key against ^[a-z][a-z0-9_]{1,40}$
+    // and rejects the whole save on a bad key. Mapped targets already conform;
+    // this shapes the fallback for an unmapped Unity target name so a future
+    // scene change can never make a Samos completion vanish.
+    const safeConceptKey = (raw) => {
+      let k = String(raw || 'unknown').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      if (!/^[a-z]/.test(k)) k = 'target_' + k;
+      if (k.length < 2) k = k + '_key';
+      return k.slice(0, 41);
+    };
     const TARGET_CONCEPT = {
       'DropTarget_01': 'equilateral',
       'DropTarget_02': 'right',
@@ -5382,7 +5392,7 @@ function onUnityActivityComplete() {
       // NEW PATH: per-concept mastery from Activity.Answer events
       const perConcept = {};
       for (const a of buf.answers) {
-        const concept = TARGET_CONCEPT[a.target] || a.target || 'unknown';
+        const concept = TARGET_CONCEPT[a.target] || safeConceptKey(a.target);
         if (!perConcept[concept]) perConcept[concept] = { correct: 0, total: 0 };
         perConcept[concept].total++;
         if (a.correct) perConcept[concept].correct++;

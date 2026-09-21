@@ -152,7 +152,7 @@ The POST handler keeps its current steps in order (ensure profile row, insert at
 
 1. Validate `concept_key` with `validateConceptKey`. On failure respond `400 { error: 'invalid concept_key' }` before any write.
 2. Read `mastery_state` for the user. Parse it; `null`, empty, or malformed JSON becomes `{}` (log a warning for malformed).
-3. Compute `assisted = isAssisted({ attemptNumber: attempt_number, hintsUsed: hints_used, wasScaffold: was_scaffold })` on the server. The client sends no assisted flag; it cannot inflate its own mastery.
+3. Compute `assisted = isAssisted({ attemptNumber: attempt_number, hintsUsed: hints_used, wasScaffold: was_scaffold })` on the server. The client sends no assisted flag. An unmodified client cannot inflate its own mastery; the inputs assisted is computed from are still client-supplied, the same trust boundary as XP today.
 4. `next = applyAttempt(state, { conceptKey, correct: !!is_correct, assisted, source: challenge_id, now: new Date().toISOString() })`.
 5. `UPDATE student_profiles SET mastery_state = ?, updated_at = datetime('now') WHERE user_id = ?`.
 
@@ -294,6 +294,7 @@ The existing 79 tests stay green throughout; the FadingPolicy tests are unchange
 
 - **Students feel fading for the first time.** After one clean success on a concept, support on that concept arrives after 20 seconds of independent effort instead of at once; after two, it is withdrawn. Intended, but visible.
 - **Mixed scales on the dashboard average** until Samos is unified (section 7).
+- **Teacher "ready for the extension variant" alerts switch on.** The production roster endpoint raises that alert at confidence 0.85 or above for `finding_leg`, `finding_hypotenuse`, and `pythagorean_triples`. Until this merge those concepts never had a confidence, so teachers will see these alerts for the first time, after a student's second clean success on a concept.
 - **One lost update on overlapping writes** (section 5.4). Unlikely at one attempt per click.
 - **Bundling an import from outside `functions/`** is new to this repo; 8.3 proves it before anything ships.
 
