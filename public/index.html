@@ -3634,6 +3634,7 @@ let timerSeconds = 0;
 const challenges = [
   {
     num: 1, total: 4,
+    concept: "triangle_types",
     tier: "Foundation Harbor",
     cogLevel: "Understand", cogColor: "badge-green",
     difficulty: "●○○○○", diffLabel: "Introductory",
@@ -3675,6 +3676,7 @@ const challenges = [
   },
   {
     num: 2, total: 4,
+    concept: "finding_leg",
     tier: "Extension Waters",
     cogLevel: "Apply", cogColor: "badge-teal",
     difficulty: "●●●○○", diffLabel: "Medium",
@@ -3720,6 +3722,7 @@ const challenges = [
   },
   {
     num: 3, total: 4,
+    concept: "finding_hypotenuse",
     tier: "Extension Waters",
     cogLevel: "Analyze", cogColor: "badge-purple",
     difficulty: "●●●●○", diffLabel: "Hard",
@@ -3760,6 +3763,7 @@ const challenges = [
   },
   {
     num: 4, total: 4,
+    concept: "pythagorean_triples",
     tier: "Extension Waters → Mastery Shores",
     cogLevel: "Evaluate", cogColor: "badge-orange",
     difficulty: "●●●●●", diffLabel: "Very Hard",
@@ -5320,26 +5324,28 @@ let fastTrackActive = false;
 // When a student opens a challenge, aceChooseRoute() looks up their confidence
 // for the relevant concept and promotes them into fast-track (>=0.85) or
 // drops them into scaffold (<0.5) automatically. Normal path otherwise.
-const CHALLENGE_CONCEPT_KEY = {
-  0: 'triangle_types',         // Samos — triangle classification
-  1: 'finding_leg',             // Athens — ladder / find missing leg
-  2: 'finding_hypotenuse',      // Rhodes — navigation / find hypotenuse
-  3: 'pythagorean_triples',     // Alexandria — verify a claim
-};
+// Each challenge carries its own concept key (see the challenges array).
+// Read it with challengeConceptKey(idx). The former index-keyed map was
+// retired with the Mastery Map write path so a challenge is authored in one
+// place, concept included.
+function challengeConceptKey(idx) {
+  const ch = challenges[idx];
+  return (ch && typeof ch.concept === 'string') ? ch.concept : null;
+}
 const ACE_FASTTRACK_THRESHOLD = 0.85;
-const ACE_SCAFFOLD_THRESHOLD  = 0.50;
 
 // Called at the start of loadChallenge(). Reads window.currentUser.mastery_state
-// (populated after auth by loadRealProfileIntoCurrentUser) and sets the
-// scaffoldActive / fastTrackActive flags BEFORE the challenge renders.
+// (populated after auth by loadRealProfileIntoCurrentUser, refreshed from each
+// progress reply) and sets the fastTrackActive flag BEFORE the challenge renders.
 // Won't override flags that the student already earned mid-session.
+// The automatic scaffold route (easier version below a confidence threshold)
+// was removed with the Mastery Map write path: the student always meets the
+// main problem, with Lens 4 support around it. The in-session side-quest offer
+// on the second wrong attempt is unchanged until Phase 9.
 function aceChooseRoute(idx) {
-  // If the student has already been put in scaffold/fast-track mode during
-  // the current session (e.g. via the existing in-session triggers), respect
-  // that and don't re-route.
   if (scaffoldActive || fastTrackActive) return;
 
-  const conceptKey = CHALLENGE_CONCEPT_KEY[idx];
+  const conceptKey = challengeConceptKey(idx);
   if (!conceptKey) return;
 
   const mastery = (window.currentUser && window.currentUser.mastery_state) || null;
@@ -5360,21 +5366,12 @@ function aceChooseRoute(idx) {
   if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx]) {
     fastTrackActive = true;
     console.log('[ACE] Fast-track route chosen for idx', idx,
-      '— concept:', conceptKey, '| confidence:', confidence);
+      'concept:', conceptKey, '| confidence:', confidence);
     return;
   }
 
-  // Scaffold requires a matching scaffold challenge for this idx.
-  if (confidence < ACE_SCAFFOLD_THRESHOLD && scaffoldChallenges[idx]) {
-    scaffoldActive = true;
-    console.log('[ACE] Scaffold route chosen for idx', idx,
-      '— concept:', conceptKey, '| confidence:', confidence);
-    return;
-  }
-
-  // Otherwise: normal route.
   console.log('[ACE] Normal route for idx', idx,
-    '— concept:', conceptKey, '| confidence:', confidence);
+    'concept:', conceptKey, '| confidence:', confidence);
 }
 
 // ═══ ACE v3.0 FADE STATE PERSISTENCE (Phase 5a) ═══
@@ -5418,7 +5415,7 @@ function writeFadeLevel(studentId, conceptKey, fadeLevel) {
 // Read-only with respect to mastery: never assigns to masteryState or
 // window.currentUser.mastery_state.
 function computeAndPersistFadeLevel(idx) {
-  const conceptKey = CHALLENGE_CONCEPT_KEY[idx];
+  const conceptKey = challengeConceptKey(idx);
   if (!conceptKey) {
     window.aceCurrentFadeLevel = null;
     return;
@@ -5611,11 +5608,11 @@ function loadChallenge(idx) {
 
   // ═══ ACE ROUTING DECISION ═══
   // Consult the student's mastery_state (populated from D1 via
-  // loadRealProfileIntoCurrentUser) to decide whether to open the challenge
-  // in scaffold mode, fast-track mode, or the normal variant. This is a
-  // PRE-CHALLENGE decision based on historical confidence — the existing
-  // in-session triggers (attempts === 2 → scaffold, fast-solve → fast-track)
-  // still fire as fallbacks for mid-session struggles/wins.
+  // loadRealProfileIntoCurrentUser and refreshed from each progress reply)
+  // to decide whether to open the challenge in fast-track mode or the normal
+  // variant. This is a PRE-CHALLENGE decision based on historical confidence.
+  // The existing in-session triggers (attempts === 2 offers the side quest,
+  // fast-solve offers fast-track) still fire for mid-session struggles/wins.
   aceChooseRoute(idx);
 
   // ═══ ACE v3.0 FADE LEVEL (Phase 5a) ═══
@@ -6016,6 +6013,16 @@ function onUnityActivityComplete() {
     //
     // Drop target name → concept key mapping. The TileMatchArea GameObjects
     // in the Unity scene are named DropTarget_01 through DropTarget_04:
+    // The server validates every mastery_state key against ^[a-z][a-z0-9_]{1,40}$
+    // and rejects the whole save on a bad key. Mapped targets already conform;
+    // this shapes the fallback for an unmapped Unity target name so a future
+    // scene change can never make a Samos completion vanish.
+    const safeConceptKey = (raw) => {
+      let k = String(raw || 'unknown').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      if (!/^[a-z]/.test(k)) k = 'target_' + k;
+      if (k.length < 2) k = k + '_key';
+      return k.slice(0, 41);
+    };
     const TARGET_CONCEPT = {
       'DropTarget_01': 'equilateral',
       'DropTarget_02': 'right',
@@ -6030,7 +6037,7 @@ function onUnityActivityComplete() {
       // NEW PATH: per-concept mastery from Activity.Answer events
       const perConcept = {};
       for (const a of buf.answers) {
-        const concept = TARGET_CONCEPT[a.target] || a.target || 'unknown';
+        const concept = TARGET_CONCEPT[a.target] || safeConceptKey(a.target);
         if (!perConcept[concept]) perConcept[concept] = { correct: 0, total: 0 };
         perConcept[concept].total++;
         if (a.correct) perConcept[concept].correct++;
@@ -6114,6 +6121,29 @@ async function ensureGameSession() {
   }
 }
 
+// Copy the refreshed mastery JSON from a /api/student/progress reply onto the
+// in-page user, so the next loadChallenge sees it for routing and fade level
+// without a second request or a reload.
+function applyProgressReply(data) {
+  if (!data || !data.profile || !window.currentUser) return;
+  if (data.profile.mastery_state === undefined) return;
+  window.currentUser.mastery_state = data.profile.mastery_state;
+}
+
+// Proof-of-life line, the Mastery Map counterpart of the Phase 5a fade line.
+function logMasteryFromReply(data, conceptKey) {
+  try {
+    let state = (data && data.profile) ? data.profile.mastery_state : null;
+    if (typeof state === 'string') state = JSON.parse(state);
+    const entry = (state && conceptKey) ? state[conceptKey] : null;
+    if (entry && typeof entry.confidence === 'number') {
+      console.log('[ACE v3] mastery ' + conceptKey + ': ' + entry.confidence + ' (' + entry.level + ')');
+    }
+  } catch (e) {
+    // display only; never let logging break the save path
+  }
+}
+
 async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
   if (!isAuthenticated || !currentUser) return;
   const sessionId = await ensureGameSession();
@@ -6124,7 +6154,12 @@ async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
   const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || idx+1}`;
 
   try {
-    await API.post('/api/student/progress', {
+    // The concept comes from the main challenge at idx, not from ch: on the
+    // side quest, ch is the scaffold challenge (no concept), and the attempt
+    // must still count toward the main concept. It arrives with was_scaffold
+    // true, so the server scores it as assisted.
+    const conceptKey = challengeConceptKey(idx);
+    const data = await API.post('/api/student/progress', {
       session_id: sessionId,
       challenge_id: challengeId,
       location,
@@ -6137,7 +6172,10 @@ async function saveAttemptToD1(ch, idx, isCorrect, val, tracker) {
       was_scaffold: scaffoldActive,
       was_fast_track: fastTrackActive,
       xp_awarded: isCorrect ? (ch.xp || 0) : 0,
+      ...(conceptKey ? { concept_key: conceptKey } : {}),
     });
+    applyProgressReply(data);
+    logMasteryFromReply(data, conceptKey);
   } catch (e) {
     console.warn('[Progress] Failed to save attempt:', e.message);
   }
@@ -6161,7 +6199,7 @@ async function saveUnityAttemptToD1(opts) {
   const challengeId = `ch_${location}_${(ch.tier || 'f').toLowerCase().replace(/\s+/g,'_')}${ch.num || opts.challengeIndex+1}`;
 
   try {
-    await API.post('/api/student/progress', {
+    const data = await API.post('/api/student/progress', {
       session_id: sessionId,
       challenge_id: challengeId,
       location,
@@ -6176,6 +6214,7 @@ async function saveUnityAttemptToD1(opts) {
       xp_awarded: opts.xpAwarded,
       mastery_state: opts.masteryState,
     });
+    applyProgressReply(data);
   } catch (e) {
     console.warn('[Progress] Failed to save Unity attempt:', e.message);
   }
