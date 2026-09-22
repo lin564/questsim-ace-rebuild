@@ -208,13 +208,42 @@ globalThis.ScaffoldingFramework = {
   FadingPolicy: {
     DELAY_THRESHOLD_MS: 20000,
 
+    // Highest fade level a concept can reach on assisted evidence alone.
+    // Sits just under the withdrawn band (0.8), so support fades to delayed
+    // but never disappears until the student succeeds without it.
+    UNASSISTED_GATE_CAP: 0.799,
+
+    // Has this concept ever been answered correctly without assistance?
+    // Reads the counts the Mastery Map records per concept: correct counts
+    // successes, assisted counts the successes that needed a hint, a retry,
+    // or the side quest. Missing or malformed counts return true, so the gate
+    // never withholds fading on data it cannot read (an older entry written
+    // before the assisted count existed is treated as unassisted evidence).
+    hasUnassistedSuccess(counts) {
+      if (!counts || typeof counts !== 'object') return true;
+      const correct = counts.correct;
+      if (typeof correct !== 'number' || !Number.isFinite(correct)) return true;
+      const assistedRaw = counts.assisted;
+      const assisted = (typeof assistedRaw === 'number' && Number.isFinite(assistedRaw))
+        ? assistedRaw
+        : 0;
+      return (correct - assisted) >= 1;
+    },
+
     // Map concept mastery confidence to a fade level in [0, 1].
-    // Phase 5a: identity with clamping. Null or non-numeric -> 0 (full support).
-    computeFadeLevel(confidence) {
+    // Identity with clamping, then the unassisted-success gate: a concept
+    // whose successes were all assisted cannot reach the withdrawn band,
+    // because mastery means unassisted performance (Tabak and Reiser).
+    // Called with one argument it behaves exactly as it did in Phase 5a.
+    computeFadeLevel(confidence, counts) {
       if (typeof confidence !== 'number' || Number.isNaN(confidence)) return 0;
-      if (confidence < 0) return 0;
-      if (confidence > 1) return 1;
-      return confidence;
+      let level = confidence;
+      if (level < 0) level = 0;
+      if (level > 1) level = 1;
+      if (counts !== undefined && !this.hasUnassistedSuccess(counts)) {
+        return Math.min(level, this.UNASSISTED_GATE_CAP);
+      }
+      return level;
     },
 
     // Classify a fade level into a mode.

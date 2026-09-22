@@ -45,6 +45,64 @@ describe('FadingPolicy', () => {
     });
   });
 
+  describe('computeFadeLevel unassisted-success gate', () => {
+    it('caps just below withdrawn when every success was assisted', () => {
+      expect(FadingPolicy.computeFadeLevel(0.874, { correct: 3, assisted: 3 }))
+        .toBe(FadingPolicy.UNASSISTED_GATE_CAP);
+      expect(FadingPolicy.getMode(FadingPolicy.computeFadeLevel(0.874, { correct: 3, assisted: 3 })))
+        .toBe('delayed');
+    });
+    it('caps a fully mastered confidence too when no success was unassisted', () => {
+      expect(FadingPolicy.computeFadeLevel(0.99, { correct: 5, assisted: 5 })).toBe(0.799);
+    });
+    it('does not cap once one success was unassisted', () => {
+      expect(FadingPolicy.computeFadeLevel(0.938, { correct: 2, assisted: 1 })).toBe(0.938);
+      expect(FadingPolicy.getMode(FadingPolicy.computeFadeLevel(0.938, { correct: 2, assisted: 1 })))
+        .toBe('withdrawn');
+    });
+    it('leaves a level below the cap untouched', () => {
+      expect(FadingPolicy.computeFadeLevel(0.548, { correct: 1, assisted: 1 })).toBe(0.548);
+      expect(FadingPolicy.computeFadeLevel(0.3, { correct: 0, assisted: 0 })).toBe(0.3);
+    });
+    it('treats a missing assisted count as zero, so a Samos entry is not capped', () => {
+      expect(FadingPolicy.computeFadeLevel(0.95, { correct: 4, total: 4 })).toBe(0.95);
+    });
+    it('caps when counts say successes exist but none were unassisted, by any shape', () => {
+      expect(FadingPolicy.computeFadeLevel(0.9, { correct: 1, assisted: 1 })).toBe(0.799);
+      expect(FadingPolicy.computeFadeLevel(0.9, { correct: 2, assisted: 4 })).toBe(0.799);
+    });
+    it('caps when the entry records no success at all', () => {
+      expect(FadingPolicy.computeFadeLevel(0.9, { correct: 0, assisted: 0 })).toBe(0.799);
+    });
+    it('behaves exactly as before when called with one argument', () => {
+      expect(FadingPolicy.computeFadeLevel(0.938)).toBe(0.938);
+      expect(FadingPolicy.computeFadeLevel(1)).toBe(1);
+    });
+    it('ignores a non-object or malformed counts argument', () => {
+      expect(FadingPolicy.computeFadeLevel(0.938, null)).toBe(0.938);
+      expect(FadingPolicy.computeFadeLevel(0.938, 'counts')).toBe(0.938);
+      expect(FadingPolicy.computeFadeLevel(0.938, { correct: 'two', assisted: 'one' })).toBe(0.938);
+    });
+  });
+
+  describe('hasUnassistedSuccess', () => {
+    it('is true when at least one success was unassisted', () => {
+      expect(FadingPolicy.hasUnassistedSuccess({ correct: 2, assisted: 1 })).toBe(true);
+      expect(FadingPolicy.hasUnassistedSuccess({ correct: 1, assisted: 0 })).toBe(true);
+      expect(FadingPolicy.hasUnassistedSuccess({ correct: 4 })).toBe(true);
+    });
+    it('is false when every success was assisted, or there are none', () => {
+      expect(FadingPolicy.hasUnassistedSuccess({ correct: 3, assisted: 3 })).toBe(false);
+      expect(FadingPolicy.hasUnassistedSuccess({ correct: 0, assisted: 0 })).toBe(false);
+    });
+    it('is true for a missing or malformed entry, so the gate never blocks on bad data', () => {
+      expect(FadingPolicy.hasUnassistedSuccess(null)).toBe(true);
+      expect(FadingPolicy.hasUnassistedSuccess(undefined)).toBe(true);
+      expect(FadingPolicy.hasUnassistedSuccess('entry')).toBe(true);
+      expect(FadingPolicy.hasUnassistedSuccess({ correct: 'two' })).toBe(true);
+    });
+  });
+
   describe('getMode', () => {
     it('returns full for fadeLevel < 0.4', () => {
       expect(FadingPolicy.getMode(0)).toBe('full');
