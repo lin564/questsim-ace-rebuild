@@ -123,3 +123,16 @@ CREATE TABLE IF NOT EXISTS analytics_events (
 CREATE INDEX IF NOT EXISTS idx_ae_student ON analytics_events(student_id);
 CREATE INDEX IF NOT EXISTS idx_ae_type ON analytics_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_ae_created ON analytics_events(created_at);
+
+-- Voice quota: daily generation counters for the ElevenLabs proxy, so a paid
+-- endpoint has a ceiling. actor is 'user:<id>' for a signed-in caller,
+-- 'addr:<token>' for a guest, or 'global:anon' for the all-guests ceiling.
+-- The token is a salted hash, so no visitor address is stored here.
+CREATE TABLE IF NOT EXISTS voice_usage (
+  actor TEXT NOT NULL,
+  day TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (actor, day)
+);
+CREATE INDEX IF NOT EXISTS idx_vu_day ON voice_usage(day);
