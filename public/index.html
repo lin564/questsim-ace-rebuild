@@ -4717,12 +4717,21 @@ function aceChooseRoute(idx) {
   const confidence = (typeof entry.confidence === 'number') ? entry.confidence : null;
   if (confidence === null) return;
 
-  // Fast-track requires a matching variant for this idx.
-  if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx]) {
+  // Fast-track requires a matching variant for this idx, and the same
+  // unassisted-success gate the fade level uses: a student whose successes
+  // all needed a hint has not shown they can solve it alone, so the harder
+  // variant waits.
+  const unassisted = globalThis.ScaffoldingFramework.FadingPolicy.hasUnassistedSuccess(entry);
+  if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx] && unassisted) {
     fastTrackActive = true;
     console.log('[ACE] Fast-track route chosen for idx', idx,
       'concept:', conceptKey, '| confidence:', confidence);
     return;
+  }
+  if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx] && !unassisted) {
+    console.log('[ACE] Fast-track held for idx', idx,
+      'concept:', conceptKey, '| confidence:', confidence,
+      '| no unassisted success yet');
   }
 
   console.log('[ACE] Normal route for idx', idx,
@@ -4784,15 +4793,20 @@ function computeAndPersistFadeLevel(idx) {
   // confidence stays null, and FadingPolicy.computeFadeLevel(null) then
   // returns 0, full support.
   let confidence = null;
+  let entry = null;
   let state = (window.currentUser && window.currentUser.mastery_state) || null;
   if (typeof state === 'string') {
     try { state = JSON.parse(state); } catch (e) { state = null; }
   }
   if (state && state[conceptKey] && typeof state[conceptKey].confidence === 'number') {
     confidence = state[conceptKey].confidence;
+    entry = state[conceptKey];
   }
 
-  const fadeLevel = globalThis.ScaffoldingFramework.FadingPolicy.computeFadeLevel(confidence);
+  // The entry carries the correct and assisted counts, so FadingPolicy can
+  // apply the unassisted-success gate: support never withdraws on hinted
+  // successes alone.
+  const fadeLevel = globalThis.ScaffoldingFramework.FadingPolicy.computeFadeLevel(confidence, entry);
   writeFadeLevel(studentId, conceptKey, fadeLevel);
   window.aceCurrentFadeLevel = fadeLevel;
   console.log('[ACE v3] fade level for', conceptKey, ':', fadeLevel,
