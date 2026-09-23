@@ -201,10 +201,12 @@ globalThis.ScaffoldingFramework = {
   },
 
   // ═══ FADING POLICY (spec Section 5) ═══
-  // Phase 5a: mastery-driven only. fadeLevel = clamped concept confidence.
+  // fadeLevel is derived from the concept's Mastery Map entry: clamped
+  // confidence, reduced by time away from the concept, then held under the
+  // withdrawn band while every success so far needed assistance.
   // Three modes: full (< 0.4), delayed (0.4 to 0.8), withdrawn (>= 0.8).
-  // Later phases add repetition, tier, decay, override dimensions, weakened and
-  // frequency-reduced modes, per-Support-Kind cardinality, and un-fading.
+  // Later phases add repetition, tier and override dimensions, weakened and
+  // frequency-reduced modes, and per-Support-Kind cardinality.
   FadingPolicy: {
     DELAY_THRESHOLD_MS: 20000,
 
@@ -212,6 +214,30 @@ globalThis.ScaffoldingFramework = {
     // Sits just under the withdrawn band (0.8), so support fades to delayed
     // but never disappears until the student succeeds without it.
     UNASSISTED_GATE_CAP: 0.799,
+
+    // Time away from a concept brings support back (spec Section 3). A week of
+    // grace covers the ordinary rhythm of weekly lessons and long weekends;
+    // past that, two points of fade level per day means a half-term break
+    // withdraws the harder variant, three weeks returns delayed support, and a
+    // summer holiday returns full support.
+    DECAY_GRACE_DAYS: 7,
+    DECAY_PER_DAY: 0.02,
+
+    // Whole days between an ISO timestamp and now, rounded down. Anything
+    // unreadable, and any timestamp in the future (a device clock set wrong),
+    // counts as 0: decay must never fire on data it cannot trust, because the
+    // failure direction has to leave a student with more support, not less.
+    daysSince(timestamp, now) {
+      if (typeof timestamp !== 'string' || timestamp.length === 0) return 0;
+      const then = new Date(timestamp);
+      if (Number.isNaN(then.getTime())) return 0;
+      const nowMs = (now instanceof Date && !Number.isNaN(now.getTime()))
+        ? now.getTime()
+        : Date.now();
+      const elapsed = nowMs - then.getTime();
+      if (!Number.isFinite(elapsed) || elapsed <= 0) return 0;
+      return Math.floor(elapsed / 86400000);
+    },
 
     // Has this concept ever been answered correctly without assistance?
     // Reads the counts the Mastery Map records per concept: correct counts
@@ -230,16 +256,26 @@ globalThis.ScaffoldingFramework = {
       return (correct - assisted) >= 1;
     },
 
-    // Map concept mastery confidence to a fade level in [0, 1].
-    // Identity with clamping, then the unassisted-success gate: a concept
-    // whose successes were all assisted cannot reach the withdrawn band,
-    // because mastery means unassisted performance (Tabak and Reiser).
-    // Called with one argument it behaves exactly as it did in Phase 5a.
-    computeFadeLevel(confidence, counts) {
+    // Map a concept's Mastery Map entry to a fade level in [0, 1].
+    // Clamp the confidence, reduce it by time away from the concept, then hold
+    // it under the withdrawn band while every success needed assistance,
+    // because mastery means unassisted performance (Tabak and Reiser). Both
+    // steps only ever reduce the level, so the result is the lower of the two.
+    // Called with one or two arguments it behaves exactly as it did before.
+    // `now` is for tests; it defaults to the current time.
+    computeFadeLevel(confidence, counts, lastAttemptAt, now) {
       if (typeof confidence !== 'number' || Number.isNaN(confidence)) return 0;
       let level = confidence;
       if (level < 0) level = 0;
       if (level > 1) level = 1;
+
+      const days = this.daysSince(lastAttemptAt, now);
+      if (days > this.DECAY_GRACE_DAYS) {
+        level = level - (days - this.DECAY_GRACE_DAYS) * this.DECAY_PER_DAY;
+        if (level < 0) level = 0;
+        level = Math.round(level * 1000000) / 1000000;
+      }
+
       if (counts !== undefined && !this.hasUnassistedSuccess(counts)) {
         return Math.min(level, this.UNASSISTED_GATE_CAP);
       }

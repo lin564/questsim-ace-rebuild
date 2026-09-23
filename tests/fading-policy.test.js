@@ -161,4 +161,90 @@ describe('FadingPolicy', () => {
       expect(FadingPolicy.DELAY_THRESHOLD_MS).toBe(20000);
     });
   });
+
+  describe('daysSince', () => {
+    const now = new Date('2026-09-23T12:00:00.000Z');
+    it('counts whole days elapsed', () => {
+      expect(FadingPolicy.daysSince('2026-09-23T12:00:00.000Z', now)).toBe(0);
+      expect(FadingPolicy.daysSince('2026-09-22T12:00:00.000Z', now)).toBe(1);
+      expect(FadingPolicy.daysSince('2026-09-16T12:00:00.000Z', now)).toBe(7);
+      expect(FadingPolicy.daysSince('2026-08-24T12:00:00.000Z', now)).toBe(30);
+    });
+    it('rounds down a partial day, so a student is never decayed early', () => {
+      expect(FadingPolicy.daysSince('2026-09-22T13:00:00.000Z', now)).toBe(0);
+      expect(FadingPolicy.daysSince('2026-09-21T13:00:00.000Z', now)).toBe(1);
+    });
+    it('returns 0 for a timestamp in the future (a device clock set wrong)', () => {
+      expect(FadingPolicy.daysSince('2026-10-01T12:00:00.000Z', now)).toBe(0);
+    });
+    it('returns 0 for anything it cannot read', () => {
+      expect(FadingPolicy.daysSince(undefined, now)).toBe(0);
+      expect(FadingPolicy.daysSince(null, now)).toBe(0);
+      expect(FadingPolicy.daysSince('', now)).toBe(0);
+      expect(FadingPolicy.daysSince('not a date', now)).toBe(0);
+      expect(FadingPolicy.daysSince(1758628800000, now)).toBe(0);
+      expect(FadingPolicy.daysSince({}, now)).toBe(0);
+    });
+  });
+
+  describe('computeFadeLevel time decay', () => {
+    const now = new Date('2026-09-23T12:00:00.000Z');
+    // An entry whose last attempt was `d` days before `now`, with one clean success.
+    const ago = (d) => new Date(now.getTime() - d * 86400000).toISOString();
+    const clean = { correct: 2, assisted: 0 };
+
+    it('leaves the grace period untouched', () => {
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, ago(0), now)).toBe(0.94);
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, ago(7), now)).toBe(0.94);
+    });
+    it('loses exactly one step on the first day past grace', () => {
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, ago(8), now)).toBeCloseTo(0.92, 10);
+    });
+    it('walks the approved curve from 0.94', () => {
+      const at = (d) => Number(FadingPolicy.computeFadeLevel(0.94, clean, ago(d), now).toFixed(3));
+      expect(at(10)).toBe(0.88);
+      expect(at(14)).toBe(0.8);
+      expect(at(21)).toBe(0.66);
+      expect(at(28)).toBe(0.52);
+      expect(at(35)).toBe(0.38);
+      expect(at(49)).toBe(0.1);
+    });
+    it('moves through the bands as the absence lengthens', () => {
+      const mode = (d) => FadingPolicy.getMode(FadingPolicy.computeFadeLevel(0.94, clean, ago(d), now));
+      expect(mode(7)).toBe('withdrawn');
+      expect(mode(14)).toBe('withdrawn');
+      expect(mode(21)).toBe('delayed');
+      expect(mode(35)).toBe('full');
+    });
+    it('walks the approved curve from 0.727', () => {
+      const at = (d) => Number(FadingPolicy.computeFadeLevel(0.727, clean, ago(d), now).toFixed(3));
+      expect(at(0)).toBe(0.727);
+      expect(at(14)).toBe(0.587);
+      expect(at(21)).toBe(0.447);
+      expect(at(35)).toBe(0.167);
+    });
+    it('floors at 0 and never goes below', () => {
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, ago(60), now)).toBe(0);
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, ago(365), now)).toBe(0);
+    });
+    it('does not decay on unreadable or future timestamps', () => {
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, undefined, now)).toBe(0.94);
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, null, now)).toBe(0.94);
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, 'not a date', now)).toBe(0.94);
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, ago(-30), now)).toBe(0.94);
+    });
+    it('takes the lower of decay and the unassisted-success cap', () => {
+      const allAssisted = { correct: 3, assisted: 3 };
+      // Fresh: the cap binds.
+      expect(FadingPolicy.computeFadeLevel(0.874, allAssisted, ago(0), now)).toBe(0.799);
+      // Rusty: decay has already taken it below the cap.
+      expect(Number(FadingPolicy.computeFadeLevel(0.874, allAssisted, ago(21), now).toFixed(3))).toBe(0.594);
+    });
+    it('keeps its one-argument and two-argument behaviour unchanged', () => {
+      expect(FadingPolicy.computeFadeLevel(0.938)).toBe(0.938);
+      expect(FadingPolicy.computeFadeLevel(0.938, { correct: 2, assisted: 1 })).toBe(0.938);
+      expect(FadingPolicy.computeFadeLevel(0.874, { correct: 3, assisted: 3 })).toBe(0.799);
+      expect(FadingPolicy.computeFadeLevel(null)).toBe(0);
+    });
+  });
 });
