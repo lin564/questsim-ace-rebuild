@@ -225,8 +225,11 @@ globalThis.ScaffoldingFramework = {
 
     // Whole days between an ISO timestamp and now, rounded down. Anything
     // unreadable, and any timestamp in the future (a device clock set wrong),
-    // counts as 0: decay must never fire on data it cannot trust, because the
-    // failure direction has to leave a student with more support, not less.
+    // counts as 0. Decay acts on evidence of absence, and a value we cannot
+    // read is not evidence, so the policy takes no action and leaves the level
+    // where the student's performance put it. The server writes this field on
+    // every attempt, so an unreadable one means no recorded attempt rather
+    // than a long absence.
     daysSince(timestamp, now) {
       if (typeof timestamp !== 'string' || timestamp.length === 0) return 0;
       const then = new Date(timestamp);
@@ -273,7 +276,9 @@ globalThis.ScaffoldingFramework = {
       if (days > this.DECAY_GRACE_DAYS) {
         level = level - (days - this.DECAY_GRACE_DAYS) * this.DECAY_PER_DAY;
         if (level < 0) level = 0;
-        level = Math.round(level * 1000000) / 1000000;
+        // Absorb binary floating point error so that 14 days from 0.94 gives
+        // exactly 0.8, the withdrawn boundary, rather than a hair below it.
+        level = Math.round(level * 1000000000) / 1000000000;
       }
 
       if (counts !== undefined && !this.hasUnassistedSuccess(counts)) {

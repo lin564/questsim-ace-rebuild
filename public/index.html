@@ -4717,65 +4717,32 @@ function aceChooseRoute(idx) {
   const confidence = (typeof entry.confidence === 'number') ? entry.confidence : null;
   if (confidence === null) return;
 
-  // Fast-track requires a matching variant for this idx, and the same
-  // unassisted-success gate the fade level uses: a student whose successes
-  // all needed a hint has not shown they can solve it alone, so the harder
-  // variant waits.
-  const unassisted = globalThis.ScaffoldingFramework.FadingPolicy.hasUnassistedSuccess(entry);
-  if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx] && unassisted) {
+  // Fast-track decides from the same effective fade level that fading uses,
+  // not from raw confidence, so a student who is rusty or who has only ever
+  // succeeded with help is not handed the harder variant. For a current
+  // student with an unassisted success the effective level equals the clamped
+  // confidence, so this is the behaviour that already shipped.
+  const lastAttemptAt = (typeof entry.updated_at === 'string') ? entry.updated_at : null;
+  const effective = globalThis.ScaffoldingFramework.FadingPolicy.computeFadeLevel(
+    confidence, entry, lastAttemptAt
+  );
+
+  if (effective >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx]) {
     fastTrackActive = true;
     console.log('[ACE] Fast-track route chosen for idx', idx,
-      'concept:', conceptKey, '| confidence:', confidence);
+      'concept:', conceptKey, '| effective fade level:', effective);
     return;
-  }
-  if (confidence >= ACE_FASTTRACK_THRESHOLD && fastTrackVariants[idx] && !unassisted) {
-    console.log('[ACE] Fast-track held for idx', idx,
-      'concept:', conceptKey, '| confidence:', confidence,
-      '| no unassisted success yet');
   }
 
   console.log('[ACE] Normal route for idx', idx,
-    'concept:', conceptKey, '| confidence:', confidence);
+    'concept:', conceptKey, '| confidence:', confidence,
+    '| effective fade level:', effective);
 }
 
-// ═══ ACE v3.0 FADE STATE PERSISTENCE (Phase 5a) ═══
-// Per-student per-concept fade level, keyed qs_fade_<studentId>_<conceptKey>.
-// Phase 5a persists to localStorage only. D1 persistence is a later phase.
-// Defined at top level (not inside the QS Phase 1 data-layer closure further
-// down the file) so computeAndPersistFadeLevel and loadChallenge, both in
-// this scope, can call them directly.
-// readFadeLevel has no caller yet in Phase 5a; it is here for Phase 5c,
-// which un-fades a student back up and needs the previous level to do so.
-function fadeStorageKey(studentId, conceptKey) {
-  return 'qs_fade_' + String(studentId || 'anon') + '_' + String(conceptKey);
-}
-
-function readFadeLevel(studentId, conceptKey) {
-  try {
-    const raw = localStorage.getItem(fadeStorageKey(studentId, conceptKey));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return (parsed && typeof parsed.fadeLevel === 'number') ? parsed.fadeLevel : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-function writeFadeLevel(studentId, conceptKey, fadeLevel) {
-  try {
-    localStorage.setItem(
-      fadeStorageKey(studentId, conceptKey),
-      JSON.stringify({ fadeLevel, computedAt: new Date().toISOString() })
-    );
-  } catch (e) {
-    // localStorage unavailable (private mode, quota). Fade falls back to in-memory only.
-  }
-}
-
-// Compute the fade level for a challenge's concept from mastery confidence,
-// persist it, and expose it as window.aceCurrentFadeLevel.
-// Reads window.currentUser.mastery_state (D1) only; the in-page masteryState
-// object is a display seed, not a data source, see the comment below.
+// Compute the fade level for a challenge's concept and expose it as
+// window.aceCurrentFadeLevel. Derived on every challenge load from the
+// concept's D1 entry, so nothing is stored: confidence, the assisted counts,
+// and the last-attempt date are all the policy needs.
 // Read-only with respect to mastery: never assigns to masteryState or
 // window.currentUser.mastery_state.
 function computeAndPersistFadeLevel(idx) {
@@ -4784,7 +4751,6 @@ function computeAndPersistFadeLevel(idx) {
     window.aceCurrentFadeLevel = null;
     return;
   }
-  const studentId = (window.currentUser && window.currentUser.id) || 'anon';
 
   // D1 mastery_state is the only source consulted here. The in-page
   // masteryState object is a hardcoded demo seed for the Mastery Map
@@ -4803,11 +4769,14 @@ function computeAndPersistFadeLevel(idx) {
     entry = state[conceptKey];
   }
 
-  // The entry carries the correct and assisted counts, so FadingPolicy can
-  // apply the unassisted-success gate: support never withdraws on hinted
-  // successes alone.
-  const fadeLevel = globalThis.ScaffoldingFramework.FadingPolicy.computeFadeLevel(confidence, entry);
-  writeFadeLevel(studentId, conceptKey, fadeLevel);
+  // The entry carries three things the policy needs: the confidence, the
+  // correct and assisted counts for the unassisted-success gate, and
+  // updated_at for time decay. All three come from D1, so a student's fade
+  // level follows them across devices.
+  const lastAttemptAt = (entry && typeof entry.updated_at === 'string') ? entry.updated_at : null;
+  const fadeLevel = globalThis.ScaffoldingFramework.FadingPolicy.computeFadeLevel(
+    confidence, entry, lastAttemptAt
+  );
   window.aceCurrentFadeLevel = fadeLevel;
   console.log('[ACE v3] fade level for', conceptKey, ':', fadeLevel,
     '(mode:', globalThis.ScaffoldingFramework.FadingPolicy.getMode(fadeLevel) + ')');
