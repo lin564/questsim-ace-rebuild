@@ -209,6 +209,11 @@ describe('FadingPolicy', () => {
       expect(at(35)).toBe(0.38);
       expect(at(49)).toBe(0.1);
     });
+    it('rounds away binary float error at the band edge', () => {
+      // 0.94 - 7 * 0.02 is 0.7999999999999999 in raw float arithmetic, which
+      // would read as delayed rather than withdrawn. The policy rounds it.
+      expect(FadingPolicy.computeFadeLevel(0.94, clean, ago(14), now)).toBe(0.8);
+    });
     it('moves through the bands as the absence lengthens', () => {
       const mode = (d) => FadingPolicy.getMode(FadingPolicy.computeFadeLevel(0.94, clean, ago(d), now));
       expect(mode(7)).toBe('withdrawn');

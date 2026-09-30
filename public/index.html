@@ -4674,11 +4674,14 @@ let currentTier = 'extension'; // foundation | extension | mastery
 let scaffoldActive = false; // true when student is in a side-quest scaffold
 let fastTrackActive = false;
 
-// ═══ ACE ROUTING (scaffold / fast-track / normal) ═══
+// ═══ ACE ROUTING (fast-track / normal) ═══
 // Maps a challenge index to the concept key used in student_profiles.mastery_state.
-// When a student opens a challenge, aceChooseRoute() looks up their confidence
-// for the relevant concept and promotes them into fast-track (>=0.85) or
-// drops them into scaffold (<0.5) automatically. Normal path otherwise.
+// When a student opens a challenge, aceChooseRoute() reads their Mastery Map
+// entry for that challenge's concept and asks the Fading Policy for the
+// effective fade level, the same number that governs how much support fires.
+// Fast-track opens when that level reaches ACE_FASTTRACK_THRESHOLD, so a
+// student who is rusty or who has only ever succeeded with help is not handed
+// the harder variant. Normal path otherwise.
 // Each challenge carries its own concept key (see the challenges array).
 // Read it with challengeConceptKey(idx). The former index-keyed map was
 // retired with the Mastery Map write path so a challenge is authored in one

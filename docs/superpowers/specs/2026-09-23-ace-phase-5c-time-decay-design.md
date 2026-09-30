@@ -78,6 +78,8 @@ A student who left at 0.727, one clean success, already in delayed support:
 
 A week of grace means the ordinary rhythm of a weekly lesson never triggers decay, and a long weekend never does. Two weeks, a typical half-term break, withdraws the harder variant but still leaves the student to work unaided. Three weeks returns delayed support. Five to seven weeks, a summer holiday, returns full support. The constants sit in one place and are the tuning surface once real classes produce data.
 
+The tables in 3.3 start from 0.94, but the knowledge tracing rule clamps its input at 0.98 before updating, so a student with three or four clean successes is parked at 0.988 to 0.996. Here is the same calendar for a student who left at 0.996, which is where several clean successes actually leave a student. At 14 days the level is 0.856, so fast-track is still open through a two week half term. Delayed support arrives at day 17 and full support at day 37. The bands therefore arrive one to three days later than the 0.94 tables suggest. The constants remain the stated tuning surface if that proves too slow with real classes.
+
 ### 3.5 Confidence is never modified
 
 Decay moves the fade level only. The stored confidence, the level tier, the teacher dashboard, and the ready-for-extension alerts are untouched.
@@ -150,6 +152,8 @@ Days are whole days, computed from the difference in milliseconds and rounded do
 **Rollout:** no schema change, no migration, no new endpoint. Delivery follows the established pattern: implementation plan, subagent-driven development on `claude/kind-solomon-9be8a0`, final review, merge into `claude/integrate-triangle-types-activity-v0P98` with a local merge and push, then a live check.
 
 **First-day effect:** none for anyone who has used the site in the last week. Students returning from a break of more than two weeks will find support where it had been withdrawn. No teacher-visible number changes.
+
+**Known limit: returned support lasts until the next attempt.** The server writes `updated_at` on every attempt, right or wrong, so the first attempt on a concept after an absence resets the elapsed days to zero and the decay disappears. A student who returns after seven weeks meets full support, and if they then answer wrong their confidence falls but the decay is gone, so the next load of that concept can read the undecayed confidence and reopen fast-track. This is currently almost invisible, because each of the four challenges owns one concept and a challenge reloads mid-visit only when a student accepts an earned fast-track offer. It becomes routine as soon as two challenges share a concept. The fix belongs to Phase 5b, which should decide whether returned support holds for a number of attempts rather than until the next one. Doing so needs one more field inside the concept entry, which is the point at which deriving the fade level rather than storing it has to bend.
 
 ---
 

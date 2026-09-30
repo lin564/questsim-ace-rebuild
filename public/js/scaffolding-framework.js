@@ -228,8 +228,11 @@ globalThis.ScaffoldingFramework = {
     // counts as 0. Decay acts on evidence of absence, and a value we cannot
     // read is not evidence, so the policy takes no action and leaves the level
     // where the student's performance put it. The server writes this field on
-    // every attempt, so an unreadable one means no recorded attempt rather
-    // than a long absence.
+    // every attempt, so an unreadable one means no timestamp recorded rather
+    // than a long absence. The value is expected to be an ISO 8601 string with
+    // a zone, as both writers produce. A SQLite style datetime('now') string
+    // without a zone would parse as local time in the browser and shift the
+    // day boundary by the offset.
     daysSince(timestamp, now) {
       if (typeof timestamp !== 'string' || timestamp.length === 0) return 0;
       const then = new Date(timestamp);
