@@ -118,7 +118,9 @@ Existing `qs_fade_*` keys in a student's browser are left where they are. They a
 
 ## 8. Error handling
 
-Decay never fires on data it cannot read. A missing `updated_at`, a value that is not a string, an unparseable date, and a timestamp in the future (a device clock set wrong) all mean zero days elapsed and therefore no decay. The failure direction is deliberate: bad data must leave a student with more support, never less.
+Decay never fires on data it cannot read. A missing `updated_at`, a value that is not a string, an unparseable date, and a timestamp in the future (a device clock set wrong) all mean zero days elapsed and therefore no decay.
+
+The rationale is that decay is an action taken on evidence of absence, so without trustworthy evidence it takes no action and leaves the level where the student's demonstrated performance put it. Note what that costs, because it is the opposite of the usual safe direction: a higher fade level means less support, so skipping decay leaves a student with less support than decaying would. That is accepted here because the server writes this timestamp on every attempt, which means an unreadable one indicates no recorded attempt rather than a long absence, and inventing an absence from a value we cannot read would be the worse error.
 
 Days are whole days, computed from the difference in milliseconds and rounded down, so a student is never decayed a fraction of a step early.
 
