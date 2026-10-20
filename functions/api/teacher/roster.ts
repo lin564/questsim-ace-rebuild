@@ -1,0 +1,473 @@
+// Teacher roster API: detailed class roster with student stats
+import type { Env, DataContext } from '../../types';
+
+interface StudentRow {
+  student_id: number;
+  first_name: string;
+  last_name: string;
+  avatar_url: string | null;
+  xp: number;
+  level: number;
+  tier: string;
+  mastery_state: string | null;
+  joined_at: string;
+}
+
+interface SessionRow {
+  student_id: number;
+  total_sessions: number;
+  last_active: string | null;
+}
+
+interface AttemptRow {
+  student_id: number;
+  total_attempts: number;
+  correct_attempts: number;
+}
+
+// GET: return full roster for a class with student profiles, sessions, and stats
+export const onRequestGet: PagesFunction<Env, any, DataContext> = async (context) => {
+  const user = context.data.user!;
+  const db = context.env.DB;
+
+  const url = new URL(context.request.url);
+  const classId = url.searchParams.get('class_id');
+
+  if (!classId) {
+    return Response.json({ error: 'class_id query parameter is required' }, { status: 400 });
+  }
+
+  const classIdNum = parseInt(classId, 10);
+  if (isNaN(classIdNum)) {
+    return Response.json({ error: 'class_id must be a number' }, { status: 400 });
+  }
+
+  // Verify the class exists and belongs to this teacher (or user is admin)
+  const classRow = await db.prepare(
+    'SELECT id, name, class_code, teacher_id FROM classes WHERE id = ?'
+  ).bind(classIdNum).first<{ id: number; name: string; class_code: string; teacher_id: number }>();
+
+  if (!classRow) {
+    return Response.json({ error: 'Class not found' }, { status: 404 });
+  }
+
+  if (user.role !== 'admin' && classRow.teacher_id !== user.id) {
+    return Response.json({ error: 'Forbidden: you do not own this class' }, { status: 403 });
+  }
+
+  // Fetch students with their profiles
+  const studentsResult = await db.prepare(`
+    SELECT
+      u.id AS student_id,
+      u.first_name,
+      u.last_name,
+      u.avatar_url,
+      COALESCE(sp.xp, 0) AS xp,
+      COALESCE(sp.level, 1) AS level,
+      COALESCE(sp.tier, 'foundation') AS tier,
+      sp.mastery_state,
+      cs.joined_at
+    FROM class_students cs
+    JOIN users u ON cs.student_id = u.id
+    LEFT JOIN student_profiles sp ON sp.user_id = u.id
+    WHERE cs.class_id = ? AND cs.is_active = 1
+    ORDER BY u.last_name, u.first_name
+  `).bind(classIdNum).all<StudentRow>();
+
+  const students = studentsResult.results;
+  const studentIds = students.map(s => s.student_id);
+
+  // If no students, return early with empty data
+  if (studentIds.length === 0) {
+    return Response.json({
+      class: { id: classRow.id, name: classRow.name, class_code: classRow.class_code },
+      students: [],
+      stats: {
+        total: 0,
+        active_today: 0,
+        avg_mastery: 0,
+        tiers: { foundation: 0, extension: 0, mastery: 0 },
+      },
+    });
+  }
+
+  // Build placeholder list for IN clause
+  const placeholders = studentIds.map(() => '?').join(', ');
+
+  // Aggregate game_sessions per student for this class
+  const sessionsResult = await db.prepare(`
+    SELECT
+      student_id,
+      COUNT(*) AS total_sessions,
+      MAX(COALESCE(ended_at, started_at)) AS last_active
+    FROM game_sessions
+    WHERE class_id = ? AND student_id IN (${placeholders})
+    GROUP BY student_id
+  `).bind(classIdNum, ...studentIds).all<SessionRow>();
+
+  const sessionsMap = new Map<number, SessionRow>();
+  for (const row of sessionsResult.results) {
+    sessionsMap.set(row.student_id, row);
+  }
+
+  // Aggregate challenge_attempts per student
+  const attemptsResult = await db.prepare(`
+    SELECT
+      ca.student_id,
+      COUNT(*) AS total_attempts,
+      SUM(CASE WHEN ca.is_correct = 1 THEN 1 ELSE 0 END) AS correct_attempts
+    FROM challenge_attempts ca
+    JOIN game_sessions gs ON ca.session_id = gs.id
+    WHERE gs.class_id = ? AND ca.student_id IN (${placeholders})
+    GROUP BY ca.student_id
+  `).bind(classIdNum, ...studentIds).all<AttemptRow>();
+
+  const attemptsMap = new Map<number, AttemptRow>();
+  for (const row of attemptsResult.results) {
+    attemptsMap.set(row.student_id, row);
+  }
+
+  // Count students active today
+  const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const activeTodayResult = await db.prepare(`
+    SELECT COUNT(DISTINCT student_id) AS active_count
+    FROM game_sessions
+    WHERE class_id = ? AND student_id IN (${placeholders})
+      AND date(COALESCE(ended_at, started_at)) = ?
+  `).bind(classIdNum, ...studentIds, todayStr).first<{ active_count: number }>();
+
+  const activeToday = activeTodayResult?.active_count ?? 0;
+
+  // Parse mastery_state JSON and compute per-student mastery percentage.
+  // mastery_state structure: { concept1: { level: string, confidence: number }, ... }
+  function computeMastery(masteryState: string | null): number {
+    if (!masteryState) return 0;
+    try {
+      const state = JSON.parse(masteryState);
+      if (typeof state === 'object' && state !== null) {
+        const entries = Object.values(state) as any[];
+        if (entries.length === 0) return 0;
+        // Extract confidence numbers (skip entries missing confidence)
+        const confidences = entries
+          .map(e => (e && typeof e === 'object' && typeof e.confidence === 'number') ? e.confidence : null)
+          .filter((c): c is number => c !== null);
+        if (confidences.length === 0) return 0;
+        const sum = confidences.reduce((a, b) => a + b, 0);
+        return Math.round((sum / confidences.length) * 100) / 100;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return 0;
+  }
+
+  // Parse the mastery_state JSON once per student so we can return both
+  // the computed aggregate AND the per-concept breakdown that the teacher
+  // dashboard can drill into. Shape of mastery_state:
+  //   { "concept_name": { level: "mastery"|"extension"|"foundation",
+  //                       confidence: 0-1, last_activity: "...", updated_at: "..." },
+  //     ... }
+  function parseMasteryState(masteryJson: string | null): Record<string, any> {
+    if (!masteryJson) return {};
+    try {
+      const obj = JSON.parse(masteryJson);
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch { return {}; }
+  }
+
+  // Build detailed student list
+  const enrichedStudents = students.map(s => {
+    const session = sessionsMap.get(s.student_id);
+    const attempt = attemptsMap.get(s.student_id);
+    const mastery = computeMastery(s.mastery_state);
+    const masteryByConcept = parseMasteryState(s.mastery_state);
+    const totalAttempts = attempt?.total_attempts ?? 0;
+    const correctAttempts = attempt?.correct_attempts ?? 0;
+    const confidence = totalAttempts > 0
+      ? Math.round((correctAttempts / totalAttempts) * 100) / 100
+      : 0;
+
+    return {
+      student_id: s.student_id,
+      name: `${s.first_name} ${s.last_name}`.trim(),
+      avatar_url: s.avatar_url,
+      xp: s.xp,
+      level: s.level,
+      tier: s.tier,
+      mastery,
+      mastery_by_concept: masteryByConcept,
+      challenges_completed: correctAttempts,
+      sessions_completed: session?.total_sessions ?? 0,
+      last_active: session?.last_active ?? null,
+      confidence,
+    };
+  });
+
+  // Aggregate per-concept stats across the whole class. For each unique
+  // concept seen in any student's mastery_state, compute the class-wide
+  // average confidence and the distribution across tier levels.
+  const conceptAgg: Record<string, {
+    name: string;
+    student_count: number;
+    avg_confidence: number;
+    levels: { foundation: number; extension: number; mastery: number };
+    // Running sum used only during aggregation; dropped before response.
+    _sum: number;
+  }> = {};
+  for (const s of enrichedStudents) {
+    for (const [concept, data] of Object.entries(s.mastery_by_concept)) {
+      if (!data || typeof data !== 'object') continue;
+      const c = data as { level?: string; confidence?: number };
+      if (!conceptAgg[concept]) {
+        conceptAgg[concept] = {
+          name: concept,
+          student_count: 0,
+          avg_confidence: 0,
+          levels: { foundation: 0, extension: 0, mastery: 0 },
+          _sum: 0,
+        };
+      }
+      conceptAgg[concept].student_count++;
+      conceptAgg[concept]._sum += (typeof c.confidence === 'number') ? c.confidence : 0;
+      const lvl = (c.level || '').toLowerCase();
+      if (lvl === 'foundation' || lvl === 'extension' || lvl === 'mastery') {
+        conceptAgg[concept].levels[lvl]++;
+      }
+    }
+  }
+  const conceptBreakdown = Object.values(conceptAgg).map(c => ({
+    name: c.name,
+    student_count: c.student_count,
+    avg_confidence: c.student_count > 0
+      ? Math.round((c._sum / c.student_count) * 100) / 100
+      : 0,
+    levels: c.levels,
+  })).sort((a, b) => b.student_count - a.student_count);
+
+  // Aggregate stats
+  const totalStudents = enrichedStudents.length;
+  const avgMastery = totalStudents > 0
+    ? Math.round(
+        (enrichedStudents.reduce((sum, s) => sum + s.mastery, 0) / totalStudents) * 100
+      ) / 100
+    : 0;
+
+  const tiers = { foundation: 0, extension: 0, mastery: 0 };
+  for (const s of enrichedStudents) {
+    const t = s.tier.toLowerCase();
+    if (t === 'foundation') tiers.foundation++;
+    else if (t === 'extension') tiers.extension++;
+    else if (t === 'mastery') tiers.mastery++;
+  }
+
+  // ═══ MODULE-SCOPED ALERTS ═══
+  // Each module (game location) gets its own set of actionable alerts
+  // derived from attempts at that location — no time cutoff, uses all
+  // attempts recorded for students in this class. Produces three alert
+  // types per module:
+  //   - struggling:   students with low accuracy at this location (≥ 2 attempts, < 50%)
+  //   - stuck:        students with many attempts but still low accuracy
+  //   - ready:        students with high mastery confidence for the module's concept
+  //   - confusion:    Samos only — per (actual, placed_as) pair aggregated from answer_log
+  const MODULES = [
+    { key: 'samos',      label: 'Samos',      concept: 'triangle_types',     subconcepts: true },
+    { key: 'athens',     label: 'Athens',     concept: 'finding_leg',         subconcepts: false },
+    { key: 'rhodes',     label: 'Rhodes',     concept: 'finding_hypotenuse',  subconcepts: false },
+    { key: 'alexandria', label: 'Alexandria', concept: 'pythagorean_triples', subconcepts: false },
+  ];
+
+  // Drop-target → concept (Samos only, used for confusion pair aggregation)
+  const TARGET_CONCEPT: Record<string, string> = {
+    'DropTarget_01': 'equilateral',
+    'DropTarget_02': 'right',
+    'DropTarget_03': 'isosceles',
+    'DropTarget_04': 'scalene',
+  };
+  const TILE_CONCEPT: Record<string, string> = {
+    'EquilateralT': 'equilateral',
+    'RightT': 'right',
+    'IsoscelesT': 'isosceles',
+    'ScaleneT': 'scalene',
+  };
+
+  // Fetch all per-attempt rows for students in this class across all modules.
+  // We need user_answer to extract answer_log for confusion pairs; the row
+  // count per class should stay small (dozens to low hundreds).
+  const moduleAttemptsResult = await db.prepare(`
+    SELECT ca.student_id, ca.location, ca.is_correct, ca.user_answer
+    FROM challenge_attempts ca
+    WHERE ca.student_id IN (${placeholders})
+  `).bind(...studentIds).all<{
+    student_id: number;
+    location: string | null;
+    is_correct: number;
+    user_answer: string | null;
+  }>();
+
+  // Build a per-module → per-student → {attempts, correct} map, plus a
+  // per-module confusion matrix map for Samos.
+  const perModuleStudentStats: Record<string, Map<number, { attempts: number; correct: number }>> = {};
+  const perModuleConfusion: Record<string, Record<string, Record<string, number>>> = {};
+  const perModuleConfusionStudents: Record<string, Record<string, Set<number>>> = {};
+
+  for (const row of moduleAttemptsResult.results) {
+    const loc = (row.location || '').toLowerCase();
+    if (!loc) continue;
+    if (!perModuleStudentStats[loc]) perModuleStudentStats[loc] = new Map();
+    const map = perModuleStudentStats[loc];
+    const entry = map.get(row.student_id) || { attempts: 0, correct: 0 };
+    entry.attempts++;
+    if (row.is_correct) entry.correct++;
+    map.set(row.student_id, entry);
+
+    // For Samos, extract answer_log entries to build a class-wide confusion matrix
+    if (loc === 'samos' && row.user_answer) {
+      try {
+        const ua = JSON.parse(row.user_answer);
+        const answerLog = ua && ua.answer_log;
+        if (Array.isArray(answerLog)) {
+          if (!perModuleConfusion[loc]) perModuleConfusion[loc] = {};
+          if (!perModuleConfusionStudents[loc]) perModuleConfusionStudents[loc] = {};
+          for (const e of answerLog) {
+            if (!e || typeof e !== 'object' || e.correct) continue; // only track WRONG drops
+            const actual = TILE_CONCEPT[e.tile];
+            const placed = TARGET_CONCEPT[e.target];
+            if (!actual || !placed || actual === placed) continue;
+            const pairKey = `${actual}__${placed}`;
+            if (!perModuleConfusion[loc][pairKey]) perModuleConfusion[loc][pairKey] = { count: 0 } as any;
+            (perModuleConfusion[loc][pairKey] as any).count =
+              ((perModuleConfusion[loc][pairKey] as any).count || 0) + 1;
+            if (!perModuleConfusionStudents[loc][pairKey]) {
+              perModuleConfusionStudents[loc][pairKey] = new Set();
+            }
+            perModuleConfusionStudents[loc][pairKey].add(row.student_id);
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+  }
+
+  // Build a per-student mastery-by-concept lookup keyed by student_id
+  const studentMasteryMap = new Map<number, Record<string, any>>();
+  for (const s of students) {
+    try {
+      if (s.mastery_state) studentMasteryMap.set(s.student_id, JSON.parse(s.mastery_state));
+    } catch { /* skip */ }
+  }
+
+  // Generate alerts per module
+  const alertsByModule: Array<{
+    module: string;
+    label: string;
+    concept: string;
+    alerts: Array<{
+      type: 'struggling' | 'stuck' | 'ready' | 'confusion';
+      severity: 'low' | 'med' | 'high';
+      message: string;
+      student_count: number;
+      student_ids: number[];
+      // Optional structured payload for future client-side filtering
+      extra?: any;
+    }>;
+  }> = [];
+
+  for (const mod of MODULES) {
+    const alerts: any[] = [];
+    const studentStats = perModuleStudentStats[mod.key];
+
+    if (studentStats && studentStats.size > 0) {
+      // Struggling: ≥ 2 attempts, accuracy < 50%
+      const struggling: number[] = [];
+      const stuck: number[] = [];
+      for (const [sid, s] of studentStats) {
+        if (s.attempts < 2) continue;
+        const acc = s.correct / s.attempts;
+        if (s.attempts >= 6 && acc < 0.4) {
+          stuck.push(sid);
+        } else if (acc < 0.5) {
+          struggling.push(sid);
+        }
+      }
+      if (struggling.length > 0) {
+        alerts.push({
+          type: 'struggling',
+          severity: struggling.length >= 3 ? 'high' : 'med',
+          message: `${struggling.length} student${struggling.length === 1 ? ' is' : 's are'} struggling with ${mod.label} (< 50% accuracy)`,
+          student_count: struggling.length,
+          student_ids: struggling,
+        });
+      }
+      if (stuck.length > 0) {
+        alerts.push({
+          type: 'stuck',
+          severity: 'high',
+          message: `${stuck.length} student${stuck.length === 1 ? ' is' : 's are'} stuck at ${mod.label} (≥ 6 attempts, < 40% accuracy)`,
+          student_count: stuck.length,
+          student_ids: stuck,
+        });
+      }
+    }
+
+    // Ready-for-extension: students whose mastery confidence for this module's
+    // concept is ≥ 0.85 (the ACE fast-track threshold)
+    const ready: number[] = [];
+    for (const s of enrichedStudents) {
+      const masteryState = studentMasteryMap.get(s.student_id);
+      if (!masteryState) continue;
+      const entry = masteryState[mod.concept];
+      if (!entry || typeof entry.confidence !== 'number') continue;
+      if (entry.confidence >= 0.85) ready.push(s.student_id);
+    }
+    if (ready.length > 0) {
+      alerts.push({
+        type: 'ready',
+        severity: 'low',
+        message: `${ready.length} student${ready.length === 1 ? ' is' : 's are'} ready for the extension variant of ${mod.label} (confidence ≥ 85%)`,
+        student_count: ready.length,
+        student_ids: ready,
+      });
+    }
+
+    // Confusion-pair alerts (Samos only): pairs with ≥ 2 different students
+    // showing the same misclassification
+    if (mod.subconcepts && perModuleConfusion[mod.key]) {
+      for (const [pairKey, info] of Object.entries(perModuleConfusion[mod.key])) {
+        const students = perModuleConfusionStudents[mod.key][pairKey];
+        const sCount = students ? students.size : 0;
+        if (sCount < 2) continue;
+        const [actual, placed] = pairKey.split('__');
+        const pretty = (s: string) => s.replace(/^\w/, (c) => c.toUpperCase());
+        alerts.push({
+          type: 'confusion',
+          severity: sCount >= 3 ? 'high' : 'med',
+          message: `${sCount} students confusing ${pretty(actual)} ↔ ${pretty(placed)} in ${mod.label}`,
+          student_count: sCount,
+          student_ids: Array.from(students || []),
+          extra: { actual, placed, total_misclassifications: (info as any).count || 0 },
+        });
+      }
+    }
+
+    if (alerts.length > 0) {
+      alertsByModule.push({
+        module: mod.key,
+        label: mod.label,
+        concept: mod.concept,
+        alerts,
+      });
+    }
+  }
+
+  return Response.json({
+    class: { id: classRow.id, name: classRow.name, class_code: classRow.class_code },
+    students: enrichedStudents,
+    stats: {
+      total: totalStudents,
+      active_today: activeToday,
+      avg_mastery: avgMastery,
+      tiers,
+      concept_breakdown: conceptBreakdown,
+      alerts_by_module: alertsByModule,
+    },
+  });
+};

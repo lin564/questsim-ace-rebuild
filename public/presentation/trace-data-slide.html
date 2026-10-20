@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Click to Construct — ACE Data Trace</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy-deep: #0f2640;
+    --navy: #1B3A5C;
+    --navy-mid: #244A6E;
+    --teal: #2A7F8E;
+    --gold: #D4A843;
+    --green: #8BC34A;
+    --red: #E05368;
+    --purple: #9575CD;
+    --amber: #FFB74D;
+    --text: rgba(255,255,255,0.88);
+    --text-dim: rgba(255,255,255,0.55);
+    --text-faint: rgba(255,255,255,0.35);
+    --border: rgba(255,255,255,0.08);
+    --panel: rgba(255,255,255,0.03);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; width: 100%; overflow: hidden; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--navy-deep);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    padding: 14px 28px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: -0.01em;
+  }
+  .header-sub {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 2px;
+  }
+  .step-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+  .step-counter .num {
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* ═══ MAIN 3-COLUMN LAYOUT ═══ */
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    min-height: 0;
+  }
+  .col {
+    background: var(--navy-deep);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .col-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .col-title {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+
+  /* ═══ COLUMN 1: GAME INTERACTION ═══ */
+  .game-stage {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+  }
+  .dwell-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .dwell-value {
+    color: var(--gold);
+    font-weight: 700;
+    font-size: 1.3rem;
+  }
+  .dwell-bar {
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px;
+    margin: 0 auto 24px;
+    width: 80%;
+    overflow: hidden;
+  }
+  .dwell-fill {
+    height: 100%;
+    background: var(--gold);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+  .game-canvas {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+  }
+  .drop-zone {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    border: 2px dashed var(--gold);
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .triangle {
+    position: absolute;
+    transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 60px;
+    height: 60px;
+  }
+  .triangle svg {
+    width: 100%;
+    height: 100%;
+    stroke: var(--gold);
+    stroke-width: 2;
+    fill: none;
+  }
+  .triangle.start { bottom: 20%; left: 20%; }
+  .triangle.dragging { bottom: 50%; left: 50%; transform: translate(-50%, 0); }
+  .triangle.dropped { top: 36%; left: 50%; transform: translate(-50%, -50%); }
+  .triangle.correct svg { stroke: var(--green); }
+  .triangle.wrong svg { stroke: var(--red); }
+
+  .categories {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .cat-box {
+    padding: 12px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+  }
+  .cat-box.highlight {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(212,168,67,0.08);
+  }
+  .cat-box.correct-hit {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(139,195,74,0.1);
+  }
+
+  /* ═══ COLUMN 2: EVENT FIRED & LOGGED ═══ */
+  .event-section {
+    margin-bottom: 14px;
+  }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .event-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: var(--text);
+    opacity: 0.3;
+    transition: opacity 0.5s ease;
+  }
+  .event-box.active { opacity: 1; }
+  .event-box .key { color: var(--teal); }
+  .event-box .str { color: var(--green); }
+  .event-box .num { color: var(--amber); }
+  .event-box .bool { color: var(--purple); }
+  .event-box .err  { color: var(--red); }
+
+  .event-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .event-table th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--text-faint);
+    font-weight: 600;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+  }
+  .event-table td {
+    padding: 7px 10px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .event-table tr:last-child td { border-bottom: none; }
+  .event-table tr.row-hidden { display: none; }
+  .event-table tr.row-error td { color: var(--red); background: rgba(224,83,104,0.05); }
+  .event-table tr.row-error td.placed { color: var(--red); font-weight: 600; }
+  .event-table tr.row-error td.actual { color: var(--amber); font-weight: 600; }
+  .event-table tr.row-new {
+    animation: rowIn 0.6s ease;
+  }
+  @keyframes rowIn {
+    from { background: rgba(212,168,67,0.15); }
+    to { background: transparent; }
+  }
+
+  /* ═══ COLUMN 3: CATEGORIZED & APPLIED ═══ */
+  .logic-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.6;
+    color: var(--text);
+    opacity: 0.3;
+    transition: opacity 0.5s ease;
+    margin-bottom: 12px;
+  }
+  .logic-box.active { opacity: 1; }
+  .logic-box .op { color: var(--gold); }
+  .logic-box .cond { color: var(--teal); }
+  .logic-box .out { color: var(--red); font-weight: 600; }
+  .logic-box .arrow { color: var(--amber); }
+
+  /* Confusion matrix */
+  .matrix-wrapper { margin-bottom: 12px; }
+  .matrix {
+    display: grid;
+    grid-template-columns: 28px repeat(4, 1fr);
+    gap: 3px;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+  }
+  .matrix-col-hdr, .matrix-row-hdr {
+    color: var(--text-faint);
+    font-weight: 600;
+    text-align: center;
+    padding: 4px 0;
+  }
+  .matrix-cell {
+    aspect-ratio: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-weight: 500;
+    transition: all 0.4s ease;
+  }
+  .matrix-cell.diagonal { color: var(--green); border-color: rgba(139,195,74,0.2); }
+  .matrix-cell.misclass { color: var(--red); border-color: var(--red); background: rgba(224,83,104,0.12); font-weight: 700; }
+  .matrix-cell.zero { color: var(--text-faint); opacity: 0.3; }
+  .matrix-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-faint);
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  /* Fluency index */
+  .fluency {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    opacity: 0.3;
+    transition: opacity 0.5s ease;
+    margin-bottom: 12px;
+  }
+  .fluency.active { opacity: 1; }
+  .fluency-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .fluency-formula {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+  .fluency-formula .hi { color: var(--gold); font-weight: 700; }
+  .fluency-formula .result { color: var(--amber); font-size: 0.88rem; font-weight: 700; }
+  .fluency-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .fluency-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--red), var(--amber), var(--gold));
+    width: 0%;
+    transition: width 0.8s ease;
+  }
+  .fluency-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+
+  /* Learner profile */
+  .profile {
+    background: rgba(224,83,104,0.08);
+    border: 1px solid rgba(224,83,104,0.4);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.55;
+    display: none;
+  }
+  .profile.active { display: block; animation: fadeInUp 0.5s ease; }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .profile-label {
+    font-size: 0.62rem;
+    color: var(--red);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .profile strong { color: var(--text); font-weight: 700; }
+  .profile .line2 { margin-top: 4px; color: var(--text-dim); }
+  .profile .intervention { color: var(--amber); margin-top: 6px; font-weight: 600; }
+
+  /* ═══ FOOTER ═══ */
+  .footer {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 14px 28px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+  .btn {
+    padding: 8px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.06em;
+  }
+  .btn:hover { background: rgba(255,255,255,0.05); }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--navy-deep);
+    border-color: var(--gold);
+    font-weight: 700;
+  }
+  .btn-primary:hover { background: #e0b355; border-color: #e0b355; }
+  .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+  .step-desc {
+    flex: 1;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .step-desc strong { color: var(--text); }
+  .step-desc .step-num { color: var(--gold); font-weight: 700; }
+  .dots {
+    display: flex;
+    gap: 6px;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    opacity: 0.3;
+    transition: all 0.3s ease;
+  }
+  .dot.active { background: var(--gold); opacity: 1; transform: scale(1.3); }
+  .dot.past { background: var(--gold); opacity: 0.5; }
+
+  /* Color-coded values in tables */
+  .equilateral { color: #8BC34A; }
+  .right-val { color: #FFB74D; }
+  .isosceles { color: #64B5F6; }
+  .scalene { color: #CE93D8; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-title">From Click to Construct</div>
+    <div class="header-sub">Trace Data: One Classification Event · Pythagoras Quest Challenge 1</div>
+  </div>
+  <div class="step-counter">Step <span class="num" id="stepNum">1</span> of <span class="num">6</span></div>
+</div>
+
+<!-- MAIN 3-COLUMN -->
+<div class="main">
+
+  <!-- COLUMN 1: GAME INTERACTION -->
+  <div class="col">
+    <div class="col-header">01 / Game Interaction</div>
+    <div class="game-stage">
+      <div class="dwell-display">
+        Dwell time: <span class="dwell-value" id="dwellValue">0.0s</span>
+      </div>
+      <div class="dwell-bar">
+        <div class="dwell-fill" id="dwellFill"></div>
+      </div>
+      <div class="game-canvas">
+        <div class="drop-zone"></div>
+        <div class="triangle start" id="triangle">
+          <!-- Right triangle SVG with a distinct right angle -->
+          <svg viewBox="0 0 60 60">
+            <polygon points="10,50 50,50 10,10"></polygon>
+          </svg>
+        </div>
+      </div>
+      <div class="categories">
+        <div class="cat-box" id="cat-equilateral">Equilateral</div>
+        <div class="cat-box" id="cat-right">Right</div>
+        <div class="cat-box" id="cat-isosceles">Isosceles</div>
+        <div class="cat-box" id="cat-scalene">Scalene</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMN 2: EVENT FIRED & LOGGED -->
+  <div class="col">
+    <div class="col-header">02 / Event Fired & Logged</div>
+    <div class="col-title">
+      Each placement fires a structured <code style="font-family:'JetBrains Mono',monospace;color:var(--gold);">Activity.Answer</code> event from Unity. The wrapper forwards it via postMessage to the ACE parent, which buffers it for mastery computation.
+    </div>
+
+    <div class="event-section">
+      <div class="section-label">Raw Event · unity_answer (from Unity jslib bridge)</div>
+      <div class="event-box" id="rawEvent">
+        {<br>
+        &nbsp;&nbsp;<span class="key">source</span>: <span class="str">"ace_unity"</span>,<br>
+        &nbsp;&nbsp;<span class="key">type</span>: <span class="str">"unity_answer"</span>,<br>
+        &nbsp;&nbsp;<span class="key">data</span>: {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">tile</span>: <span class="str">"RightT"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">target</span>: <span class="str" id="rawTarget">"DropTarget_01"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">correct</span>: <span class="bool" id="rawCorrect">false</span><br>
+        &nbsp;&nbsp;},<br>
+        &nbsp;&nbsp;<span class="key">timestamp</span>: <span class="num">1775948280697</span><br>
+        }
+      </div>
+    </div>
+
+    <div class="event-section">
+      <div class="section-label">ACE Event Store — challenge_attempts.answer_log</div>
+      <table class="event-table" id="eventTable">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Tile</th>
+            <th>Placed As</th>
+            <th>Actual</th>
+            <th>Correct</th>
+            <th>Dwell</th>
+          </tr>
+        </thead>
+        <tbody id="eventRows">
+          <tr class="row-hidden" data-step="2">
+            <td>linda_adm_1</td>
+            <td>EquilateralT</td>
+            <td class="equilateral">equilateral</td>
+            <td class="equilateral">equilateral</td>
+            <td style="color:var(--green);">✓</td>
+            <td>2310ms</td>
+          </tr>
+          <tr class="row-hidden" data-step="3">
+            <td>linda_adm_1</td>
+            <td>ScaleneT</td>
+            <td class="scalene">scalene</td>
+            <td class="scalene">scalene</td>
+            <td style="color:var(--green);">✓</td>
+            <td>3100ms</td>
+          </tr>
+          <tr class="row-hidden row-error" data-step="4">
+            <td>linda_adm_1</td>
+            <td>RightT</td>
+            <td class="placed equilateral">equilateral</td>
+            <td class="actual right-val">right</td>
+            <td style="color:var(--red);">✗</td>
+            <td>1840ms</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="event-section" style="margin-top:auto;">
+      <div class="section-label">Pipeline Path</div>
+      <div class="event-box active" style="font-size:0.64rem;opacity:0.75;line-height:1.8;">
+        Unity C# · TileMatchArea.OnTriggerEnter<br>
+        &nbsp;&nbsp;→ <span class="str">JS.Do("Activity.Answer(...)")</span><br>
+        &nbsp;&nbsp;→ jslib · UnityToJs_message<br>
+        &nbsp;&nbsp;→ Wrapper · postMessage("unity_answer")<br>
+        &nbsp;&nbsp;→ ACE Parent · unityEventBuffer.answers[]<br>
+        &nbsp;&nbsp;→ /api/student/progress · D1
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMN 3: CATEGORIZED & APPLIED -->
+  <div class="col">
+    <div class="col-header">03 / Categorized & Applied</div>
+
+    <!-- Categorization logic -->
+    <div class="logic-box" id="logicBox">
+      <div class="section-label" style="margin-bottom:4px;">Categorization Logic</div>
+      <span class="op">IF</span> <span class="cond">placed_as ≠ actual</span><br>
+      &nbsp;&nbsp;<span class="op">AND</span> <span class="cond">dwell_ms &lt; 2500</span><br>
+      &nbsp;&nbsp;<span class="op">AND</span> <span class="cond">revision_count = 0</span><br>
+      &nbsp;&nbsp;<span class="op">AND</span> <span class="cond">is_near_miss = true</span><br>
+      <span class="arrow">→</span> <span class="key">error_type</span>:<br>
+      &nbsp;&nbsp;<span class="out">"confident_misclassification"</span><br>
+      <span class="arrow">→</span> <span class="key">intervention</span>:<br>
+      &nbsp;&nbsp;<span class="out">"contrastive_near_miss"</span>
+    </div>
+
+    <!-- Confusion matrix -->
+    <div class="matrix-wrapper">
+      <div class="section-label">Confusion Matrix Update</div>
+      <div class="matrix" id="matrix">
+        <div></div>
+        <div class="matrix-col-hdr">EQ</div>
+        <div class="matrix-col-hdr">RT</div>
+        <div class="matrix-col-hdr">IS</div>
+        <div class="matrix-col-hdr">SC</div>
+
+        <div class="matrix-row-hdr">EQ</div>
+        <div class="matrix-cell diagonal zero" id="m-eq-eq">0</div>
+        <div class="matrix-cell zero" id="m-eq-rt">0</div>
+        <div class="matrix-cell zero" id="m-eq-is">0</div>
+        <div class="matrix-cell zero" id="m-eq-sc">0</div>
+
+        <div class="matrix-row-hdr">RT</div>
+        <div class="matrix-cell zero" id="m-rt-eq">0</div>
+        <div class="matrix-cell diagonal zero" id="m-rt-rt">0</div>
+        <div class="matrix-cell zero" id="m-rt-is">0</div>
+        <div class="matrix-cell zero" id="m-rt-sc">0</div>
+
+        <div class="matrix-row-hdr">IS</div>
+        <div class="matrix-cell zero" id="m-is-eq">0</div>
+        <div class="matrix-cell zero" id="m-is-rt">0</div>
+        <div class="matrix-cell diagonal zero" id="m-is-is">0</div>
+        <div class="matrix-cell zero" id="m-is-sc">0</div>
+
+        <div class="matrix-row-hdr">SC</div>
+        <div class="matrix-cell zero" id="m-sc-eq">0</div>
+        <div class="matrix-cell zero" id="m-sc-rt">0</div>
+        <div class="matrix-cell zero" id="m-sc-is">0</div>
+        <div class="matrix-cell diagonal zero" id="m-sc-sc">0</div>
+      </div>
+      <div class="matrix-caption">rows = actual · cols = placed_as</div>
+    </div>
+
+    <!-- Fluency index -->
+    <div class="fluency" id="fluencyBox">
+      <div class="fluency-label">Fluency Index</div>
+      <div class="fluency-formula">
+        accuracy × (1 / dwell_norm)<br>
+        = <span class="hi" id="flAcc">0.67</span> × (1 / <span class="hi" id="flDwell">0.74</span>)<br>
+        = <span class="result" id="flResult">0.91</span>
+      </div>
+      <div class="fluency-bar">
+        <div class="fluency-fill" id="fluencyFill"></div>
+      </div>
+      <div class="fluency-scale">
+        <span>0 — systematic</span>
+        <span>1 — fluent</span>
+      </div>
+    </div>
+
+    <!-- Learner profile update -->
+    <div class="profile" id="profileBox">
+      <div class="profile-label">⚠ Learner Profile Update</div>
+      <strong id="profileName">Linda B.</strong> — error_type:<br>
+      confident_misclassification<br>
+      <div class="line2">near_miss_confusion: right → equilateral</div>
+      <div class="intervention">Intervention queued:<br>
+      contrastive_near_miss before Fragment 2</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <button class="btn" onclick="reset()">↻ Reset</button>
+  <div class="step-desc" id="stepDesc">
+    <span class="step-num">Step 1</span> — <strong>Student drags a tile.</strong> The triangle is picked up in the Unity game. Dwell timer starts counting.
+  </div>
+  <div class="dots" id="dots">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+  <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Next Step →</button>
+</div>
+
+<script>
+let currentStep = 1;
+const TOTAL_STEPS = 6;
+
+const STEPS = [
+  // Step 1
+  {
+    desc: '<span class="step-num">Step 1</span> — <strong>Student picks up a tile.</strong> The triangle is grabbed in the Unity game. Dwell timer starts counting milliseconds until a drop target is hit.',
+    run: () => {
+      // Triangle already at start position; reset any classes
+      const tri = document.getElementById('triangle');
+      tri.className = 'triangle start';
+      document.getElementById('dwellValue').textContent = '0.0s';
+      document.getElementById('dwellFill').style.width = '0%';
+      animateDwell(1.8, 1400);
+    }
+  },
+  // Step 2
+  {
+    desc: '<span class="step-num">Step 2</span> — <strong>Student drops the tile on a category.</strong> Unity fires <code style="font-family:JetBrains Mono,monospace;color:var(--gold);">Activity.Answer(tile, target, correct)</code> through the JS.Do bridge. The wrapper forwards it as <code style="font-family:JetBrains Mono,monospace;color:var(--teal);">unity_answer</code> postMessage.',
+    run: () => {
+      const tri = document.getElementById('triangle');
+      tri.className = 'triangle correct';
+      document.getElementById('cat-equilateral').classList.add('correct-hit');
+      // First row appears
+      showTableRow(2);
+      incrementMatrix('eq', 'eq');
+    }
+  },
+  // Step 3
+  {
+    desc: '<span class="step-num">Step 3</span> — <strong>Event logged.</strong> The ACE parent appends to <code style="font-family:JetBrains Mono,monospace;color:var(--gold);">unityEventBuffer.answers[]</code>. A second drop (Scalene) lands correctly. The confusion matrix diagonal fills.',
+    run: () => {
+      showRawEvent('DropTarget_04', true);
+      showTableRow(3);
+      incrementMatrix('sc', 'sc');
+      // Reset triangle
+      const tri = document.getElementById('triangle');
+      tri.className = 'triangle start';
+      document.getElementById('cat-scalene').classList.add('correct-hit');
+    }
+  },
+  // Step 4
+  {
+    desc: '<span class="step-num">Step 4</span> — <strong>A wrong drop!</strong> Student places a <span class="right-val">Right</span> triangle on the <span class="equilateral">Equilateral</span> target. Unity fires <code style="font-family:JetBrains Mono,monospace;color:var(--red);">Activity.Answer(RightT, DropTarget_01, wrong)</code>. Short dwell (1.8s) + no revision + near-miss item = flagged.',
+    run: () => {
+      const tri = document.getElementById('triangle');
+      tri.className = 'triangle wrong';
+      showRawEvent('DropTarget_01', false);
+      showTableRow(4);
+      incrementMatrix('rt', 'eq'); // actual=right, placed_as=equilateral
+      document.getElementById('cat-equilateral').classList.remove('correct-hit');
+      document.getElementById('cat-equilateral').classList.add('highlight');
+    }
+  },
+  // Step 5
+  {
+    desc: '<span class="step-num">Step 5</span> — <strong>Categorization logic runs.</strong> The rule engine reads the row: placed_as ≠ actual + short dwell + no revision + near-miss item → <code style="font-family:JetBrains Mono,monospace;color:var(--red);">confident_misclassification</code>. Confusion matrix cell RT→EQ increments.',
+    run: () => {
+      document.getElementById('logicBox').classList.add('active');
+      const cell = document.getElementById('m-rt-eq');
+      cell.classList.remove('zero');
+      cell.classList.add('misclass');
+    }
+  },
+  // Step 6
+  {
+    desc: '<span class="step-num">Step 6</span> — <strong>Mastery updated & intervention queued.</strong> The fluency index reflects accuracy × inverse-dwell: 2 of 3 correct with near-miss error = 0.31. Linda\'s learner profile is flagged for a <code style="font-family:JetBrains Mono,monospace;color:var(--amber);">contrastive_near_miss</code> intervention before Fragment 2.',
+    run: () => {
+      document.getElementById('fluencyBox').classList.add('active');
+      document.getElementById('fluencyFill').style.width = '31%';
+      document.getElementById('profileBox').classList.add('active');
+      // Disable Next
+      const btn = document.getElementById('nextBtn');
+      btn.textContent = 'Complete ✓';
+      btn.disabled = true;
+    }
+  }
+];
+
+function animateDwell(targetSec, durationMs) {
+  const valueEl = document.getElementById('dwellValue');
+  const fillEl = document.getElementById('dwellFill');
+  const startTime = Date.now();
+  const animate = () => {
+    const elapsed = Date.now() - startTime;
+    const pct = Math.min(elapsed / durationMs, 1);
+    const val = (pct * targetSec).toFixed(1);
+    valueEl.textContent = val + 's';
+    fillEl.style.width = (pct * 100) + '%';
+    if (pct < 1) requestAnimationFrame(animate);
+  };
+  animate();
+}
+
+function showRawEvent(target, correct) {
+  document.getElementById('rawTarget').textContent = '"' + target + '"';
+  const elCorrect = document.getElementById('rawCorrect');
+  elCorrect.textContent = correct ? 'true' : 'false';
+  elCorrect.style.color = correct ? 'var(--purple)' : 'var(--red)';
+  document.getElementById('rawEvent').classList.add('active');
+}
+
+function showTableRow(step) {
+  const row = document.querySelector(`tr[data-step="${step}"]`);
+  if (row) {
+    row.classList.remove('row-hidden');
+    row.classList.add('row-new');
+    setTimeout(() => row.classList.remove('row-new'), 600);
+  }
+}
+
+function incrementMatrix(actual, placed) {
+  const cell = document.getElementById(`m-${actual}-${placed}`);
+  if (!cell) return;
+  const current = parseInt(cell.textContent, 10) || 0;
+  cell.textContent = current + 1;
+  cell.classList.remove('zero');
+  if (actual === placed) {
+    cell.classList.add('diagonal');
+  }
+}
+
+function updateDots() {
+  const dots = document.querySelectorAll('.dot');
+  dots.forEach((dot, i) => {
+    dot.classList.remove('active', 'past');
+    const step = i + 1;
+    if (step < currentStep) dot.classList.add('past');
+    else if (step === currentStep) dot.classList.add('active');
+  });
+}
+
+function updateStepUi() {
+  document.getElementById('stepNum').textContent = currentStep;
+  document.getElementById('stepDesc').innerHTML = STEPS[currentStep - 1].desc;
+  updateDots();
+}
+
+function nextStep() {
+  if (currentStep >= TOTAL_STEPS) return;
+  currentStep++;
+  updateStepUi();
+  STEPS[currentStep - 1].run();
+}
+
+function reset() {
+  currentStep = 1;
+  // Reset all visual state
+  document.getElementById('dwellValue').textContent = '0.0s';
+  document.getElementById('dwellFill').style.width = '0%';
+  document.getElementById('triangle').className = 'triangle start';
+  document.querySelectorAll('.cat-box').forEach(b => b.classList.remove('highlight', 'correct-hit'));
+  document.getElementById('rawEvent').classList.remove('active');
+  document.querySelectorAll('tr[data-step]').forEach(r => r.classList.add('row-hidden'));
+  document.querySelectorAll('.matrix-cell').forEach(c => {
+    c.textContent = '0';
+    c.classList.add('zero');
+    c.classList.remove('misclass');
+  });
+  document.getElementById('logicBox').classList.remove('active');
+  document.getElementById('fluencyBox').classList.remove('active');
+  document.getElementById('fluencyFill').style.width = '0%';
+  document.getElementById('profileBox').classList.remove('active');
+  const btn = document.getElementById('nextBtn');
+  btn.textContent = 'Next Step →';
+  btn.disabled = false;
+  updateStepUi();
+  STEPS[0].run();
+}
+
+// Initialize with Step 1
+updateStepUi();
+STEPS[0].run();
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'ArrowRight') {
+    e.preventDefault();
+    nextStep();
+  } else if (e.code === 'ArrowLeft' || e.code === 'Backspace') {
+    e.preventDefault();
+    reset();
+  }
+});
+</script>
+
+</body>
+</html>
