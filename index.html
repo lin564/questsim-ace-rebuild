@@ -5175,5 +5175,130 @@ window.QS = (() => {
   };
 
 })();</script>
+
+<!-- ───────────────────────────────────────────────────────────────────────
+     Synthetic Persona Lab adapter.
+     Lets the Synthetic Persona Lab (synthetic-student.pages.dev) drive this
+     game with a population of synthetic students and collect aggregate ACE
+     outcomes. Dormant until the lab sends 'persona-test:init'; it never runs
+     during normal human play and touches none of the game's state or UI.
+
+     It reproduces this game's ACE rules headlessly:
+       • scaffold side-quest after the 2nd miss on a challenge
+       • fast-track harder variant on a quick, first-try, hint-free solve
+       • Extension → Mastery after all three challenges are cleared
+     The lab stays the authority on how each persona answers an item; this
+     adapter is the authority on the game's ACE logic.
+─────────────────────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  "use strict";
+  // Each quest challenge mapped to an item difficulty the lab can respond to
+  // (guess/slip/learn follow the lab's model; harder quests lower guess/learn,
+  // raise slip). `fast` marks challenges that have a fast-track hard variant.
+  var CHALLENGES = [
+    { key: "athens",     guess: 0.12, slip: 0.14, learn: 0.16, fast: true  },
+    { key: "rhodes",     guess: 0.10, slip: 0.15, learn: 0.14, fast: true  },
+    { key: "alexandria", guess: 0.08, slip: 0.17, learn: 0.12, fast: false }
+  ];
+  var SCAFFOLD_ITEM = { guess: 0.20, slip: 0.08, learn: 0.28 }; // friendly 3-4-5 practice
+  var FASTTRACK_ITEM = { guess: 0.06, slip: 0.20, learn: 0.10 }; // harder triple variant
+  var MAX_ATTEMPTS = 5;
+
+  function ask(playerId, item) {
+    return new Promise(function (resolve) {
+      function handler(e) {
+        var d = e.data;
+        if (d && d.type === "persona-test:response" && d.playerId === playerId) {
+          window.removeEventListener("message", handler);
+          resolve(d);
+        }
+      }
+      window.addEventListener("message", handler);
+      parent.postMessage({ type: "persona-test:item", playerId: playerId, item: item }, "*");
+    });
+  }
+
+  function playChallenge(playerId, ch) {
+    var scaffolded = false, fastTracked = false, attempts = 0, boosted = null;
+    function attempt(a) {
+      attempts = a;
+      var item = boosted || { guess: ch.guess, slip: ch.slip, learn: ch.learn };
+      boosted = null;
+      return ask(playerId, item).then(function (ev) {
+        if (ev.correct) {
+          // fast-track: quick, first try, no hint, and a harder variant exists
+          if (a === 1 && !ev.usedHint && ch.fast) {
+            fastTracked = true;
+            return ask(playerId, FASTTRACK_ITEM).then(function () {
+              return { passed: true, scaffolded: scaffolded, fastTracked: fastTracked, attempts: attempts };
+            });
+          }
+          return { passed: true, scaffolded: scaffolded, fastTracked: fastTracked, attempts: attempts };
+        }
+        // 2nd miss routes to a scaffold side-quest (once); it teaches, so the
+        // next main attempt gets a learning boost.
+        if (a >= 2 && !scaffolded) {
+          scaffolded = true;
+          return ask(playerId, SCAFFOLD_ITEM).then(function () {
+            boosted = { guess: Math.min(0.45, ch.guess + 0.05),
+                        slip: Math.max(0.04, ch.slip - 0.03),
+                        learn: Math.min(0.6, ch.learn + 0.12) };
+            return (a < MAX_ATTEMPTS) ? attempt(a + 1)
+              : { passed: false, scaffolded: scaffolded, fastTracked: fastTracked, attempts: attempts };
+          });
+        }
+        return (a < MAX_ATTEMPTS) ? attempt(a + 1)
+          : { passed: false, scaffolded: scaffolded, fastTracked: fastTracked, attempts: attempts };
+      });
+    }
+    return attempt(1);
+  }
+
+  function playStudent(player) {
+    var challengesPassed = 0, scaffoldCount = 0, fastCount = 0;
+    function step(i) {
+      if (i >= CHALLENGES.length) return Promise.resolve();
+      return playChallenge(player.id, CHALLENGES[i]).then(function (r) {
+        if (r.scaffolded) scaffoldCount++;
+        if (r.fastTracked) fastCount++;
+        if (r.passed) { challengesPassed++; return step(i + 1); }
+        return Promise.resolve(); // the quest is linear — a hard block ends the run
+      });
+    }
+    return step(0).then(function () {
+      var tier = challengesPassed >= CHALLENGES.length ? "mastery"
+               : challengesPassed >= 1 ? "extension" : "foundation";
+      parent.postMessage({
+        type: "persona-test:result", playerId: player.id,
+        mastery: challengesPassed / CHALLENGES.length,
+        tier: tier, challengesPassed: challengesPassed,
+        scaffolded: scaffoldCount > 0, fastTracked: fastCount > 0,
+        reachedMastery: tier === "mastery"
+      }, "*");
+    });
+  }
+
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (!d || d.type !== "persona-test:init") return;
+    var players = (d.players || []).slice();
+    (function run(i) {
+      if (i >= players.length) {
+        parent.postMessage({ type: "persona-test:done", count: players.length }, "*");
+        return;
+      }
+      playStudent(players[i]).then(function () { run(i + 1); });
+    })(0);
+  });
+
+  // Tell the lab this game speaks the protocol (ignored during human play).
+  try {
+    if (window.parent && window.parent !== window) {
+      parent.postMessage({ type: "persona-test:ready", game: "questsim-ace-rebuild" }, "*");
+    }
+  } catch (err) {}
+})();
+</script>
 </body>
 </html>
